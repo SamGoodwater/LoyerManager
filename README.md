@@ -21,7 +21,7 @@ Développé par **Goodwater** — logiciel libre sous [licence MIT](LICENSE).
 ## Installation rapide
 
 ```bash
-git clone https://github.com/goodwater/LoyerManager.git
+git clone https://github.com/SamGoodwater/LoyerManager.git
 cd LoyerManager
 cp config.example.php config.php
 # Optionnel en production : définir api_key dans config.php
@@ -85,5 +85,5 @@ LoyerManager/
 
 ## Liens
 
-- Dépôt : https://github.com/goodwater/LoyerManager
+- Dépôt : https://github.com/SamGoodwater/LoyerManager
 - Documentation développeur : [`docs/AGENTS.md`](docs/AGENTS.md)

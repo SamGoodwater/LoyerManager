@@ -1,0 +1,18 @@
+[Unit]
+Description=Loyer Manager — serveur PHP intégré
+Documentation=file:///var/www/LoyerManager/deploy/debian/README
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/loyer-manager/env
+ExecStart=/var/www/LoyerManager/deploy/scripts/run-php-server.sh
+Restart=on-failure
+RestartSec=5
+# User/Group lus depuis env ; fallback www-data si non défini
+User=www-data
+Group=www-data
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,43 @@
+/**
+ * Contenu par défaut des modèles (bootstrap file:// sans fetch).
+ */
+(function (global) {
+  'use strict';
+
+  var QUITTANCE_HTML =
+    '<div class="quittance-doc">' +
+    '<div class="quittance-header" style="display:flex;flex-direction:row;justify-content:space-between;align-items:flex-start;gap:2rem;width:100%;margin-bottom:1.5rem;">' +
+    '<div class="quittance-party quittance-party-bailleur" style="flex:1 1 45%;min-width:180px;">' +
+    '<h3>BAILLEUR</h3>' +
+    '<p><strong>{{bailleur.name}}</strong></p>' +
+    '<p>{{bailleur.street}}</p>' +
+    '<p>{{bailleur.postalCode}} {{bailleur.city}}</p>' +
+    '</div>' +
+    '<div class="quittance-party quittance-party-locataire" style="flex:1 1 45%;min-width:180px;text-align:right;">' +
+    '<h3>LOCATAIRE</h3>' +
+    '<p><strong>{{locataire.name}}</strong></p>' +
+    '<p>{{locataire.street}}</p>' +
+    '<p>{{locataire.postalCode}} {{locataire.city}}</p>' +
+    '</div></div>' +
+    '<h2 class="quittance-title">Quittance du loyer du mois de {{moisText}}</h2>' +
+    '<p class="quittance-body">Je soussigné(e) <strong>{{bailleur.name}}</strong>, propriétaire bailleur du logement situé au {{locataire.street}}, {{locataire.postalCode}} {{locataire.city}}, déclare avoir reçu de <strong>{{locataire.name}}</strong> la somme de <strong>{{paiement}}</strong> au titre du paiement du loyer et des charges locatives pour la période du {{date}} au {{datePlusUnMois}}.</p>' +
+    '<div class="quittance-payments"><h4>Paiements reçus :</h4><div class="quittance-list">{{listePaiements}}</div></div>' +
+    '<p class="quittance-solde">{{texteSolde}}</p>' +
+    '<p class="quittance-legal">La présente quittance ne vaut pas présomption de paiement des loyers antérieurs et futurs.</p>' +
+    '<div class="quittance-footer" style="margin-top:2rem;text-align:right;"><p style="margin:0;">Fait le {{dateDuJour}} à {{lieu}}, pour faire valoir ce que de droit.</p>{{signatureHtml}}</div>' +
+    '</div>';
+
+  var MAIL_HTML =
+    '<p>Bonjour,</p>' +
+    '<p>Vous trouverez en pièce jointe la quittance de loyer pour <strong>{{mois}} {{annee}}</strong>.</p>' +
+    '<p>Cordialement,</p>' +
+    '<p>{{signature}}</p>';
+
+  var MAIL_SUBJECT = 'Envoi de la quittance de loyer - {{mois}} {{annee}}';
+
+  global.LOYER_TEMPLATE_DEFAULTS = {
+    'templates/quittance.html': QUITTANCE_HTML,
+    'templates/mail.html': MAIL_HTML,
+    'templates/mail-subject.txt': MAIL_SUBJECT
+  };
+})(window);

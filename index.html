@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Loyer Manager</title>
+  <link rel="icon" href="img/logo.ico" sizes="any">
+  <link rel="icon" href="img/logo.jpg" type="image/jpeg">
+  <link rel="apple-touch-icon" href="img/logo.jpg">
+  <link rel="stylesheet" href="lib/quill.snow.css">
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="lib/quill.min.js"></script>
+  <script src="lib/chart.umd.min.js"></script>
+  <script src="lib/html2pdf.bundle.min.js"></script>
+  <script src="lib/html-docx.js"></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Aller au contenu principal</a>
+  <header class="app-header">
+    <div class="app-header-brand">
+      <a href="#main-content" class="app-brand" id="app-brand-home" aria-label="Loyer Manager — tableau de bord">
+        <span class="app-logo-wrap" aria-hidden="true">
+          <picture>
+            <source srcset="img/logo.webp" type="image/webp">
+            <img src="img/logo.jpg" alt="Loyer Manager" class="app-logo" width="40" height="40" decoding="async">
+          </picture>
+        </span>
+        <span class="app-brand-text">
+          <span class="app-brand-title">Loyer Manager</span>
+          <span class="app-brand-tagline">Gestion des loyers</span>
+        </span>
+      </a>
+      <div class="app-header-meta">
+        <button type="button" id="save-status-badge" class="save-status-badge save-status-needs-setup hidden" title="État de la sauvegarde">
+          Sauvegarde
+        </button>
+        <button type="button" class="help-trigger" data-help-id="save-badge" aria-label="Aide : indicateur de sauvegarde" aria-expanded="false"><span aria-hidden="true">?</span></button>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Sections de l'application">
+      <button type="button" role="tab" id="tab-dashboard" data-panel="panel-dashboard" class="active" aria-selected="true" aria-controls="panel-dashboard">Tableau de bord</button>
+      <button type="button" role="tab" id="tab-payments" data-panel="panel-payments" aria-selected="false" aria-controls="panel-payments">Virements</button>
+      <button type="button" role="tab" id="tab-settings" data-panel="panel-settings" aria-selected="false" aria-controls="panel-settings">Paramètres</button>
+      <button type="button" role="tab" id="tab-quittance" data-panel="panel-quittance" aria-selected="false" aria-controls="panel-quittance">Quittance</button>
+      <button type="button" role="tab" id="tab-mail" data-panel="panel-mail" aria-selected="false" aria-controls="panel-mail">Mail</button>
+      <button type="button" role="tab" id="tab-help" data-panel="panel-help" aria-selected="false" aria-controls="panel-help">Aide</button>
+    </nav>
+  </header>
+
+  <main id="main-content">
+    <!-- Tableau de bord -->
+    <section id="panel-dashboard" class="panel active" role="tabpanel" aria-labelledby="tab-dashboard">
+      <div class="card no-print">
+        <h2 class="heading-with-help">Période sélectionnée
+          <button type="button" class="help-trigger" data-help-id="dash-period" aria-label="Aide : période" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        </h2>
+        <p class="field-hint">Choisissez l'année et le mois à consulter. Les chiffres ci-dessous se mettent à jour tout seuls.</p>
+        <div class="filters">
+          <div class="form-row">
+            <div class="label-with-help">
+              <label for="sel-year">Année</label>
+            </div>
+            <select id="sel-year" aria-describedby="hint-sel-year"></select>
+            <p id="hint-sel-year" class="field-hint">Exemple : 2025 pour l'année en cours.</p>
+          </div>
+          <div class="form-row">
+            <div class="label-with-help">
+              <label for="sel-month">Mois</label>
+            </div>
+            <select id="sel-month" aria-describedby="hint-sel-month"></select>
+            <p id="hint-sel-month" class="field-hint">Le mois choisi sert aussi pour la quittance.</p>
+          </div>
+        </div>
+        <div id="month-stats" class="stats-row"></div>
+      </div>
+
+      <div class="dashboard-period-grid">
+        <div class="card">
+          <h2 class="heading-with-help">Détail par mois (<span id="dash-year-label"></span>)
+            <button type="button" class="help-trigger" data-help-id="dash-monthly-table" aria-label="Aide : tableau mensuel" aria-expanded="false"><span aria-hidden="true">?</span></button>
+          </h2>
+          <p class="table-hint">Cliquez sur une ligne de mois pour la sélectionner rapidement.</p>
+          <table class="data-table" id="monthly-table">
+            <thead>
+              <tr>
+                <th>Mois</th>
+                <th class="num">Attendu</th>
+                <th class="num">Reçu</th>
+                <th class="num">Différence</th>
+                <th class="num">Solde cumulé</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="card card-dashboard-payments">
+          <h2 class="heading-with-help">Virements du mois sélectionné
+            <button type="button" class="help-trigger" data-help-id="dash-payments-month" aria-label="Aide : virements du mois" aria-expanded="false"><span aria-hidden="true">?</span></button>
+          </h2>
+          <p class="field-hint table-hint">Aperçu des encaissements du mois choisi ci-dessus.</p>
+          <p class="table-scroll-hint">← Faites glisser le tableau horizontalement pour voir toutes les colonnes →</p>
+          <div class="payments-table-scroll payments-table-scroll--dashboard">
+            <table class="data-table data-table-payments data-table-dashboard-payments" id="payments-month-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Émetteur</th>
+                  <th class="num">Montant</th>
+                  <th>Libellé bancaire</th>
+                  <th class="col-pay-ref">Réf.</th>
+                  <th>Statut</th>
+                  <th class="col-pay-comment">Commentaire</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h2 class="heading-with-help">Graphique — Attendu vs reçu
+            <button type="button" class="help-trigger" data-help-id="dash-charts" aria-label="Aide : graphiques" aria-expanded="false"><span aria-hidden="true">?</span></button>
+          </h2>
+          <div class="chart-wrap"><canvas id="chart-monthly"></canvas></div>
+        </div>
+        <div class="card">
+          <h2>Graphique — Solde cumulé</h2>
+          <p class="field-hint">Évolution de la dette ou de l'avance du locataire mois après mois.</p>
+          <div class="chart-wrap"><canvas id="chart-balance"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="heading-with-help">Récapitulatif par année
+          <button type="button" class="help-trigger" data-help-id="dash-yearly" aria-label="Aide : récapitulatif annuel" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        </h2>
+        <table class="data-table" id="yearly-table">
+          <thead>
+            <tr>
+              <th>Année</th>
+              <th class="num">Attendu</th>
+              <th class="num">Reçu</th>
+              <th class="num">Différence</th>
+              <th class="num">Solde cumulé</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Virements -->
+    <section id="panel-payments" class="panel" role="tabpanel" aria-labelledby="tab-payments">
+      <div class="card">
+        <div class="card-header-row">
+          <h2 class="heading-with-help">Liste des virements
+            <button type="button" class="help-trigger" data-help-id="payments-list" aria-label="Aide : liste des virements" aria-expanded="false"><span aria-hidden="true">?</span></button>
+          </h2>
+          <div class="btn-group">
+            <label class="btn btn-secondary" style="cursor:pointer;margin:0" title="Importer un relevé bancaire au format CSV">
+              Importer CSV
+              <input type="file" id="import-csv" accept=".csv,text/csv" class="hidden" aria-describedby="hint-import-csv">
+            </label>
+            <button type="button" class="help-trigger" data-help-id="payments-csv" aria-label="Aide : import CSV" aria-expanded="false"><span aria-hidden="true">?</span></button>
+            <button type="button" id="btn-clear-payments" class="btn btn-danger" title="Supprimer tous les virements">Supprimer tous les virements</button>
+            <button type="button" class="help-trigger" data-help-id="payments-clear" aria-label="Aide : supprimer tous les virements" aria-expanded="false"><span aria-hidden="true">?</span></button>
+            <button type="button" id="btn-add-payment" class="btn">+ Ajouter un virement</button>
+            <button type="button" class="help-trigger" data-help-id="payments-manual" aria-label="Aide : ajout manuel" aria-expanded="false"><span aria-hidden="true">?</span></button>
+          </div>
+        </div>
+        <p id="hint-import-csv" class="field-hint card-intro">Deux façons d'ajouter des virements : <strong>Importer CSV</strong> (relevé banque) ou <strong>+ Ajouter un virement</strong> (saisie une par une).</p>
+        <p class="table-scroll-hint">← Faites glisser le tableau horizontalement pour voir toutes les colonnes →</p>
+        <div class="payments-table-scroll">
+          <table class="data-table data-table-payments" id="payments-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Émetteur</th>
+                <th class="num">Montant</th>
+                <th>Libellé bancaire</th>
+                <th>Réf.</th>
+                <th>Statut</th>
+                <th>Commentaire</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Paramètres -->
+    <section id="panel-settings" class="panel" role="tabpanel" aria-labelledby="tab-settings">
+      <p class="field-hint card-intro no-print">Remplissez ces informations une première fois, puis cliquez sur le bouton bleu <strong>Enregistrer</strong> en bas à droite de l'écran. Vos choix sont mémorisés automatiquement.</p>
+      <div class="card">
+        <h2 class="heading-with-help">Location
+          <button type="button" class="help-trigger" data-help-id="settings-lease" aria-label="Aide : location" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        </h2>
+        <div class="grid-2">
+          <div class="form-row">
+            <label for="set-lease-start">Début de location</label>
+            <input type="date" id="set-lease-start">
+          </div>
+          <div class="form-row">
+            <label for="set-rent-day">Jour théorique du virement</label>
+            <input type="number" id="set-rent-day" min="1" max="31" value="1" aria-describedby="hint-rent-day">
+            <p id="hint-rent-day" class="field-hint">Jour habituel du mois où le locataire paie (souvent 1, 5 ou 10).</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h2 class="heading-with-help">Bailleur
+            <button type="button" class="help-trigger" data-help-id="settings-bailleur" aria-label="Aide : bailleur" aria-expanded="false"><span aria-hidden="true">?</span></button>
+          </h2>
+          <div class="form-row"><label for="set-bailleur-name">Nom</label><input type="text" id="set-bailleur-name"></div>
+          <div class="form-row"><label for="set-bailleur-street">Rue</label><input type="text" id="set-bailleur-street"></div>
+          <div class="form-row"><label for="set-bailleur-cp">Code postal</label><input type="text" id="set-bailleur-cp"></div>
+          <div class="form-row"><label for="set-bailleur-city">Ville</label><input type="text" id="set-bailleur-city"></div>
+          <div class="form-row signature-upload">
+            <div class="label-with-help">
+              <label for="set-signature-image">Signature manuscrite (image)</label>
+              <button type="button" class="help-trigger" data-help-id="settings-signature" aria-label="Aide : signature" aria-expanded="false"><span aria-hidden="true">?</span></button>
+            </div>
+            <p class="subsection-title">Importez une image PNG ou JPG (max. 400 Ko). Elle s'affiche en bas de la quittance.</p>
+            <input type="file" id="set-signature-image" accept="image/png,image/jpeg,image/webp,image/gif">
+            <div id="signature-preview" class="signature-preview"></div>
+            <div class="btn-group" style="margin-top:0.5rem">
+              <button type="button" id="btn-restore-signature" class="btn btn-secondary">Restaurer la signature par défaut</button>
+              <button type="button" id="btn-remove-signature" class="btn btn-secondary hidden">Supprimer l'image</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h2 class="heading-with-help">Locataire
+            <button type="button" class="help-trigger" data-help-id="settings-locataire" aria-label="Aide : locataire" aria-expanded="false"><span aria-hidden="true">?</span></button>
+          </h2>
+          <div class="form-row"><label for="set-loc-name">Nom</label><input type="text" id="set-loc-name"></div>
+          <div class="form-row"><label for="set-loc-street">Rue</label><input type="text" id="set-loc-street"></div>
+          <div class="form-row"><label for="set-loc-cp">Code postal</label><input type="text" id="set-loc-cp"></div>
+          <div class="form-row"><label for="set-loc-city">Ville</label><input type="text" id="set-loc-city"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="heading-with-help">Émetteurs de virements (import CSV)
+          <button type="button" class="help-trigger" data-help-id="settings-emitters" aria-label="Aide : émetteurs CSV" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        </h2>
+        <p class="subsection-title">Nom affiché dans l'app et motifs à rechercher dans le libellé bancaire (un par ligne). La référence bancaire extraite du libellé sert à éviter les doublons.</p>
+        <div id="emitters-list"></div>
+        <button type="button" id="btn-add-emitter" class="btn btn-secondary">+ Ajouter un émetteur</button>
+      </div>
+
+      <div class="card">
+        <h2 class="heading-with-help">Historique des loyers
+          <button type="button" class="help-trigger" data-help-id="settings-prices" aria-label="Aide : historique des loyers" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        </h2>
+        <p class="field-hint">Indiquez le montant du loyer et la date à partir de laquelle il s'applique.</p>
+        <div id="prices-list"></div>
+        <button type="button" id="btn-add-price" class="btn btn-secondary">+ Ajouter un palier</button>
+      </div>
+
+      <div class="card" id="settings-templates-section">
+        <h2 class="heading-with-help">Modèles quittance et mail
+          <button type="button" class="help-trigger" data-help-id="settings-templates" aria-label="Aide : modèles" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        </h2>
+        <p class="field-hint card-intro">Liste et modèle par défaut. L'édition du contenu se fait dans les onglets <strong>Quittance</strong> et <strong>Mail</strong>.</p>
+
+        <div class="template-registry-block" data-template-type="quittance">
+          <h3 class="subsection-title">Modèles quittance</h3>
+          <div class="form-row">
+            <label for="sel-default-quittance">Modèle par défaut</label>
+            <select id="sel-default-quittance" aria-label="Modèle quittance par défaut"></select>
+          </div>
+          <ul id="quittance-templates-list" class="template-registry-list" aria-label="Modèles quittance enregistrés"></ul>
+          <button type="button" id="btn-new-quittance-template" class="btn btn-secondary">+ Nouveau modèle</button>
+        </div>
+
+        <div class="template-registry-block" data-template-type="mail" style="margin-top:1.5rem">
+          <h3 class="subsection-title">Modèles mail</h3>
+          <div class="form-row">
+            <label for="sel-default-mail">Modèle par défaut</label>
+            <select id="sel-default-mail" aria-label="Modèle mail par défaut"></select>
+          </div>
+          <ul id="mail-templates-list" class="template-registry-list" aria-label="Modèles mail enregistrés"></ul>
+          <button type="button" id="btn-new-mail-template" class="btn btn-secondary">+ Nouveau modèle</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="heading-with-help">Destinataires et signature mail
+          <button type="button" class="help-trigger" data-help-id="settings-mail" aria-label="Aide : destinataires mail" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        </h2>
+        <p class="subsection-title">Le contenu du mail se modifie dans l'onglet <strong>Mail</strong>. Ici : destinataires et signature texte (<code>{{signature}}</code>).</p>
+        <div id="recipients-list"></div>
+        <button type="button" id="btn-add-recipient" class="btn btn-secondary">+ Ajouter un destinataire</button>
+        <div class="form-row" style="margin-top:1rem">
+          <label for="set-mail-signature">Signature (texte)</label>
+          <input type="text" id="set-mail-signature">
+        </div>
+      </div>
+
+      <div class="card" id="settings-data-section">
+        <h2 class="heading-with-help">Données
+          <button type="button" class="help-trigger" data-help-id="settings-data" aria-label="Aide : fichier de données" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        </h2>
+        <p id="data-file-status" class="data-file-status"></p>
+        <div id="server-api-key-block" class="form-row hidden">
+          <label for="set-server-api-key">Clé API serveur</label>
+          <p class="field-hint">Requis si <code>api_key</code> est défini dans <code>config.php</code>. Stockée dans le navigateur (session).</p>
+          <div class="btn-group" style="align-items:flex-end">
+            <input type="password" id="set-server-api-key" class="flex-grow" autocomplete="off" placeholder="Collez la clé API">
+            <button type="button" id="btn-save-api-key" class="btn">Connecter</button>
+          </div>
+        </div>
+        <p id="settings-data-intro" class="subsection-title">Les données et modèles sont enregistrés sur le serveur via <strong>api.php</strong>. Utilisez les boutons ci-dessous pour exporter ou importer une copie JSON.</p>
+        <div class="btn-group">
+          <button type="button" id="btn-export-json" class="btn btn-secondary">Copie de secours (export)</button>
+          <label class="btn btn-secondary" style="cursor:pointer">
+            Importer JSON
+            <input type="file" id="import-json" accept=".json,application/json" class="hidden">
+          </label>
+          <button type="button" id="btn-load-seed" class="btn btn-secondary">Recharger les données par défaut</button>
+          <button type="button" id="btn-reset-data" class="btn btn-danger">Réinitialiser</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quittance -->
+    <section id="panel-quittance" class="panel" role="tabpanel" aria-labelledby="tab-quittance">
+      <div class="card no-print">
+        <h2 class="heading-with-help">Quittance — période du tableau de bord
+          <button type="button" class="help-trigger" data-help-id="quittance-period" aria-label="Aide : période de la quittance" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        </h2>
+        <p class="field-hint">Le mois sélectionné dans le tableau de bord est utilisé ici.</p>
+        <div class="template-mode-bar" style="flex-wrap:wrap;gap:0.75rem;margin-bottom:0.75rem">
+          <div class="form-row" style="margin:0;min-width:200px">
+            <label for="sel-quittance-template">Modèle</label>
+            <select id="sel-quittance-template" aria-label="Modèle quittance"></select>
+          </div>
+          <div class="template-mode-toggle" role="group" aria-label="Mode quittance">
+            <button type="button" id="btn-quittance-tab-preview" class="btn btn-secondary template-mode-btn active" data-mode="preview">Aperçu du mois</button>
+            <button type="button" id="btn-quittance-tab-edit" class="btn btn-secondary template-mode-btn" data-mode="edit">Édition du modèle</button>
+          </div>
+        </div>
+        <div class="btn-group" style="flex-wrap:wrap">
+          <button type="button" id="btn-refresh-quittance" class="btn btn-secondary" title="Recalculer l'aperçu à partir du modèle">Régénérer</button>
+          <button type="button" id="btn-quittance-new" class="btn btn-secondary">Nouveau modèle…</button>
+          <button type="button" id="btn-quittance-save" class="btn">Enregistrer</button>
+          <button type="button" id="btn-quittance-save-as" class="btn btn-secondary">Enregistrer sous…</button>
+          <button type="button" id="btn-quittance-set-default" class="btn btn-secondary">Utiliser par défaut</button>
+          <button type="button" class="help-trigger" data-help-id="quittance-edit" aria-label="Aide : édition quittance" aria-expanded="false"><span aria-hidden="true">?</span></button>
+          <button type="button" id="btn-export-pdf" class="btn" title="Télécharger un fichier PDF">PDF</button>
+          <button type="button" id="btn-export-docx" class="btn" title="Télécharger un fichier Word">DOCX</button>
+          <button type="button" id="btn-export-html" class="btn btn-secondary" title="Télécharger une page web">HTML</button>
+          <button type="button" class="help-trigger" data-help-id="quittance-export" aria-label="Aide : export quittance" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        </div>
+      </div>
+      <div id="quittance-preview-wrap" class="card editor-card">
+        <div id="quittance-editor" class="quill-editor-host" aria-label="Aperçu quittance éditable"></div>
+      </div>
+      <div id="quittance-edit-wrap" class="hidden">
+        <div class="template-editor-layout" id="quittance-template-layout">
+          <div class="template-editor-main">
+            <div class="card editor-card template-editor-card template-page-card template-page-a4">
+              <div id="template-quittance-editor" class="quill-editor-host" aria-label="Éditeur modèle quittance"></div>
+            </div>
+          </div>
+          <aside class="template-placeholder-sidebar" aria-label="Mots-clés quittance">
+            <h4 class="placeholder-sidebar-title">Mots-clés</h4>
+            <p class="placeholder-sidebar-hint">Cliquez pour insérer à la position du curseur.</p>
+            <ul id="quittance-placeholder-list" class="placeholder-sidebar-list"></ul>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- Mail -->
+    <section id="panel-mail" class="panel" role="tabpanel" aria-labelledby="tab-mail">
+      <div class="card no-print">
+        <h2 class="heading-with-help">Mail — période du tableau de bord
+          <button type="button" class="help-trigger" data-help-id="mail-period" aria-label="Aide : mail du mois" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        </h2>
+        <p class="field-hint">Objet et corps du mail pour le mois sélectionné dans le tableau de bord.</p>
+        <div class="template-mode-bar" style="flex-wrap:wrap;gap:0.75rem;margin-bottom:0.75rem">
+          <div class="form-row" style="margin:0;min-width:200px">
+            <label for="sel-mail-template">Modèle</label>
+            <select id="sel-mail-template" aria-label="Modèle mail"></select>
+          </div>
+          <div class="template-mode-toggle" role="group" aria-label="Mode mail">
+            <button type="button" id="btn-mail-tab-preview" class="btn btn-secondary template-mode-btn active" data-mode="preview">Aperçu du mois</button>
+            <button type="button" id="btn-mail-tab-edit" class="btn btn-secondary template-mode-btn" data-mode="edit">Édition du modèle</button>
+          </div>
+        </div>
+        <div class="btn-group" style="flex-wrap:wrap">
+          <button type="button" id="btn-refresh-mail" class="btn btn-secondary">Régénérer</button>
+          <button type="button" id="btn-mail-new" class="btn btn-secondary">Nouveau modèle…</button>
+          <button type="button" id="btn-mail-save" class="btn">Enregistrer</button>
+          <button type="button" id="btn-mail-save-as" class="btn btn-secondary">Enregistrer sous…</button>
+          <button type="button" id="btn-mail-set-default" class="btn btn-secondary">Utiliser par défaut</button>
+          <button type="button" id="btn-mail-eml" class="btn" title="Créer un e-mail avec PDF joint">EML + PDF</button>
+          <button type="button" id="btn-mail-nav" class="btn btn-secondary" title="Ouvrir votre messagerie web">mailto</button>
+          <button type="button" class="help-trigger" data-help-id="quittance-mail" aria-label="Aide : envoi par mail" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        </div>
+      </div>
+      <div id="mail-tab-preview-wrap">
+        <div class="form-row">
+          <label for="mail-preview-subject">Objet</label>
+          <input type="text" id="mail-preview-subject" readonly aria-readonly="true">
+        </div>
+        <div class="card editor-card">
+          <div id="mail-preview-editor" class="quill-editor-host" aria-label="Aperçu mail du mois"></div>
+        </div>
+      </div>
+      <div id="mail-tab-edit-wrap" class="hidden">
+        <div class="template-editor-layout" id="mail-template-layout">
+          <div class="template-editor-main">
+            <div class="form-row template-subject-row">
+              <label for="set-mail-subject-template">Objet du mail</label>
+              <input type="text" id="set-mail-subject-template" aria-describedby="hint-mail-subject">
+              <p id="hint-mail-subject" class="field-hint">Placez le curseur ici ou dans le corps, puis cliquez un mot-clé à droite.</p>
+            </div>
+            <div class="card editor-card template-editor-card template-page-card" id="template-mail-editor-card">
+              <div id="template-mail-editor" class="quill-editor-host" aria-label="Éditeur modèle mail"></div>
+            </div>
+          </div>
+          <aside class="template-placeholder-sidebar" aria-label="Mots-clés mail">
+            <h4 class="placeholder-sidebar-title">Mots-clés</h4>
+            <p class="placeholder-sidebar-hint">Cliquez pour insérer à la position du curseur.</p>
+            <ul id="mail-placeholder-list" class="placeholder-sidebar-list"></ul>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- Aide -->
+    <section id="panel-help" class="panel" role="tabpanel" aria-labelledby="tab-help">
+      <div class="help-layout">
+        <nav class="help-toc card no-print" aria-label="Sommaire de l'aide">
+          <div class="help-toc-brand">
+            <img src="img/logo.jpg" alt="" class="app-logo app-logo--toc" width="40" height="40" decoding="async">
+            <h2>Sommaire</h2>
+          </div>
+          <ol>
+            <li><a href="#help-intro">Avant de commencer</a></li>
+            <li><a href="#help-step1">1. Premiers pas</a></li>
+            <li><a href="#help-step2">2. Paramètres</a></li>
+            <li><a href="#help-step3">3. Virements</a></li>
+            <li><a href="#help-step4">4. Consulter les données</a></li>
+            <li><a href="#help-step5">5. Quittance et export</a></li>
+            <li><a href="#help-deploy">Installation sur un serveur</a></li>
+            <li><a href="#help-troubleshoot">Dépannage</a></li>
+          </ol>
+          <p class="field-hint" style="margin-top:1rem">Partout dans l'application, le bouton <strong>?</strong> affiche une explication courte.</p>
+        </nav>
+
+        <div class="help-content">
+          <article id="help-intro" class="card help-article" tabindex="-1">
+            <div class="help-brand">
+              <img src="img/logo.jpg" alt="" class="app-logo app-logo--help" width="56" height="56" decoding="async">
+              <div>
+                <h2 style="margin:0">Avant de commencer</h2>
+                <p class="field-hint" style="margin:0.35rem 0 0">Loyer Manager — sur votre serveur, sans cloud.</p>
+              </div>
+            </div>
+            <p style="margin-top:1rem">Loyer Manager vous aide à suivre les loyers, enregistrer les virements et produire des quittances. L'application tourne sur <strong>votre serveur</strong> : aucun compte cloud, vos données restent sur le disque.</p>
+            <div class="help-callout">
+              <strong>Accès :</strong> ouvrez l'application via son URL (<code>http://…/index.html</code>) — pas en double-cliquant sur le fichier.
+            </div>
+            <h3>Organisation des fichiers (serveur)</h3>
+            <pre class="help-folder-tree">LoyerManager/
+├── index.html
+├── api.php
+├── data/
+│   └── loyer-data.json     ← paramètres, virements, registre modèles
+└── templates/
+    ├── quittances/
+    │   └── principal.html
+    └── mails/
+        ├── principal.html
+        └── principal-subject.txt</pre>
+            <p class="field-hint">Les fichiers <code>*.example.*</code> servent de référence. L'application crée vos fichiers personnalisés via api.php si besoin.</p>
+          </article>
+
+          <article id="help-step1" class="card help-article" tabindex="-1">
+            <h2><span class="help-step-badge">Étape 1</span> Premiers pas</h2>
+            <p>Ouvrez l'application via l'URL de votre serveur. Au premier lancement, le badge affiche <strong>Enregistré</strong> en vert : vos données sont lues et écrites automatiquement via <strong>api.php</strong>.</p>
+            <ol>
+              <li>Vérifiez que nginx et PHP fonctionnent (<code>curl http://localhost/api.php?action=status</code>).</li>
+              <li>Ouvrez <strong>Paramètres</strong> et renseignez bailleur, locataire et montant du loyer.</li>
+              <li>Cliquez sur le bouton bleu <strong>Enregistrer</strong> en bas à droite.</li>
+            </ol>
+            <div class="help-actions">
+              <button type="button" class="btn btn-secondary help-goto" data-panel="panel-settings" data-help-anchor="settings-data-section">Aller aux paramètres Données</button>
+              <button type="button" class="btn btn-secondary help-goto" data-panel="panel-settings" data-help-anchor="settings-templates-section">Aller aux Modèles</button>
+            </div>
+          </article>
+
+          <article id="help-step2" class="card help-article" tabindex="-1">
+            <h2><span class="help-step-badge">Étape 2</span> Paramétrer l'application</h2>
+            <p>Rendez-vous dans l'onglet <strong>Paramètres</strong> et remplissez les sections dans l'ordre ci-dessous. Cliquez sur le bouton bleu <strong>Enregistrer</strong> en bas à droite quand vous avez terminé.</p>
+            <h3>2.1 — Location</h3>
+            <ul>
+              <li><strong>Début de location</strong> : date de prise d'effet du bail.</li>
+              <li><strong>Jour théorique du virement</strong> : jour habituel du paiement (souvent le 1<sup>er</sup> du mois).</li>
+            </ul>
+            <h3>2.2 — Bailleur et locataire</h3>
+            <p>Renseignez les noms et adresses : ils apparaîtront sur la quittance de loyer.</p>
+            <h3>2.3 — Signature</h3>
+            <p>Importez une photo ou un scan de votre signature (PNG/JPG, max. 400 Ko). Elle sera placée en bas de la quittance.</p>
+            <h3>2.4 — Historique des loyers</h3>
+            <p>Indiquez le montant actuel du loyer et la date à partir de laquelle il s'applique. Si le loyer a changé dans le passé, ajoutez un palier pour chaque période.</p>
+            <h3>2.5 — Émetteurs (pour l'import bancaire)</h3>
+            <p>Si vous importez un relevé CSV, configurez le nom du locataire et les mots à repérer dans le libellé bancaire (ex. <em>MARYSE VALLEE</em>).</p>
+            <h3>2.6 — Modèles quittance et mail</h3>
+            <p>Dans <strong>Paramètres → Modèles</strong>, personnalisez le HTML avec des mots-clés <code>{{mois}}</code>, <code>{{bailleur.name}}</code>, etc. Deux modes : <strong>Modifier le modèle</strong> (mots-clés visibles) et <strong>Aperçu</strong> (données réelles). Cliquez <strong>Enregistrer</strong> pour écrire dans <code>templates/quittance.html</code>, <code>templates/mail.html</code> et <code>templates/mail-subject.txt</code>. <strong>Réinitialiser</strong> remet le modèle par défaut embarqué.</p>
+            <h3>2.7 — Destinataires mail (optionnel)</h3>
+            <p>Indiquez les adresses e-mail des destinataires et la signature texte (<code>{{signature}}</code>).</p>
+            <div class="help-actions">
+              <button type="button" class="btn btn-secondary help-goto" data-panel="panel-settings" data-help-anchor="settings-templates-section">Ouvrir Modèles</button>
+            </div>
+          </article>
+
+          <article id="help-step3" class="card help-article" tabindex="-1">
+            <h2><span class="help-step-badge">Étape 3</span> Ajouter les virements</h2>
+            <p>Deux méthodes sont possibles — choisissez celle qui vous convient.</p>
+            <h3>Méthode A — Import CSV (relevé bancaire)</h3>
+            <ol>
+              <li>Connectez-vous à votre banque en ligne et exportez vos opérations au format <strong>CSV</strong> (relevé de compte).</li>
+              <li>Dans l'onglet <strong>Virements</strong>, cliquez sur <strong>Importer CSV</strong> et choisissez le fichier téléchargé.</li>
+              <li>Une liste s'affiche : cochez les virements à enregistrer (les doublons sont déjà exclus).</li>
+              <li>Cliquez sur <strong>Importer la sélection</strong>.</li>
+            </ol>
+            <div class="help-callout">
+              L'import repère automatiquement les virements du locataire grâce aux « émetteurs » configurés à l'étape 2.5.
+            </div>
+            <h3>Méthode B — Saisie manuelle</h3>
+            <ol>
+              <li>Cliquez sur <strong>+ Ajouter un virement</strong>.</li>
+              <li>Indiquez la date, le montant et l'émetteur.</li>
+              <li>Cliquez sur <strong>Enregistrer</strong>.</li>
+            </ol>
+            <p class="field-hint">Utilisez la saisie manuelle pour corriger une ligne ou ajouter un virement ponctuel sans fichier bancaire.</p>
+            <div class="help-actions">
+              <button type="button" class="btn btn-secondary help-goto" data-panel="panel-payments">Ouvrir Virements</button>
+            </div>
+          </article>
+
+          <article id="help-step4" class="card help-article" tabindex="-1">
+            <h2><span class="help-step-badge">Étape 4</span> Consulter les données</h2>
+            <p>L'onglet <strong>Tableau de bord</strong> centralise la vue d'ensemble.</p>
+            <ul>
+              <li>Choisissez une <strong>année</strong> et un <strong>mois</strong> en haut.</li>
+              <li>Le tableau « Détail par mois » compare le loyer <strong>attendu</strong>, le montant <strong>reçu</strong>, la <strong>différence</strong> et le <strong>solde cumulé</strong>.</li>
+              <li>Cliquez sur une ligne de mois pour la sélectionner rapidement.</li>
+              <li>Les graphiques et le récapitulatif annuel reprennent les mêmes chiffres sous forme visuelle.</li>
+              <li>La liste « Virements du mois sélectionné » détaille les encaissements du mois choisi.</li>
+            </ul>
+            <div class="help-actions">
+              <button type="button" class="btn btn-secondary help-goto" data-panel="panel-dashboard">Ouvrir Tableau de bord</button>
+            </div>
+          </article>
+
+          <article id="help-step5" class="card help-article" tabindex="-1">
+            <h2><span class="help-step-badge">Étape 5</span> Quittance et export</h2>
+            <ol>
+              <li>Sélectionnez le bon mois dans le <strong>Tableau de bord</strong>.</li>
+              <li>Ouvrez l'onglet <strong>Quittance</strong> : le texte se remplit automatiquement.</li>
+              <li>Relisez et corrigez le texte si besoin (comme dans un traitement de texte).</li>
+              <li>Exportez :
+                <ul>
+                  <li><strong>PDF</strong> — le plus courant pour envoyer ou imprimer ;</li>
+                  <li><strong>DOCX</strong> — pour modifier dans Word ;</li>
+                  <li><strong>HTML</strong> — page web autonome.</li>
+                </ul>
+              </li>
+              <li>Pour envoyer par e-mail : <strong>Mail (EML + PDF)</strong> crée un message prêt à envoyer avec la quittance en pièce jointe.</li>
+            </ol>
+            <div class="help-callout">
+              Cliquez sur <strong>Régénérer</strong> si vous avez modifié des virements ou des paramètres et souhaitez recalculer le texte automatique.
+            </div>
+            <div class="help-actions">
+              <button type="button" class="btn btn-secondary help-goto" data-panel="panel-quittance">Ouvrir Quittance</button>
+            </div>
+          </article>
+
+          <article id="help-deploy" class="card help-article" tabindex="-1">
+            <h2>Installation sur un serveur (recommandé)</h2>
+            <p>Pour éviter de sélectionner un dossier à chaque actualisation, hébergez l'application sur un serveur web avec <strong>PHP</strong> (présent sur la plupart des hébergeurs mutualisés).</p>
+            <h3>Étapes</h3>
+            <ol>
+              <li>Uploadez le dossier du projet sur votre hébergement (FTP ou gestionnaire de fichiers).</li>
+              <li>Vérifiez que <code>data/</code> et <code>templates/</code> sont <strong>inscriptibles</strong> par PHP (droits 755 ou 775).</li>
+              <li>Copiez <code>config.example.php</code> en <code>config.php</code> (optionnel : ajoutez une clé <code>api_key</code> en production).</li>
+              <li>Ouvrez l'application via son URL (<code>https://votre-domaine.fr/loyer/index.html</code>) — <em>pas</em> en double-cliquant sur le fichier.</li>
+            </ol>
+            <p class="field-hint">L'application détecte automatiquement <code>api.php</code> et enregistre vos données sur le serveur. Le badge affiche <strong>Enregistré</strong> sans aucune configuration de dossier.</p>
+            <h3>Test en local</h3>
+            <p>Dans le dossier du projet, lancez :</p>
+            <pre class="help-folder-tree">php -S localhost:8080</pre>
+            <p>Puis ouvrez <code>http://localhost:8080/index.html</code> dans votre navigateur.</p>
+            <div class="help-callout">
+              <strong>Sécurité :</strong> ne partagez pas l'URL publiquement sans définir une <code>api_key</code> dans <code>config.php</code>. Faites aussi une copie de secours régulière via Paramètres → Données.
+            </div>
+          </article>
+
+          <article id="help-troubleshoot" class="card help-article" tabindex="-1">
+            <h2>Dépannage</h2>
+            <h3>Les modèles ne s'enregistrent pas</h3>
+            <p>Vérifiez que nginx et php-fpm tournent, que <code>templates/</code> est inscriptible par PHP, et que le badge affiche <strong>Enregistré</strong>. Test : <code>curl http://localhost/api.php?action=status</code>.</p>
+            <h3>Le badge indique « Serveur indisponible »</h3>
+            <p>Ouvrez l'app via <code>http://</code> (pas <code>file://</code>). Vérifiez nginx, php8.4-fpm et les droits sur <code>data/</code>.</p>
+            <h3>Le fichier JSON est corrompu</h3>
+            <p>Au démarrage, l'application vous propose de télécharger une copie du fichier endommagé, puis de le recréer vide.</p>
+            <h3>L'import CSV ne trouve aucun virement</h3>
+            <p>Vérifiez les « Émetteurs » dans Paramètres : les mots-clés doivent correspondre au libellé affiché par votre banque.</p>
+            <h3>Les chiffres du tableau de bord semblent incorrects</h3>
+            <p>Vérifiez la date de début de location, l'historique des loyers et que tous les virements ont bien été saisis.</p>
+            <h3>Faire une copie de secours</h3>
+            <p>Paramètres → Données → <strong>Copie de secours (export)</strong> télécharge votre fichier JSON.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal import CSV -->
+  <div id="modal-csv-import" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-csv-import-title">
+    <div class="modal-backdrop" data-csv-modal-close></div>
+    <div class="modal-box modal-box-wide">
+      <div class="modal-header">
+        <h2 id="modal-csv-import-title">Importer des virements</h2>
+        <button type="button" class="help-trigger" data-help-id="csv-import-modal" aria-label="Aide : import CSV" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        <button type="button" class="modal-close" data-csv-modal-close aria-label="Fermer">×</button>
+      </div>
+      <p id="csv-import-summary" class="csv-import-summary"></p>
+      <div class="csv-import-toolbar">
+        <label class="csv-import-select-all">
+          <input type="checkbox" id="csv-import-select-all" checked>
+          Tout sélectionner (hors doublons)
+        </label>
+      </div>
+      <div class="csv-import-table-wrap">
+        <table class="data-table" id="csv-import-table">
+          <thead>
+            <tr>
+              <th class="col-check"></th>
+              <th>Date</th>
+              <th class="num">Montant</th>
+              <th>Émetteur</th>
+              <th>Libellé bancaire</th>
+              <th>Réf.</th>
+              <th>Statut</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="btn-group modal-actions">
+        <button type="button" id="btn-csv-import-confirm" class="btn">Importer la sélection</button>
+        <button type="button" class="btn btn-secondary" data-csv-modal-close>Annuler</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal virement -->
+  <div id="modal-payment" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-payment-title">
+    <div class="modal-backdrop" data-modal-close></div>
+    <div class="modal-box modal-box-wide">
+      <div class="modal-header">
+        <h2 id="modal-payment-title">Nouveau virement</h2>
+        <button type="button" class="help-trigger" data-help-id="payment-form-modal" aria-label="Aide : formulaire virement" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        <button type="button" class="modal-close" data-modal-close aria-label="Fermer">×</button>
+      </div>
+      <form id="form-payment">
+        <div class="grid-2">
+          <div class="form-row">
+            <label for="pay-date">Date</label>
+            <input type="date" id="pay-date" required>
+          </div>
+          <div class="form-row">
+            <label for="pay-amount">Montant (€)</label>
+            <input type="number" id="pay-amount" step="0.01" min="0.01" required>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="form-row">
+            <label for="pay-emitter">Émetteur</label>
+            <select id="pay-emitter" required></select>
+          </div>
+          <div class="form-row">
+            <label for="pay-status">Statut</label>
+            <select id="pay-status">
+              <option value="manuel">Manuel</option>
+              <option value="importé">Importé</option>
+              <option value="vérifié">Vérifié</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <label for="pay-bank-label">Libellé bancaire</label>
+          <input type="text" id="pay-bank-label" placeholder="Libellé tel qu'affiché sur le relevé">
+        </div>
+        <div class="form-row">
+          <label for="pay-bank-ref">Référence bancaire</label>
+          <input type="text" id="pay-bank-ref" placeholder="Identifiant unique du virement">
+        </div>
+        <div class="form-row">
+          <label for="pay-comment">Commentaire</label>
+          <textarea id="pay-comment" rows="2" placeholder="Note personnelle (optionnel)"></textarea>
+        </div>
+        <div class="btn-group modal-actions">
+          <button type="submit" class="btn">Enregistrer</button>
+          <button type="button" class="btn btn-secondary" data-modal-close>Annuler</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <button type="button" id="btn-save-settings" class="fab-save" title="Enregistrer les paramètres" aria-label="Enregistrer les paramètres">
+    Enregistrer
+  </button>
+
+  <footer class="app-footer no-print" id="app-footer">
+    <p class="app-footer-text">
+      Logiciel libre sous licence
+      <a href="LICENSE" target="_blank" rel="license noopener">MIT</a>
+      ·
+      <a id="footer-github-link" href="https://github.com/goodwater/LoyerManager" target="_blank" rel="noopener noreferrer">Code source sur GitHub</a>
+      · Développé par <strong>Goodwater</strong>
+    </p>
+  </footer>
+
+  <div id="app-loading" class="app-loading" aria-live="polite">
+    <div class="app-loading-box">
+      <img src="img/logo.jpg" alt="" class="app-loading-logo" width="72" height="72" decoding="async">
+      <div class="app-loading-spinner" aria-hidden="true"></div>
+      <p>Chargement de vos données…</p>
+    </div>
+  </div>
+
+  <script src="js/site-meta.js"></script>
+  <script src="js/default-signature.js"></script>
+  <script src="js/template-defaults.js"></script>
+  <script src="js/seed-data.js"></script>
+  <script src="js/calculations.js"></script>
+  <script src="js/csv-import.js"></script>
+  <script src="js/server-api.js"></script>
+  <script src="js/template-manager.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/templates.js"></script>
+  <script src="js/notify.js"></script>
+  <script src="js/editor.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/quittance.js"></script>
+  <script src="js/export.js"></script>
+  <script src="js/mail.js"></script>
+  <script src="js/help.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

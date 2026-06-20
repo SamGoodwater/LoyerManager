@@ -1,0 +1,10 @@
+Options -Indexes
+# Bloquer l'accès direct à la configuration
+<Files "config.php">
+  Require all denied
+</Files>
+
+# Bloquer l'accès au fichier d'exemple de config (contient la structure)
+<Files "config.example.php">
+  Require all denied
+</Files>

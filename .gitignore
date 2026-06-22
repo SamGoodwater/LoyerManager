@@ -37,6 +37,3 @@ desktop.ini
 .vscode/
 .cursor/
 *.log
-
-# Ancien logo erroné (capture d'écran) — utiliser logo.webp / logo.jpg
-img/logo.png

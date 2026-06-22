@@ -4,6 +4,8 @@
 (function (global) {
   'use strict';
 
+  var SIGNATURE_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+
   var state = {
     data: null,
     selectedYear: new Date().getFullYear(),
@@ -33,6 +35,11 @@
 
   function $$(sel) {
     return document.querySelectorAll(sel);
+  }
+
+  function bindIf(id, fn) {
+    var el = $(id);
+    if (el) fn(el);
   }
 
   function fmt(n) {
@@ -177,6 +184,11 @@
       .join('');
   }
 
+  function refreshTemplatePlaceholderSidebars() {
+    renderPlaceholderSidebar('#quittance-placeholder-list', 'quittance');
+    renderPlaceholderSidebar('#mail-placeholder-list', 'mail');
+  }
+
   function bindPlaceholderSidebar(listId, editorId, options) {
     options = options || {};
     var ul = $(listId);
@@ -225,10 +237,12 @@
   }
 
   function markQuittanceDirty() {
+    if (!isQuittanceTemplateEditable()) return;
     state.quittanceUi.dirty = true;
   }
 
   function markMailDirty() {
+    if (!isMailTemplateEditable()) return;
     state.mailUi.dirty = true;
   }
 
@@ -289,25 +303,31 @@
       var ul = $(listId);
       if (!ul) return;
       var defaultId = LoyerTemplateManager.getDefaultId(state.data.settings, type);
-      var items = getTemplateItems(type).filter(function (item) {
-        return !item.isSystem;
-      });
+      var items = getTemplateItems(type);
       ul.innerHTML = items
         .map(function (item) {
-          var badge = item.id === defaultId ? ' <span class="template-default-badge">Défaut</span>' : '';
-          var canDelete = items.length > 1 && item.id !== defaultId;
+          var badges = '';
+          if (item.isProtected) {
+            badges += ' <span class="template-protected-badge">Modèle de base</span>';
+          }
+          if (item.id === defaultId) {
+            badges += ' <span class="template-default-badge">Défaut</span>';
+          }
+          var canDelete = !item.isProtected && item.id !== defaultId;
           return (
             '<li class="template-registry-item">' +
             '<span class="template-registry-name">' +
             escapeHtml(item.name) +
-            badge +
+            badges +
             '</span>' +
             '<span class="template-registry-actions">' +
             '<button type="button" class="btn btn-secondary btn-sm btn-edit-template" data-type="' +
             type +
             '" data-id="' +
             escapeHtml(item.id) +
-            '">Modifier</button>' +
+            '">' +
+            (item.isProtected ? 'Aperçu' : 'Modifier') +
+            '</button>' +
             (canDelete
               ? '<button type="button" class="btn btn-danger btn-sm btn-del-template" data-type="' +
                 type +
@@ -331,6 +351,10 @@
       loadQuittanceTemplateEditor(content);
       state.quittanceUi.dirty = false;
       fillTemplateSelect('#sel-quittance-template', 'quittance', id);
+      updateTemplateEditControls('quittance');
+      if (state.quittanceUi.mode === 'edit' && !isQuittanceTemplateEditable()) {
+        return applyQuittanceTabMode('preview');
+      }
     });
   }
 
@@ -343,27 +367,52 @@
       if (subjectInp) subjectInp.value = state.mailUi.mailSubjectRaw;
       state.mailUi.dirty = false;
       fillTemplateSelect('#sel-mail-template', 'mail', id);
+      updateTemplateEditControls('mail');
+      if (state.mailUi.mode === 'edit' && !isMailTemplateEditable()) {
+        return applyMailTabMode('preview');
+      }
     });
   }
 
   function applyQuittanceTabMode(mode) {
-    state.quittanceUi.mode = mode;
-    $$('#panel-quittance .template-mode-btn').forEach(function (btn) {
-      btn.classList.toggle('active', btn.dataset.mode === mode);
-    });
-    var previewWrap = $('#quittance-preview-wrap');
-    var editWrap = $('#quittance-edit-wrap');
-    if (mode === 'preview') {
-      if (previewWrap) previewWrap.classList.remove('hidden');
-      if (editWrap) editWrap.classList.add('hidden');
-      renderQuittancePreview();
-      return;
+    var apply = function () {
+      state.quittanceUi.mode = mode;
+      $$('#panel-quittance .template-mode-btn').forEach(function (btn) {
+        btn.classList.toggle('active', btn.dataset.mode === mode);
+      });
+      var previewWrap = $('#quittance-preview-wrap');
+      var editWrap = $('#quittance-edit-wrap');
+      if (mode === 'preview') {
+        if (previewWrap) previewWrap.classList.remove('hidden');
+        if (editWrap) editWrap.classList.add('hidden');
+        renderQuittancePreview();
+        return;
+      }
+      if (previewWrap) previewWrap.classList.add('hidden');
+      if (editWrap) editWrap.classList.remove('hidden');
+      loadQuittanceTemplateEditor(state.quittanceUi.raw);
+      setEditorReadOnly('template-quittance', !isQuittanceTemplateEditable());
+      setTemplateLayoutPreview('#quittance-template-layout', false);
+      updateTemplateEditControls('quittance');
+      refreshTemplatePlaceholderSidebars();
+    };
+
+    if (mode === 'preview' && state.quittanceUi.mode === 'edit' && state.quittanceUi.dirty && isQuittanceTemplateEditable()) {
+      return saveQuittanceTemplateFromTab({ silent: true })
+        .then(apply)
+        .catch(function (err) {
+          LoyerNotify.error(err.message || 'Enregistrement impossible.');
+        });
     }
-    if (previewWrap) previewWrap.classList.add('hidden');
-    if (editWrap) editWrap.classList.remove('hidden');
-    loadQuittanceTemplateEditor(state.quittanceUi.raw);
-    setEditorReadOnly('template-quittance', false);
-    setTemplateLayoutPreview('#quittance-template-layout', false);
+    if (mode === 'preview' && state.quittanceUi.mode === 'edit' && state.quittanceUi.dirty) {
+      state.quittanceUi.dirty = false;
+    }
+    if (mode === 'edit' && !isQuittanceTemplateEditable()) {
+      LoyerNotify.info('Le modèle principal est en lecture seule. Dupliquez-le pour le modifier.');
+      mode = 'preview';
+    }
+    apply();
+    return Promise.resolve();
   }
 
   function renderQuittancePreview() {
@@ -375,34 +424,55 @@
   }
 
   function applyMailTabMode(mode) {
-    state.mailUi.mode = mode;
-    $$('#panel-mail .template-mode-btn').forEach(function (btn) {
-      btn.classList.toggle('active', btn.dataset.mode === mode);
-    });
-    var previewWrap = $('#mail-tab-preview-wrap');
-    var editWrap = $('#mail-tab-edit-wrap');
-    if (mode === 'preview') {
-      if (previewWrap) previewWrap.classList.remove('hidden');
-      if (editWrap) editWrap.classList.add('hidden');
-      renderMailPreview();
-      return;
+    var apply = function () {
+      state.mailUi.mode = mode;
+      $$('#panel-mail .template-mode-btn').forEach(function (btn) {
+        btn.classList.toggle('active', btn.dataset.mode === mode);
+      });
+      var previewWrap = $('#mail-tab-preview-wrap');
+      var editWrap = $('#mail-tab-edit-wrap');
+      if (mode === 'preview') {
+        if (previewWrap) previewWrap.classList.remove('hidden');
+        if (editWrap) editWrap.classList.add('hidden');
+        renderMailPreview();
+        return;
+      }
+      if (previewWrap) previewWrap.classList.add('hidden');
+      if (editWrap) editWrap.classList.remove('hidden');
+      syncMailSubjectFromForm();
+      loadMailTemplateEditor(state.mailUi.raw);
+      var subjectInp = $('#set-mail-subject-template');
+      if (subjectInp) {
+        subjectInp.readOnly = !isMailTemplateEditable();
+        subjectInp.value = state.mailUi.mailSubjectRaw;
+      }
+      setEditorReadOnly('template-mail', !isMailTemplateEditable());
+      setTemplateLayoutPreview('#mail-template-layout', false);
+      updateTemplateEditControls('mail');
+      refreshTemplatePlaceholderSidebars();
+    };
+
+    if (mode === 'preview' && state.mailUi.mode === 'edit' && state.mailUi.dirty && isMailTemplateEditable()) {
+      return saveMailTemplateFromTab({ silent: true })
+        .then(apply)
+        .catch(function (err) {
+          LoyerNotify.error(err.message || 'Enregistrement impossible.');
+        });
     }
-    if (previewWrap) previewWrap.classList.add('hidden');
-    if (editWrap) editWrap.classList.remove('hidden');
-    syncMailSubjectFromForm();
-    loadMailTemplateEditor(state.mailUi.raw);
-    var subjectInp = $('#set-mail-subject-template');
-    if (subjectInp) {
-      subjectInp.readOnly = false;
-      subjectInp.value = state.mailUi.mailSubjectRaw;
+    if (mode === 'preview' && state.mailUi.mode === 'edit' && state.mailUi.dirty) {
+      state.mailUi.dirty = false;
     }
-    setEditorReadOnly('template-mail', false);
-    setTemplateLayoutPreview('#mail-template-layout', false);
+    if (mode === 'edit' && !isMailTemplateEditable()) {
+      LoyerNotify.info('Le modèle principal est en lecture seule. Dupliquez-le pour le modifier.');
+      mode = 'preview';
+    }
+    apply();
+    return Promise.resolve();
   }
 
   function renderMailPreview() {
     var id = state.mailUi.selectedId || LoyerTemplateManager.getDefaultId(state.data.settings, 'mail');
-    return LoyerTemplates.loadFilledMail(state.data.settings, state.selectedYear, state.selectedMonth, id).then(
+    return LoyerTemplates.loadFilledMail(state.data, state.selectedYear, state.selectedMonth, id).then(
       function (filled) {
         var subjectInp = $('#mail-preview-subject');
         if (subjectInp) subjectInp.value = filled.subject;
@@ -423,8 +493,7 @@
       state.mailUi.selectedId = LoyerTemplateManager.getDefaultId(state.data.settings, 'mail');
     }
 
-    renderPlaceholderSidebar('#quittance-placeholder-list', 'quittance');
-    renderPlaceholderSidebar('#mail-placeholder-list', 'mail');
+    refreshTemplatePlaceholderSidebars();
     bindPlaceholderSidebar('#quittance-placeholder-list', 'template-quittance');
     bindPlaceholderSidebar('#mail-placeholder-list', 'template-mail', {
       subjectInputId: 'set-mail-subject-template'
@@ -435,18 +504,20 @@
         renderTemplateRegistry();
         applyQuittanceTabMode(state.quittanceUi.mode);
         applyMailTabMode(state.mailUi.mode);
+        updateTemplateEditControls('quittance');
+        updateTemplateEditControls('mail');
         if (state.quittanceUi.pendingEditId) {
           var qId = state.quittanceUi.pendingEditId;
           state.quittanceUi.pendingEditId = null;
           return loadQuittanceTemplateById(qId).then(function () {
-            applyQuittanceTabMode('edit');
+            applyQuittanceTabMode(isTemplateEditable(qId) ? 'edit' : 'preview');
           });
         }
         if (state.mailUi.pendingEditId) {
           var mId = state.mailUi.pendingEditId;
           state.mailUi.pendingEditId = null;
           return loadMailTemplateById(mId).then(function () {
-            applyMailTabMode('edit');
+            applyMailTabMode(isTemplateEditable(mId) ? 'edit' : 'preview');
           });
         }
       })
@@ -455,34 +526,174 @@
       });
   }
 
-  function saveQuittanceTemplateFromTab() {
+  function isTemplateEditable(id) {
+    return !LoyerTemplateManager.isProtectedId(id) && !LoyerTemplateManager.isSystemId(id);
+  }
+
+  function isQuittanceTemplateEditable() {
+    return isTemplateEditable(state.quittanceUi.selectedId);
+  }
+
+  function isMailTemplateEditable() {
+    return isTemplateEditable(state.mailUi.selectedId);
+  }
+
+  function updateTemplateEditControls(type) {
+    var editable = type === 'quittance' ? isQuittanceTemplateEditable() : isMailTemplateEditable();
+    var editBtn = $(type === 'quittance' ? '#btn-quittance-tab-edit' : '#btn-mail-tab-edit');
+    var hint = $(type === 'quittance' ? '#quittance-template-readonly-hint' : '#mail-template-readonly-hint');
+    if (editBtn) {
+      editBtn.disabled = !editable;
+      editBtn.title = editable ? '' : 'Le modèle principal est en lecture seule — dupliquez-le pour le modifier.';
+    }
+    if (hint) {
+      hint.classList.toggle('hidden', editable);
+    }
+  }
+
+  function getTemplateDisplayName(type, id) {
+    var entry = LoyerTemplateManager.findEntry(state.data.settings, type, id);
+    return entry ? entry.name : id;
+  }
+
+  function saveQuittanceTemplateFromTab(options) {
+    options = options || {};
     captureQuittanceEditorRaw();
     var id = state.quittanceUi.selectedId;
-    if (LoyerTemplateManager.isSystemId(id)) {
-      return Promise.reject(new Error('Dupliquez le modèle système avant de l\'enregistrer.'));
+    if (!isTemplateEditable(id)) {
+      return Promise.reject(new Error('Le modèle principal ne peut pas être modifié. Utilisez « Nouveau modèle… » ou « Importer modèle ».'));
     }
     return LoyerTemplateManager.saveQuittance(id, state.quittanceUi.raw).then(function () {
       state.quittanceUi.dirty = false;
-      LoyerNotify.success('Modèle quittance enregistré.');
+      if (!options.silent) {
+        LoyerNotify.success('Modèle quittance enregistré.');
+      }
     });
   }
 
-  function saveMailTemplateFromTab() {
+  function saveMailTemplateFromTab(options) {
+    options = options || {};
     captureMailEditorRaw();
     var id = state.mailUi.selectedId;
-    if (LoyerTemplateManager.isSystemId(id)) {
-      return Promise.reject(new Error('Dupliquez le modèle système avant de l\'enregistrer.'));
+    if (!isTemplateEditable(id)) {
+      return Promise.reject(new Error('Le modèle principal ne peut pas être modifié. Utilisez « Nouveau modèle… » ou « Importer modèle ».'));
     }
     return LoyerTemplateManager.saveMail(id, state.mailUi.raw, state.mailUi.mailSubjectRaw).then(function () {
       state.mailUi.dirty = false;
-      LoyerNotify.success('Modèle mail enregistré.');
+      if (!options.silent) {
+        LoyerNotify.success('Modèle mail enregistré.');
+      }
     });
   }
 
-  function promptNewTemplateName(type) {
+  function exportTemplateById(type, id) {
+    if (type === 'quittance') {
+      return LoyerTemplateManager.loadQuittance(id).then(function (body) {
+        LoyerTemplateIo.exportQuittanceTemplate(getTemplateDisplayName(type, id), body);
+        LoyerNotify.success('Modèle quittance exporté.');
+      });
+    }
+    return LoyerTemplateManager.loadMail(id).then(function (parts) {
+      LoyerTemplateIo.exportMailTemplate(getTemplateDisplayName(type, id), parts.subject, parts.body);
+      LoyerNotify.success('Modèle mail exporté.');
+    });
+  }
+
+  function exportTemplateFromTab(type) {
+    if (type === 'quittance') {
+      captureQuittanceEditorRaw();
+      if (state.quittanceUi.mode === 'edit') {
+        LoyerTemplateIo.exportQuittanceTemplate(
+          getTemplateDisplayName('quittance', state.quittanceUi.selectedId),
+          state.quittanceUi.raw
+        );
+        LoyerNotify.success('Modèle quittance exporté.');
+        return Promise.resolve();
+      }
+      return exportTemplateById('quittance', state.quittanceUi.selectedId);
+    }
+    captureMailEditorRaw();
+    if (state.mailUi.mode === 'edit') {
+      LoyerTemplateIo.exportMailTemplate(
+        getTemplateDisplayName('mail', state.mailUi.selectedId),
+        state.mailUi.mailSubjectRaw,
+        state.mailUi.raw
+      );
+      LoyerNotify.success('Modèle mail exporté.');
+      return Promise.resolve();
+    }
+    return exportTemplateById('mail', state.mailUi.selectedId);
+  }
+
+  function exportTemplateFromSettings(type) {
+    var selectId = type === 'quittance' ? '#sel-default-quittance' : '#sel-default-mail';
+    var sel = $(selectId);
+    var id = sel && sel.value ? sel.value : LoyerTemplateManager.getDefaultId(state.data.settings, type);
+    return exportTemplateById(type, id);
+  }
+
+  function importTemplateAsNew(type, file) {
+    if (!file) return Promise.resolve();
+    var defaultName = LoyerTemplateIo.templateNameFromFilename(file.name);
+    return LoyerTemplateIo.readTemplateFile(type, file)
+      .then(function (parsed) {
+        return promptNewTemplateName(type, defaultName, { confirmLabel: 'Importer' }).then(function (name) {
+          if (!name) return;
+          return LoyerTemplateManager.createFrom(
+            state.data.settings,
+            type,
+            LoyerTemplateManager.LEGACY_ID,
+            name
+          ).then(function (created) {
+            var savePromise =
+              type === 'mail'
+                ? LoyerTemplateManager.saveMail(
+                    created.id,
+                    parsed.body,
+                    parsed.subject != null ? parsed.subject : ''
+                  )
+                : LoyerTemplateManager.saveQuittance(created.id, parsed.body);
+            return savePromise.then(function () {
+              persist();
+              renderTemplateRegistry();
+              if (type === 'quittance') {
+                return loadQuittanceTemplateById(created.id).then(function () {
+                  showPanel('panel-quittance');
+                  applyQuittanceTabMode('edit');
+                  LoyerNotify.success('Modèle « ' + created.name + ' » importé.');
+                });
+              }
+              return loadMailTemplateById(created.id).then(function () {
+                showPanel('panel-mail');
+                applyMailTabMode('edit');
+                LoyerNotify.success('Modèle « ' + created.name + ' » importé.');
+              });
+            });
+          });
+        });
+      })
+      .catch(function (err) {
+        LoyerNotify.error(err.message || 'Import impossible.');
+      });
+  }
+
+  function bindTemplateImportInput(inputId, type) {
+    bindIf(inputId, function (el) {
+      el.addEventListener('change', function (e) {
+        var file = e.target.files[0];
+        e.target.value = '';
+        if (!file) return;
+        importTemplateAsNew(type, file);
+      });
+    });
+  }
+
+  function promptNewTemplateName(type, defaultName, options) {
+    options = options || {};
     return LoyerNotify.prompt('Nom du nouveau modèle :', {
       placeholder: type === 'quittance' ? 'Ex. Relance 2025' : 'Ex. Mail relance',
-      confirmLabel: 'Créer'
+      defaultValue: defaultName || '',
+      confirmLabel: options.confirmLabel || 'Créer'
     });
   }
 
@@ -517,38 +728,6 @@
     });
   }
 
-  function saveTemplateAsNew(type) {
-    if (type === 'quittance') captureQuittanceEditorRaw();
-    else captureMailEditorRaw();
-    var ui = type === 'quittance' ? state.quittanceUi : state.mailUi;
-    var sourceId = ui.selectedId;
-    return promptNewTemplateName(type).then(function (name) {
-      if (!name) return;
-      return LoyerTemplateManager.createFrom(state.data.settings, type, sourceId, name).then(function (created) {
-        if (type === 'quittance') {
-          return LoyerTemplateManager.saveQuittance(created.id, ui.raw).then(function () {
-            persist();
-            renderTemplateRegistry();
-            return loadQuittanceTemplateById(created.id).then(function () {
-              state.quittanceUi.dirty = false;
-              applyQuittanceTabMode('edit');
-              LoyerNotify.success('Modèle enregistré sous « ' + name + ' ».');
-            });
-          });
-        }
-        return LoyerTemplateManager.saveMail(created.id, ui.raw, ui.mailSubjectRaw).then(function () {
-          persist();
-          renderTemplateRegistry();
-          return loadMailTemplateById(created.id).then(function () {
-            state.mailUi.dirty = false;
-            applyMailTabMode('edit');
-            LoyerNotify.success('Modèle enregistré sous « ' + name + ' ».');
-          });
-        });
-      });
-    });
-  }
-
   function setTemplateDefault(type, id) {
     LoyerTemplateManager.setDefault(state.data.settings, type, id);
     persist();
@@ -561,15 +740,19 @@
       onProceed();
       return;
     }
-    LoyerNotify.confirm('Modifications non enregistrées. Que faire ?', {
-      cancelLabel: 'Annuler',
-      confirmLabel: 'Ignorer'
-    }).then(function (discard) {
-      if (discard) {
-        ui.dirty = false;
-        onProceed();
-      }
-    });
+    var editable =
+      ui === state.quittanceUi ? isQuittanceTemplateEditable() : isMailTemplateEditable();
+    if (!editable) {
+      ui.dirty = false;
+      onProceed();
+      return;
+    }
+    var saveFn = ui === state.quittanceUi ? saveQuittanceTemplateFromTab : saveMailTemplateFromTab;
+    saveFn({ silent: true })
+      .then(onProceed)
+      .catch(function (err) {
+        LoyerNotify.error(err.message || 'Enregistrement impossible.');
+      });
   }
 
   function switchQuittanceTemplate(id) {
@@ -598,14 +781,35 @@
     showPanel('panel-mail');
   }
 
+  function createNewTemplateFromDefault(type) {
+    var sourceId = LoyerTemplateManager.LEGACY_ID;
+    return promptNewTemplateName(type).then(function (name) {
+      if (!name) return;
+      return LoyerTemplateManager.createFrom(state.data.settings, type, sourceId, name).then(function (created) {
+        persist();
+        renderTemplateRegistry();
+        if (type === 'quittance') {
+          return loadQuittanceTemplateById(created.id).then(function () {
+            openQuittanceEditor(created.id);
+            LoyerNotify.success('Modèle « ' + created.name + ' » créé à partir du modèle principal.');
+          });
+        }
+        return loadMailTemplateById(created.id).then(function () {
+          openMailEditor(created.id);
+          LoyerNotify.success('Modèle « ' + created.name + ' » créé à partir du modèle principal.');
+        });
+      });
+    }).catch(function (err) {
+      LoyerNotify.error(err.message || 'Création du modèle impossible.');
+    });
+  }
+
   function openNewQuittanceFromSystem() {
-    state.quittanceUi.pendingEditId = LoyerTemplateManager.SYSTEM_ID;
-    showPanel('panel-quittance');
+    createNewTemplateFromDefault('quittance');
   }
 
   function openNewMailFromSystem() {
-    state.mailUi.pendingEditId = LoyerTemplateManager.SYSTEM_ID;
-    showPanel('panel-mail');
+    createNewTemplateFromDefault('mail');
   }
 
   function deleteTemplate(type, id) {
@@ -773,7 +977,7 @@
         var qPending = state.quittanceUi.pendingEditId;
         state.quittanceUi.pendingEditId = null;
         loadQuittanceTemplateById(qPending).then(function () {
-          applyQuittanceTabMode('edit');
+          applyQuittanceTabMode(isTemplateEditable(qPending) ? 'edit' : 'preview');
         });
       } else if (state.quittanceUi.mode === 'preview') {
         renderQuittancePreview();
@@ -784,7 +988,7 @@
         var mPending = state.mailUi.pendingEditId;
         state.mailUi.pendingEditId = null;
         loadMailTemplateById(mPending).then(function () {
-          applyMailTabMode('edit');
+          applyMailTabMode(isTemplateEditable(mPending) ? 'edit' : 'preview');
         });
       } else if (state.mailUi.mode === 'preview') {
         renderMailPreview();
@@ -1076,7 +1280,8 @@
           '<div style="flex:1"><label>Type</label>' +
           '<select class="recipient-type" data-index="' + i + '">' +
           '<option value="to"' + (r.type === 'to' ? ' selected' : '') + '>À</option>' +
-          '<option value="cc"' + (r.type === 'cc' ? ' selected' : '') + '>CC</option></select></div>' +
+          '<option value="cc"' + (r.type === 'cc' ? ' selected' : '') + '>CC</option>' +
+          '<option value="bcc"' + (r.type === 'bcc' ? ' selected' : '') + '>CCI</option></select></div>' +
           '<button type="button" class="btn btn-danger btn-rm-recipient" data-index="' + i + '">×</button></div></div>'
         );
       })
@@ -1184,6 +1389,136 @@
     reader.readAsArrayBuffer(file);
   }
 
+  function importJsonFile(file) {
+    return LoyerStore.importJson(file)
+      .then(function (data) {
+        state.data = data;
+        renderAll();
+        LoyerNotify.success('Données importées.');
+      })
+      .catch(function (err) {
+        LoyerNotify.error(err.message || 'Import JSON impossible.');
+      });
+  }
+
+  function classifyImportFile(file) {
+    var name = String(file.name || '').toLowerCase();
+    var type = String(file.type || '').toLowerCase();
+    if (name.endsWith('.json') || type === 'application/json') {
+      return 'json';
+    }
+    if (
+      name.endsWith('.csv') ||
+      type === 'text/csv' ||
+      type === 'application/csv' ||
+      type === 'application/vnd.ms-excel'
+    ) {
+      return 'csv';
+    }
+    return null;
+  }
+
+  function handleDroppedImportFiles(fileList) {
+    if (!fileList || !fileList.length) return;
+    var jsonFile = null;
+    var csvFile = null;
+    for (var i = 0; i < fileList.length; i++) {
+      var kind = classifyImportFile(fileList[i]);
+      if (kind === 'json') jsonFile = fileList[i];
+      else if (kind === 'csv') csvFile = fileList[i];
+    }
+    if (jsonFile && csvFile) {
+      LoyerNotify.warn('Déposez un seul fichier à la fois (.json ou .csv).');
+      return;
+    }
+    if (jsonFile) {
+      importJsonFile(jsonFile);
+      return;
+    }
+    if (csvFile) {
+      readCsvFile(csvFile);
+      return;
+    }
+    LoyerNotify.warn('Fichier non reconnu. Déposez un .json (données) ou un .csv (relevé bancaire).');
+  }
+
+  function bindFileDropImport() {
+    var overlay = $('#file-drop-overlay');
+    if (!overlay) return;
+
+    var dragDepth = 0;
+
+    function isAppReady() {
+      var loading = $('#app-loading');
+      return !loading || loading.classList.contains('hidden');
+    }
+
+    function dragHasFiles(e) {
+      var types = e.dataTransfer && e.dataTransfer.types;
+      if (!types) return false;
+      for (var i = 0; i < types.length; i++) {
+        if (types[i] === 'Files') return true;
+      }
+      return false;
+    }
+
+    function showDropOverlay() {
+      overlay.classList.remove('hidden');
+      overlay.setAttribute('aria-hidden', 'false');
+    }
+
+    function hideDropOverlay() {
+      dragDepth = 0;
+      overlay.classList.add('hidden');
+      overlay.setAttribute('aria-hidden', 'true');
+    }
+
+    window.addEventListener(
+      'dragenter',
+      function (e) {
+        if (!isAppReady() || !dragHasFiles(e)) return;
+        e.preventDefault();
+        dragDepth += 1;
+        showDropOverlay();
+      },
+      false
+    );
+
+    window.addEventListener(
+      'dragover',
+      function (e) {
+        if (!isAppReady() || !dragHasFiles(e)) return;
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+      },
+      false
+    );
+
+    window.addEventListener(
+      'dragleave',
+      function (e) {
+        if (!dragHasFiles(e)) return;
+        e.preventDefault();
+        dragDepth = Math.max(0, dragDepth - 1);
+        if (dragDepth === 0) hideDropOverlay();
+      },
+      false
+    );
+
+    window.addEventListener(
+      'drop',
+      function (e) {
+        if (!isAppReady() || !dragHasFiles(e)) return;
+        e.preventDefault();
+        hideDropOverlay();
+        handleDroppedImportFiles(e.dataTransfer.files);
+      },
+      false
+    );
+
+    window.addEventListener('dragend', hideDropOverlay, false);
+  }
+
   function renderQuittance() {
     if (state.quittanceUi.mode === 'preview') {
       return renderQuittancePreview();
@@ -1262,6 +1597,7 @@
   }
 
   function bindEvents() {
+    bindFileDropImport();
     var mainContent = $('#main-content');
     var brandHome = $('#app-brand-home');
     if (brandHome) {
@@ -1437,11 +1773,6 @@
       LoyerNotify.success('Paramètres enregistrés.');
     });
 
-    function bindIf(id, fn) {
-      var el = $(id);
-      if (el) fn(el);
-    }
-
     bindIf('#sel-quittance-template', function (el) {
       el.addEventListener('change', function () {
         switchQuittanceTemplate(this.value);
@@ -1488,17 +1819,10 @@
       });
     });
 
-    bindIf('#btn-quittance-save', function (el) {
+    bindIf('#btn-quittance-export-template', function (el) {
       el.addEventListener('click', function () {
-        saveQuittanceTemplateFromTab().catch(function (err) {
-          LoyerNotify.error(err.message || 'Enregistrement impossible.');
-        });
-      });
-    });
-    bindIf('#btn-quittance-save-as', function (el) {
-      el.addEventListener('click', function () {
-        saveTemplateAsNew('quittance').catch(function (err) {
-          LoyerNotify.error(err.message || 'Enregistrement impossible.');
+        exportTemplateFromTab('quittance').catch(function (err) {
+          LoyerNotify.error(err.message || 'Export impossible.');
         });
       });
     });
@@ -1515,17 +1839,10 @@
       });
     });
 
-    bindIf('#btn-mail-save', function (el) {
+    bindIf('#btn-mail-export-template', function (el) {
       el.addEventListener('click', function () {
-        saveMailTemplateFromTab().catch(function (err) {
-          LoyerNotify.error(err.message || 'Enregistrement impossible.');
-        });
-      });
-    });
-    bindIf('#btn-mail-save-as', function (el) {
-      el.addEventListener('click', function () {
-        saveTemplateAsNew('mail').catch(function (err) {
-          LoyerNotify.error(err.message || 'Enregistrement impossible.');
+        exportTemplateFromTab('mail').catch(function (err) {
+          LoyerNotify.error(err.message || 'Export impossible.');
         });
       });
     });
@@ -1548,6 +1865,24 @@
     bindIf('#btn-new-mail-template', function (el) {
       el.addEventListener('click', openNewMailFromSystem);
     });
+    bindIf('#btn-settings-export-quittance', function (el) {
+      el.addEventListener('click', function () {
+        exportTemplateFromSettings('quittance').catch(function (err) {
+          LoyerNotify.error(err.message || 'Export impossible.');
+        });
+      });
+    });
+    bindIf('#btn-settings-export-mail', function (el) {
+      el.addEventListener('click', function () {
+        exportTemplateFromSettings('mail').catch(function (err) {
+          LoyerNotify.error(err.message || 'Export impossible.');
+        });
+      });
+    });
+    bindTemplateImportInput('#import-quittance-template-tab', 'quittance');
+    bindTemplateImportInput('#import-mail-template-tab', 'mail');
+    bindTemplateImportInput('#import-quittance-template-settings', 'quittance');
+    bindTemplateImportInput('#import-mail-template-settings', 'mail');
 
     var quittanceList = $('#quittance-templates-list');
     if (quittanceList) {
@@ -1604,8 +1939,8 @@
         e.target.value = '';
         return;
       }
-      if (file.size > 400000) {
-        LoyerNotify.warn('Image trop volumineuse (maximum 400 Ko).');
+      if (file.size > SIGNATURE_IMAGE_MAX_BYTES) {
+        LoyerNotify.warn('Image trop volumineuse (maximum 5 Mo).');
         e.target.value = '';
         return;
       }
@@ -1703,16 +2038,7 @@
 
     $('#import-json').addEventListener('change', function (e) {
       var file = e.target.files[0];
-      if (!file) return;
-      LoyerStore.importJson(file)
-        .then(function (data) {
-          state.data = data;
-          renderAll();
-          LoyerNotify.success('Données importées.');
-        })
-        .catch(function (err) {
-          LoyerNotify.error(err.message);
-        });
+      if (file) importJsonFile(file);
       e.target.value = '';
     });
     $('#btn-reset-data').addEventListener('click', function () {

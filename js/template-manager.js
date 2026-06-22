@@ -7,6 +7,7 @@
   var SYSTEM_ID = '_system';
   var SYSTEM_LABEL = 'Modèle par défaut (système)';
   var LEGACY_ID = 'principal';
+  var PROTECTED_NAME = 'Modèle principal';
 
   var SYSTEM_DEFAULT_KEYS = {
     quittance: { body: 'templates/quittance.html' },
@@ -21,7 +22,7 @@
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '')
       .slice(0, 64);
-    if (!s || s === SYSTEM_ID) {
+    if (!s || s === SYSTEM_ID || s === LEGACY_ID) {
       s = 'modele-' + Date.now();
     }
     return s;
@@ -29,6 +30,35 @@
 
   function isSystemId(id) {
     return id === SYSTEM_ID;
+  }
+
+  function isProtectedId(id) {
+    return id === LEGACY_ID;
+  }
+
+  function ensureProtectedInRegistry(settings) {
+    if (!settings || !settings.templates) return;
+    var t = settings.templates;
+
+    function hasPrincipal(list) {
+      for (var i = 0; i < list.length; i++) {
+        if (list[i] && list[i].id === LEGACY_ID) return true;
+      }
+      return false;
+    }
+
+    if (!hasPrincipal(t.quittances)) {
+      t.quittances.unshift({ id: LEGACY_ID, name: PROTECTED_NAME });
+    }
+    if (!hasPrincipal(t.mails)) {
+      t.mails.unshift({ id: LEGACY_ID, name: PROTECTED_NAME });
+    }
+    if (t.defaultQuittanceId === SYSTEM_ID || !t.defaultQuittanceId) {
+      t.defaultQuittanceId = LEGACY_ID;
+    }
+    if (t.defaultMailId === SYSTEM_ID || !t.defaultMailId) {
+      t.defaultMailId = LEGACY_ID;
+    }
   }
 
   function getDefaultContent(type, part) {
@@ -61,6 +91,7 @@
     if (!t.defaultMailId) {
       t.defaultMailId = t.mails.length ? t.mails[0].id : LEGACY_ID;
     }
+    ensureProtectedInRegistry(settings);
   }
 
   function findEntry(settings, type, id) {
@@ -86,21 +117,13 @@
     var byId = {};
     var items = [];
 
-    items.push({
-      id: SYSTEM_ID,
-      name: SYSTEM_LABEL,
-      isSystem: true,
-      isDefault: defaultId === SYSTEM_ID
-    });
-    byId[SYSTEM_ID] = true;
-
     registry.forEach(function (entry) {
       if (!entry || !entry.id || byId[entry.id]) return;
       byId[entry.id] = true;
       items.push({
         id: entry.id,
-        name: entry.name || entry.id,
-        isSystem: false,
+        name: isProtectedId(entry.id) ? PROTECTED_NAME : entry.name || entry.id,
+        isProtected: isProtectedId(entry.id),
         isDefault: entry.id === defaultId
       });
     });
@@ -138,19 +161,17 @@
       mergeDisk(settings.templates.mails, mDisk);
 
       if (
-        settings.templates.quittances.length &&
         !findEntry(settings, 'quittance', settings.templates.defaultQuittanceId) &&
-        settings.templates.defaultQuittanceId !== SYSTEM_ID
+        settings.templates.defaultQuittanceId !== LEGACY_ID
       ) {
-        settings.templates.defaultQuittanceId = settings.templates.quittances[0].id;
+        settings.templates.defaultQuittanceId = LEGACY_ID;
         changed = true;
       }
       if (
-        settings.templates.mails.length &&
         !findEntry(settings, 'mail', settings.templates.defaultMailId) &&
-        settings.templates.defaultMailId !== SYSTEM_ID
+        settings.templates.defaultMailId !== LEGACY_ID
       ) {
-        settings.templates.defaultMailId = settings.templates.mails[0].id;
+        settings.templates.defaultMailId = LEGACY_ID;
         changed = true;
       }
 
@@ -183,8 +204,8 @@
   }
 
   function saveQuittance(id, html) {
-    if (isSystemId(id)) {
-      return Promise.reject(new Error('Le modèle système ne peut pas être enregistré directement.'));
+    if (isSystemId(id) || isProtectedId(id)) {
+      return Promise.reject(new Error('Le modèle principal ne peut pas être modifié directement.'));
     }
     if (!global.LoyerServerApi || !global.LoyerServerApi.isActive()) {
       return Promise.reject(new Error('Serveur indisponible.'));
@@ -193,8 +214,8 @@
   }
 
   function saveMail(id, body, subject) {
-    if (isSystemId(id)) {
-      return Promise.reject(new Error('Le modèle système ne peut pas être enregistré directement.'));
+    if (isSystemId(id) || isProtectedId(id)) {
+      return Promise.reject(new Error('Le modèle principal ne peut pas être modifié directement.'));
     }
     if (!global.LoyerServerApi || !global.LoyerServerApi.isActive()) {
       return Promise.reject(new Error('Serveur indisponible.'));
@@ -203,16 +224,18 @@
   }
 
   function removeFromRegistry(settings, type, id) {
+    if (isProtectedId(id)) {
+      return settings;
+    }
     normalizeRegistry(settings);
     var key = type === 'quittance' ? 'quittances' : 'mails';
     var defaultKey = type === 'quittance' ? 'defaultQuittanceId' : 'defaultMailId';
     settings.templates[key] = settings.templates[key].filter(function (e) {
       return e.id !== id;
     });
+    ensureProtectedInRegistry(settings);
     if (settings.templates[defaultKey] === id) {
-      settings.templates[defaultKey] = settings.templates[key][0]
-        ? settings.templates[key][0].id
-        : SYSTEM_ID;
+      settings.templates[defaultKey] = LEGACY_ID;
     }
     return settings;
   }
@@ -257,14 +280,10 @@
   }
 
   function remove(settings, type, id) {
-    if (isSystemId(id)) {
-      return Promise.reject(new Error('Le modèle système ne peut pas être supprimé.'));
+    if (isSystemId(id) || isProtectedId(id)) {
+      return Promise.reject(new Error('Le modèle principal ne peut pas être supprimé.'));
     }
     normalizeRegistry(settings);
-    var list = type === 'quittance' ? settings.templates.quittances : settings.templates.mails;
-    if (list.length <= 1 && findEntry(settings, type, id)) {
-      return Promise.reject(new Error('Impossible de supprimer le dernier modèle enregistré.'));
-    }
     if (getDefaultId(settings, type) === id) {
       return Promise.reject(new Error('Choisissez un autre modèle par défaut avant de supprimer celui-ci.'));
     }
@@ -281,8 +300,11 @@
     SYSTEM_ID: SYSTEM_ID,
     SYSTEM_LABEL: SYSTEM_LABEL,
     LEGACY_ID: LEGACY_ID,
+    PROTECTED_NAME: PROTECTED_NAME,
     slugify: slugify,
     isSystemId: isSystemId,
+    isProtectedId: isProtectedId,
+    ensureProtectedInRegistry: ensureProtectedInRegistry,
     getDefaultContent: getDefaultContent,
     normalizeRegistry: normalizeRegistry,
     listMerged: listMerged,

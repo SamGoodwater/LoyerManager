@@ -6,37 +6,33 @@
 
   var RAW_HTML_KEYS = ['signatureHtml'];
 
+  var SHARED_PLACEHOLDER_ITEMS = [
+    { key: '{{bailleur.name}}', label: 'Nom du bailleur' },
+    { key: '{{bailleur.street}}', label: 'Rue du bailleur' },
+    { key: '{{bailleur.postalCode}}', label: 'Code postal bailleur' },
+    { key: '{{bailleur.city}}', label: 'Ville du bailleur' },
+    { key: '{{locataire.name}}', label: 'Nom du locataire' },
+    { key: '{{locataire.street}}', label: 'Rue du locataire' },
+    { key: '{{locataire.postalCode}}', label: 'Code postal locataire' },
+    { key: '{{locataire.city}}', label: 'Ville du locataire' },
+    { key: '{{moisText}}', label: 'Mois en toutes lettres' },
+    { key: '{{mois}}', label: 'Mois (nom)' },
+    { key: '{{annee}}', label: 'Année' },
+    { key: '{{paiement}}', label: 'Montant reçu (formaté)' },
+    { key: '{{attendu}}', label: 'Montant attendu (formaté)' },
+    { key: '{{date}}', label: 'Début de période' },
+    { key: '{{datePlusUnMois}}', label: 'Fin de période' },
+    { key: '{{listePaiements}}', label: 'Liste des virements (HTML/texte)' },
+    { key: '{{texteSolde}}', label: 'Texte solde / reste dû' },
+    { key: '{{dateDuJour}}', label: 'Date du jour' },
+    { key: '{{lieu}}', label: 'Lieu (ville bailleur)' },
+    { key: '{{signatureHtml}}', label: 'Signature (image HTML)' },
+    { key: '{{signature}}', label: 'Signature texte (paramètres)' }
+  ];
+
   var PLACEHOLDER_CATALOG = {
-    quittance: [
-      { key: '{{bailleur.name}}', label: 'Nom du bailleur' },
-      { key: '{{bailleur.street}}', label: 'Rue du bailleur' },
-      { key: '{{bailleur.postalCode}}', label: 'Code postal bailleur' },
-      { key: '{{bailleur.city}}', label: 'Ville du bailleur' },
-      { key: '{{locataire.name}}', label: 'Nom du locataire' },
-      { key: '{{locataire.street}}', label: 'Rue du locataire' },
-      { key: '{{locataire.postalCode}}', label: 'Code postal locataire' },
-      { key: '{{locataire.city}}', label: 'Ville du locataire' },
-      { key: '{{moisText}}', label: 'Mois en toutes lettres' },
-      { key: '{{mois}}', label: 'Mois (nom)' },
-      { key: '{{annee}}', label: 'Année' },
-      { key: '{{paiement}}', label: 'Montant reçu (formaté)' },
-      { key: '{{attendu}}', label: 'Montant attendu (formaté)' },
-      { key: '{{date}}', label: 'Début de période' },
-      { key: '{{datePlusUnMois}}', label: 'Fin de période' },
-      { key: '{{listePaiements}}', label: 'Liste des virements (HTML/texte)' },
-      { key: '{{texteSolde}}', label: 'Texte solde / reste dû' },
-      { key: '{{dateDuJour}}', label: 'Date du jour' },
-      { key: '{{lieu}}', label: 'Lieu (ville bailleur)' },
-      { key: '{{signatureHtml}}', label: 'Signature (image HTML)' }
-    ],
-    mail: [
-      { key: '{{mois}}', label: 'Mois' },
-      { key: '{{moisText}}', label: 'Mois en toutes lettres' },
-      { key: '{{annee}}', label: 'Année' },
-      { key: '{{bailleur}}', label: 'Nom du bailleur' },
-      { key: '{{locataire}}', label: 'Nom du locataire' },
-      { key: '{{signature}}', label: 'Signature texte (paramètres)' }
-    ]
+    quittance: SHARED_PLACEHOLDER_ITEMS,
+    mail: SHARED_PLACEHOLDER_ITEMS
   };
 
   function escapeHtml(str) {
@@ -56,12 +52,20 @@
     return val;
   }
 
+  function resolveTemplateValue(data, key) {
+    var val = getNestedValue(data, key);
+    if ((key === 'bailleur' || key === 'locataire') && val && typeof val === 'object' && val.name !== undefined) {
+      return val.name;
+    }
+    return val;
+  }
+
   function fillTemplate(template, data) {
     if (!template) return '';
     var html = template.replace(/\{\{signatureHtml\}\}/g, data.signatureHtml || '');
     return html.replace(/\{\{(\w+(?:\.\w+)*)\}\}/g, function (_, key) {
       if (key === 'signatureHtml') return '';
-      var val = getNestedValue(data, key);
+      var val = resolveTemplateValue(data, key);
       if (RAW_HTML_KEYS.indexOf(key) !== -1) return val || '';
       return escapeHtml(val);
     });
@@ -113,32 +117,33 @@
     });
   }
 
-  function buildMailData(settings, year, month) {
-    var bailleurName = settings.bailleur && settings.bailleur.name ? settings.bailleur.name : '';
-    var locataireName = settings.locataire && settings.locataire.name ? settings.locataire.name : '';
-    var moisText = global.LoyerCalc ? global.LoyerCalc.formatMonthLong(year, month) : '';
-    var mois = global.LoyerCalc ? global.LoyerCalc.MONTH_NAMES[month - 1] : '';
-    return {
-      mois: mois,
-      moisText: moisText,
-      annee: String(year),
-      bailleur: bailleurName,
-      locataire: locataireName,
-      signature: (settings.mail && settings.mail.signature) || ''
-    };
+  function buildMailData(data, year, month) {
+    var settings = data.settings || data;
+    var base = global.LoyerCalc
+      ? global.LoyerCalc.buildQuittanceData(data, year, month)
+      : {
+          bailleur: settings.bailleur || {},
+          locataire: settings.locataire || {},
+          moisText: global.LoyerCalc ? global.LoyerCalc.formatMonthLong(year, month) : '',
+          mois: global.LoyerCalc ? global.LoyerCalc.MONTH_NAMES[month - 1] : '',
+          annee: String(year)
+        };
+    base.signature = (settings.mail && settings.mail.signature) || '';
+    return base;
   }
 
-  function loadFilledMail(settings, year, month, mailId) {
+  function loadFilledMail(data, year, month, mailId) {
+    var settings = data.settings || data;
     mailId = mailId || resolveDefaultId('mail', settings);
     return Promise.all([loadTemplate('mail', mailId, 'subject'), loadTemplate('mail', mailId, 'body')]).then(
       function (parts) {
         var subjectTpl = parts[0];
         var bodyTpl = parts[1];
-        var data = buildMailData(settings, year, month);
+        var fillData = buildMailData(data, year, month);
         return {
-          subject: fillTemplate(subjectTpl, data).replace(/\s+/g, ' ').trim(),
-          bodyHtml: fillTemplate(bodyTpl, data),
-          data: data
+          subject: fillTemplate(subjectTpl, fillData).replace(/\s+/g, ' ').trim(),
+          bodyHtml: fillTemplate(bodyTpl, fillData),
+          data: fillData
         };
       }
     );
@@ -151,6 +156,9 @@
   }
 
   function getPlaceholderCatalog(type) {
+    if (type === 'quittance' || type === 'mail') {
+      return SHARED_PLACEHOLDER_ITEMS.slice();
+    }
     return PLACEHOLDER_CATALOG[type] ? PLACEHOLDER_CATALOG[type].slice() : [];
   }
 

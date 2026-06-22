@@ -24,7 +24,7 @@
     'payments-list':
       'Tous vos virements enregistrés. Vous pouvez modifier ou supprimer une ligne avec les boutons dans la colonne Actions.',
     'payments-csv':
-      'Importez un fichier CSV exporté depuis votre banque (relevé de compte). L\'application repère automatiquement les virements du locataire. Les doublons sont ignorés.',
+      'Importez un fichier CSV exporté depuis votre banque (relevé de compte), ou déposez-le n\'importe où sur la page. L\'application repère automatiquement les virements du locataire. Les doublons sont ignorés.',
     'payments-manual':
       'Ajoutez un virement un par un si vous n\'avez pas de fichier CSV, ou pour corriger une saisie.',
     'payments-clear':
@@ -32,31 +32,33 @@
     'settings-lease':
       'Indiquez la date de début du bail et le jour du mois où le loyer est normalement versé (souvent le 1er ou le 5). Ces dates servent aux calculs du tableau de bord.',
     'settings-bailleur':
-      'Vos coordonnées en tant que propriétaire. Elles apparaissent sur la quittance de loyer.',
+      'Vos coordonnées en tant que propriétaire. Elles apparaissent sur la quittance de loyer et dans les mails via les mots-clés {{bailleur.*}}.',
     'settings-locataire':
-      'Coordonnées du locataire. Elles apparaissent aussi sur la quittance.',
+      'Coordonnées du locataire. Elles apparaissent sur la quittance et dans les mails via les mots-clés {{locataire.*}}.',
     'settings-signature':
-      'Scan ou photo de votre signature (PNG ou JPG, max. 400 Ko). Elle sera placée en bas de la quittance. Vous pouvez restaurer la signature par défaut à tout moment.',
+      'Scan ou photo de votre signature (PNG, JPG, WebP ou GIF, max. 5 Mo). Elle sera placée en bas de la quittance (mot-clé {{signatureHtml}}). Vous pouvez restaurer la signature par défaut à tout moment.',
     'settings-emitters':
       'Pour l\'import CSV : indiquez le nom du locataire tel qu\'affiché dans l\'app, puis les mots à chercher dans le libellé bancaire (un par ligne). Exemple : MARYSE VALLEE.',
     'settings-prices':
       'Montant du loyer et date à partir de laquelle il s\'applique. Ajoutez un palier si le loyer a changé (ex. révision annuelle).',
     'settings-mail':
-      'Destinataires des e-mails et signature texte (mot-clé {{signature}}). Le corps et l\'objet du mail se modifient dans l\'onglet Mail.',
+      'Destinataires des e-mails (À, CC, CCI) et signature texte (mot-clé {{signature}}). Le corps et l\'objet du mail se modifient dans l\'onglet Mail.',
     'settings-data':
-      'Les données (data/loyer-data.json) et les modèles (templates/) sont enregistrés via api.php sur le serveur. Exportez régulièrement une copie JSON. Si api_key est définie dans config.php, saisissez la clé ici.',
+      'Les données (data/loyer-data.json) et les modèles (templates/) sont enregistrés via api.php sur le serveur. Exportez régulièrement une copie JSON, importez-la via le bouton ou en glissant-déposant un .json sur la page. Si api_key est définie dans config.php, saisissez la clé ici.',
     'settings-templates':
-      'Liste des modèles enregistrés sur le serveur (templates/quittances/, templates/mails/). Choisissez le modèle par défaut, modifiez ou supprimez. L\'édition du contenu se fait dans les onglets Quittance et Mail.',
+      'Liste des modèles enregistrés sur le serveur. Le modèle principal est fourni par défaut en lecture seule (aperçu et export possibles ; édition interdite). Importez un fichier pour créer un nouveau modèle, ou dupliquez le principal via « + Nouveau modèle ».',
     'mail-period':
-      'Aperçu du mail pour le mois choisi dans le Tableau de bord. Basculez en « Édition du modèle » pour modifier objet et corps.',
+      'Aperçu du mail pour le mois choisi dans le Tableau de bord. Le modèle principal est en lecture seule — dupliquez-le ou importez un fichier pour en créer un. Enregistrement automatique en revenant à l\'aperçu pour les modèles personnalisés.',
+    'mail-edit':
+      'Même panneau de mots-clés que pour la quittance : {{paiement}}, {{bailleur.name}}, {{locataire.city}}, etc. Cliquez un mot-clé pour l\'insérer dans l\'objet ou le corps. Le modèle principal est en lecture seule — utilisez « Nouveau modèle… » ou « Importer modèle ».',
     'quittance-period':
       'La quittance correspond au mois choisi dans le Tableau de bord. Changez le mois là-bas si vous voulez une autre période.',
     'quittance-edit':
-      'Choisissez un modèle, basculez en « Édition du modèle » pour modifier le HTML avec mots-clés {{…}}, ou restez en « Aperçu du mois » pour voir la quittance remplie. « Régénérer » recalcule l\'aperçu.',
+      'Le modèle principal est en lecture seule (aperçu uniquement). Pour le personnaliser, dupliquez-le via « Nouveau modèle… » ou importez un fichier .html. Les autres modèles s\'éditent normalement ; l\'enregistrement est automatique en revenant à l\'aperçu. Panneau Mots-clés à droite.',
     'quittance-export':
       'PDF : pour imprimer ou archiver. DOCX : pour Word. HTML : fichier web autonome. Le PDF est le plus courant pour envoyer au locataire.',
     'quittance-mail':
-      'EML + PDF (onglet Mail) : crée un fichier e-mail avec la quittance en pièce jointe. mailto : ouvre votre webmail avec objet et corps préremplis — attachez le PDF manuellement.',
+      'EML + PDF : crée un fichier e-mail avec la quittance en pièce jointe. mailto : ouvre votre webmail avec objet et corps préremplis — attachez le PDF manuellement.',
     'csv-import-modal':
       'Cochez les virements à importer. Les lignes déjà présentes sont marquées comme doublons et ne seront pas reimportées. Validez avec « Importer la sélection ».',
     'payment-form-modal':

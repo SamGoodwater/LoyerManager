@@ -52,10 +52,22 @@ function checkApiKey(array $config): void
     }
 }
 
-function ensureDir(string $path): void
+function ensureDir(string $path, int $mode = 0775): void
 {
     if (!is_dir($path)) {
-        mkdir($path, 0755, true);
+        mkdir($path, $mode, true);
+    }
+}
+
+function assertDirWritable(string $path, string $hint): void
+{
+    ensureDir($path);
+    if (!is_dir($path) || !is_writable($path)) {
+        respondJson([
+            'ok' => false,
+            'error' => 'Écriture impossible dans ' . $hint
+                . ' — exécutez : sudo ./deploy/scripts/fix-permissions.sh',
+        ], 500);
     }
 }
 
@@ -215,6 +227,11 @@ switch ($action) {
             'mode' => 'server',
             'php' => PHP_VERSION,
             'authRequired' => isAuthRequired($config),
+            'writable' => [
+                'data' => is_writable($dataDir),
+                'templatesQuittances' => is_writable($quittancesDir),
+                'templatesMails' => is_writable($mailsDir),
+            ],
         ]);
 
     case 'data':
@@ -286,6 +303,9 @@ switch ($action) {
         }
 
         if ($method === 'DELETE') {
+            if ($id === LEGACY_MIGRATION_ID) {
+                respondJson(['ok' => false, 'error' => 'Le modèle principal ne peut pas être supprimé'], 403);
+            }
             $bodyPath = templateBodyPath($type, $id, $quittancesDir, $mailsDir);
             if ($bodyPath === null || !is_file($bodyPath)) {
                 respondJson(['ok' => false, 'error' => 'Modèle introuvable'], 404);
@@ -331,6 +351,9 @@ switch ($action) {
         }
 
         if ($method === 'POST') {
+            if ($id === LEGACY_MIGRATION_ID) {
+                respondJson(['ok' => false, 'error' => 'Le modèle principal ne peut pas être modifié'], 403);
+            }
             $rawBody = file_get_contents('php://input');
             if ($rawBody === false) {
                 respondJson(['ok' => false, 'error' => 'Corps vide'], 400);
@@ -351,6 +374,7 @@ switch ($action) {
                         respondJson(['ok' => false, 'error' => 'Chemin invalide'], 400);
                     }
                     ensureDir($mailsDir);
+                    assertDirWritable($mailsDir, 'templates/mails/');
                     if (file_put_contents($bodyPath, $bodyContent, LOCK_EX) === false
                         || file_put_contents($subjectPath, $subjectContent, LOCK_EX) === false) {
                         respondJson(['ok' => false, 'error' => 'Écriture impossible'], 500);
@@ -368,7 +392,8 @@ switch ($action) {
             if ($path === null) {
                 respondJson(['ok' => false, 'error' => 'Chemin invalide'], 400);
             }
-            ensureDir(dirname($path));
+            $targetDir = dirname($path);
+            assertDirWritable($targetDir, 'templates/');
             if (file_put_contents($path, $rawBody, LOCK_EX) === false) {
                 respondJson(['ok' => false, 'error' => 'Écriture impossible — vérifiez les droits sur templates/'], 500);
             }

@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "settings": {
+    "leaseStart": "2024-01-01",
+    "rentDueDay": 5,
+    "emitters": ["Mme Claire Martin"],
+    "emitterProfiles": [
+      {
+        "name": "Mme Claire Martin",
+        "patterns": [
+          "CLAIRE MARTIN",
+          "MME CLAIRE MARTIN",
+          "VIR LOYER MARTIN"
+        ]
+      }
+    ],
+    "priceHistory": [
+      { "from": "2024-01-01", "amount": 650 },
+      { "from": "2025-01-01", "amount": 680 }
+    ],
+    "bailleur": {
+      "name": "SCI Les Tilleuls",
+      "street": "12 avenue des Acacias",
+      "postalCode": "75015",
+      "city": "Paris",
+      "signatureImage": ""
+    },
+    "locataire": {
+      "name": "Mme Claire Martin",
+      "street": "8 rue du Parc",
+      "postalCode": "92100",
+      "city": "Boulogne-Billancourt"
+    },
+    "mail": {
+      "recipients": [
+        { "email": "claire.martin@example.com", "type": "to" }
+      ],
+      "signature": "Cordialement,\nSCI Les Tilleuls"
+    },
+    "templates": {
+      "defaultQuittanceId": "principal",
+      "defaultMailId": "principal",
+      "quittances": [
+        { "id": "principal", "name": "Modèle principal" }
+      ],
+      "mails": [
+        { "id": "principal", "name": "Modèle principal" }
+      ]
+    }
+  },
+  "payments": [
+    {
+      "id": "p_demo_202601",
+      "date": "2026-01-06",
+      "emitter": "Mme Claire Martin",
+      "amount": 680,
+      "bankLabel": "VIR SEPA MME CLAIRE MARTIN LOYER JANV 2026 6128112502771877",
+      "bankRef": "6128112502771877",
+      "status": "importé",
+      "comment": ""
+    },
+    {
+      "id": "p_demo_202512",
+      "date": "2025-12-05",
+      "emitter": "Mme Claire Martin",
+      "amount": 680,
+      "bankLabel": "VIR INST MME CLAIRE MARTIN LOYER DEC 5363133704368111",
+      "bankRef": "5363133704368111",
+      "status": "importé",
+      "comment": ""
+    },
+    {
+      "id": "p_demo_202511",
+      "date": "2025-11-04",
+      "emitter": "Mme Claire Martin",
+      "amount": 680,
+      "bankLabel": "VIR SEPA CLAIRE MARTIN LOYER NOV 2025 5182131946810418",
+      "bankRef": "5182131946810418",
+      "status": "importé",
+      "comment": ""
+    },
+    {
+      "id": "p_demo_202510",
+      "date": "2025-10-07",
+      "emitter": "Mme Claire Martin",
+      "amount": 340,
+      "bankLabel": "VIR LOYER MARTIN ACOMPTE OCT 10278-20-25280020029762",
+      "bankRef": "10278-20-25280020029762",
+      "status": "importé",
+      "comment": "Acompte — solde en attente"
+    },
+    {
+      "id": "p_demo_202508",
+      "date": "2025-08-21",
+      "emitter": "Mme Claire Martin",
+      "amount": 650,
+      "bankLabel": "VIR SEPA MME CLAIRE MARTIN LOYER AOUT 10278-20-25233010009141",
+      "bankRef": "10278-20-25233010009141",
+      "status": "importé",
+      "comment": ""
+    },
+    {
+      "id": "p_demo_202407",
+      "date": "2024-07-03",
+      "emitter": "Mme Claire Martin",
+      "amount": 650,
+      "bankLabel": "VIR SEPA CLAIRE MARTIN LOYER JUIL 2024 4011223344556677",
+      "bankRef": "4011223344556677",
+      "status": "importé",
+      "comment": ""
+    }
+  ]
+}

@@ -293,14 +293,6 @@
     };
   }
 
-  function replaceMailPlaceholders(text, year, month, bailleurName) {
-    if (!text) return '';
-    return text
-      .replace(/\{mois\}/gi, MONTH_NAMES[month - 1])
-      .replace(/\{annee\}/gi, String(year))
-      .replace(/\{bailleur\}/gi, bailleurName || '');
-  }
-
   global.LoyerCalc = {
     MONTH_NAMES: MONTH_NAMES,
     generateId: generateId,
@@ -318,7 +310,6 @@
     filterPaymentsInMonth: filterPaymentsInMonth,
     buildQuittanceData: buildQuittanceData,
     buildSignatureHtml: buildSignatureHtml,
-    SIGNATURE_IMG_WIDTH: SIGNATURE_IMG_WIDTH,
-    replaceMailPlaceholders: replaceMailPlaceholders
+    SIGNATURE_IMG_WIDTH: SIGNATURE_IMG_WIDTH
   };
 })(window);

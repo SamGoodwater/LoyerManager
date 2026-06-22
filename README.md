@@ -1,20 +1,21 @@
 # Loyer Manager
 
-Application web **auto-hébergée** pour suivre les loyers, importer des virements bancaires, générer des quittances (PDF, DOCX, HTML) et préparer des e-mails avec pièces jointes.
+Application web **auto-hébergée** pour suivre les loyers, importer des virements bancaires, générer des quittances (PDF, DOCX, HTML) et préparer des e-mails avec pièce jointe.
 
 Développé par **Goodwater** — logiciel libre sous [licence MIT](LICENSE).
 
 ## Fonctionnalités
 
-- Tableau de bord : suivi mensuel, solde cumulé, graphiques
-- Import CSV de relevés bancaires (avec détection de doublons)
-- Bibliothèque de **modèles** quittance et mail (multi-fichiers, édition WYSIWYG)
-- Exports quittance + génération EML / mailto
-- Persistance via **PHP** (`api.php`) sur votre serveur — pas de cloud, pas de compte
+- **Tableau de bord** : suivi mensuel, solde cumulé, graphiques
+- **Virements** : saisie manuelle ou import CSV (relevé bancaire), détection de doublons, glisser-déposer sur la page
+- **Modèles quittance et mail** : bibliothèque multi-fichiers, édition WYSIWYG, mots-clés `{{…}}` (paiement, bailleur, locataire, etc.)
+- **Modèle principal** : fourni par défaut, en lecture seule — dupliquer ou importer pour personnaliser
+- **Exports** : PDF / DOCX / HTML pour la quittance ; EML + PDF ou mailto pour le mail
+- **Persistance serveur** via `api.php` — pas de cloud, pas de compte
 
 ## Prérequis
 
-- PHP 7.4+ (8.x recommandé) avec extensions JSON
+- PHP 7.4+ (8.x recommandé), extension JSON
 - Serveur web : nginx + php-fpm, Apache, ou PHP intégré pour les tests
 - Navigateur récent (Chrome, Firefox, Edge)
 
@@ -24,28 +25,32 @@ Développé par **Goodwater** — logiciel libre sous [licence MIT](LICENSE).
 git clone https://github.com/SamGoodwater/LoyerManager.git
 cd LoyerManager
 cp config.example.php config.php
-# Optionnel en production : définir api_key dans config.php
+# Production : définir api_key dans config.php (recommandé si URL publique)
 
-# Droits d'écriture pour l'utilisateur PHP
-chmod -R u+rwX data templates
+./deploy/scripts/fix-permissions.sh
 ```
 
 ### Test local (PHP intégré)
 
 ```bash
-cd LoyerManager
-php -S 0.0.0.0:8080
+./deploy/debian/install-dev.sh
+# ou : php -S 0.0.0.0:8080
 ```
 
 Ouvrez `http://localhost:8080/` (pas en `file://`).
 
 ### Production Debian / nginx
 
-Voir [`deploy/debian/README`](deploy/debian/README) pour les scripts d'installation.
+Voir [`deploy/debian/README`](deploy/debian/README).
+
+```bash
+sudo ./deploy/debian/install-nginx.sh
+curl http://localhost/api.php?action=status
+```
 
 ## Configuration
 
-| Fichier | Rôle |
+| Élément | Rôle |
 |---------|------|
 | `config.php` | Clé API optionnelle (`api_key`) — **non versionné** |
 | `data/loyer-data.json` | Paramètres, virements, registre des modèles — **non versionné** |
@@ -53,17 +58,28 @@ Voir [`deploy/debian/README`](deploy/debian/README) pour les scripts d'installat
 | `templates/mails/` | Modèles mail (corps + objet) — **non versionné** |
 | `templates/*.example.*` | Modèles d'exemple versionnés |
 
-Au premier lancement, l'application crée `data/loyer-data.json` et migre d'éventuels anciens fichiers plats vers `templates/quittances/principal.html`, etc.
+Au premier lancement, l'application crée `data/loyer-data.json` et migre d'éventuels anciens fichiers plats (`templates/quittance.html`, etc.) vers `templates/quittances/principal.html`.
+
+## Jeu de démonstration
+
+Données **100 % fictives** pour tester sans informations personnelles :
+
+```bash
+cp docs/demo/loyer-data.demo.json data/loyer-data.json
+./deploy/scripts/fix-permissions.sh
+```
+
+Voir [`docs/demo/README.md`](docs/demo/README.md) pour le CSV d'import bancaire associé.
 
 ## Données personnelles
 
-Les fichiers suivants **ne doivent pas** être commités (déjà listés dans `.gitignore`) :
+Ne pas committer (déjà dans `.gitignore`) :
 
-- `data/loyer-data.json` — bailleur, locataire, virements, e-mails
-- `config.php` — clé API
-- `templates/quittances/*`, `templates/mails/*` — modèles personnalisés
+- `data/loyer-data.json`, `data/signature.jpg`
+- `config.php`
+- `templates/quittances/*`, `templates/mails/*`
 
-Un fichier exemple anonymisé est fourni : [`docs/loyer-data.sample.json`](docs/loyer-data.sample.json) (copiez-le vers `data/loyer-data.json` pour tester).
+Exportez régulièrement une copie via **Paramètres → Données**.
 
 ## Structure du projet
 
@@ -71,17 +87,30 @@ Un fichier exemple anonymisé est fourni : [`docs/loyer-data.sample.json`](docs/
 LoyerManager/
 ├── index.html          # Interface
 ├── api.php             # API JSON + modèles
-├── js/                 # Application (vanilla JS)
+├── js/                 # Application (vanilla JS, sans build)
 ├── css/
-├── templates/          # Modèles (*.example.* versionnés)
+├── templates/          # Exemples versionnés (*.example.*)
 ├── data/               # Données utilisateur (gitignored)
+├── docs/demo/          # Jeu de démonstration
 ├── deploy/             # nginx, systemd, scripts
-└── docs/AGENTS.md      # Guide développeurs / agents IA
+└── docs/AGENTS.md      # Guide développeurs
 ```
+
+## Modèles (résumé)
+
+| Action | Quittance | Mail |
+|--------|-----------|------|
+| Aperçu du mois | Onglet Quittance | Onglet Mail |
+| Édition | Modèle personnalisé uniquement | Idem |
+| Dupliquer | Nouveau modèle… | Nouveau modèle… |
+| Importer | Crée un **nouveau** modèle (.html) | Crée un **nouveau** modèle (.json) |
+| Exporter | .html | .json (objet + corps) |
+
+Le panneau **Mots-clés** (édition) propose les mêmes variables pour quittance et mail : `{{paiement}}`, `{{bailleur.name}}`, `{{locataire.city}}`, etc.
 
 ## Licence
 
-[MIT](LICENSE) — utilisation, modification et distribution libres, avec mention de la licence.
+[MIT](LICENSE)
 
 ## Liens
 

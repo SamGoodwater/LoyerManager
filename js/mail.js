@@ -19,16 +19,19 @@
   function splitRecipients(recipients) {
     var to = [];
     var cc = [];
+    var bcc = [];
     (recipients || []).forEach(function (r) {
       if (!r.email) return;
       if (r.type === 'cc') cc.push(r.email);
+      else if (r.type === 'bcc') bcc.push(r.email);
       else to.push(r.email);
     });
-    return { to: to, cc: cc };
+    return { to: to, cc: cc, bcc: bcc };
   }
 
-  function buildMailContent(settings, year, month, mailId) {
-    return global.LoyerTemplates.loadFilledMail(settings, year, month, mailId).then(function (filled) {
+  function buildMailContent(data, year, month, mailId) {
+    return global.LoyerTemplates.loadFilledMail(data, year, month, mailId).then(function (filled) {
+      var settings = data.settings || data;
       var plain = global.LoyerTemplates.htmlToPlainText(filled.bodyHtml);
       return {
         subject: filled.subject,
@@ -47,6 +50,9 @@
     lines.push('To: ' + mailContent.recipients.to.join(', '));
     if (mailContent.recipients.cc.length) {
       lines.push('Cc: ' + mailContent.recipients.cc.join(', '));
+    }
+    if (mailContent.recipients.bcc.length) {
+      lines.push('Bcc: ' + mailContent.recipients.bcc.join(', '));
     }
     lines.push('Subject: ' + mailContent.subject);
     lines.push('MIME-Version: 1.0');
@@ -94,15 +100,17 @@
   function openMailto(mailContent) {
     var to = mailContent.recipients.to.join(',');
     var cc = mailContent.recipients.cc.join(',');
+    var bcc = mailContent.recipients.bcc.join(',');
     var params = [];
     if (cc) params.push('cc=' + encodeURIComponent(cc));
+    if (bcc) params.push('bcc=' + encodeURIComponent(bcc));
     params.push('subject=' + encodeURIComponent(mailContent.subject));
     params.push('body=' + encodeURIComponent(mailContent.body));
     window.location.href = 'mailto:' + encodeURIComponent(to) + '?' + params.join('&');
   }
 
   function prepareMail(mode, data, year, month, quittanceContainer, mailId) {
-    return buildMailContent(data.settings, year, month, mailId).then(function (mailContent) {
+    return buildMailContent(data, year, month, mailId).then(function (mailContent) {
       var filename = global.LoyerQuittance.getFilename(year, month);
 
       if (mode === 'mailto') {

@@ -171,7 +171,7 @@
             <button type="button" class="help-trigger" data-help-id="payments-manual" aria-label="Aide : ajout manuel" aria-expanded="false"><span aria-hidden="true">?</span></button>
           </div>
         </div>
-        <p id="hint-import-csv" class="field-hint card-intro">Deux façons d'ajouter des virements : <strong>Importer CSV</strong> (relevé banque) ou <strong>+ Ajouter un virement</strong> (saisie une par une).</p>
+        <p id="hint-import-csv" class="field-hint card-intro">Deux façons d'ajouter des virements : <strong>Importer CSV</strong>, glisser-déposer un <strong>.csv</strong> sur la page, ou <strong>+ Ajouter un virement</strong> (saisie une par une).</p>
         <p class="table-scroll-hint">← Faites glisser le tableau horizontalement pour voir toutes les colonnes →</p>
         <div class="payments-table-scroll">
           <table class="data-table data-table-payments" id="payments-table">
@@ -227,7 +227,7 @@
               <label for="set-signature-image">Signature manuscrite (image)</label>
               <button type="button" class="help-trigger" data-help-id="settings-signature" aria-label="Aide : signature" aria-expanded="false"><span aria-hidden="true">?</span></button>
             </div>
-            <p class="subsection-title">Importez une image PNG ou JPG (max. 400 Ko). Elle s'affiche en bas de la quittance.</p>
+            <p class="subsection-title">Importez une image PNG, JPG, WebP ou GIF (max. 5 Mo). Elle s'affiche en bas de la quittance.</p>
             <input type="file" id="set-signature-image" accept="image/png,image/jpeg,image/webp,image/gif">
             <div id="signature-preview" class="signature-preview"></div>
             <div class="btn-group" style="margin-top:0.5rem">
@@ -269,7 +269,7 @@
         <h2 class="heading-with-help">Modèles quittance et mail
           <button type="button" class="help-trigger" data-help-id="settings-templates" aria-label="Aide : modèles" aria-expanded="false"><span aria-hidden="true">?</span></button>
         </h2>
-        <p class="field-hint card-intro">Liste et modèle par défaut. L'édition du contenu se fait dans les onglets <strong>Quittance</strong> et <strong>Mail</strong>.</p>
+        <p class="field-hint card-intro">Liste et modèle par défaut. Le modèle principal est en lecture seule. Importez un fichier pour créer un modèle, ou dupliquez-le via « + Nouveau modèle ». Édition dans les onglets <strong>Quittance</strong> et <strong>Mail</strong>.</p>
 
         <div class="template-registry-block" data-template-type="quittance">
           <h3 class="subsection-title">Modèles quittance</h3>
@@ -278,7 +278,14 @@
             <select id="sel-default-quittance" aria-label="Modèle quittance par défaut"></select>
           </div>
           <ul id="quittance-templates-list" class="template-registry-list" aria-label="Modèles quittance enregistrés"></ul>
-          <button type="button" id="btn-new-quittance-template" class="btn btn-secondary">+ Nouveau modèle</button>
+          <div class="btn-group" style="flex-wrap:wrap;margin-top:0.5rem">
+            <button type="button" id="btn-new-quittance-template" class="btn btn-secondary">+ Nouveau modèle</button>
+            <button type="button" id="btn-settings-export-quittance" class="btn btn-secondary">Exporter modèle</button>
+            <label class="btn btn-secondary" style="cursor:pointer;margin:0">
+              Importer modèle
+              <input type="file" id="import-quittance-template-settings" accept=".html,text/html" class="hidden">
+            </label>
+          </div>
         </div>
 
         <div class="template-registry-block" data-template-type="mail" style="margin-top:1.5rem">
@@ -288,7 +295,14 @@
             <select id="sel-default-mail" aria-label="Modèle mail par défaut"></select>
           </div>
           <ul id="mail-templates-list" class="template-registry-list" aria-label="Modèles mail enregistrés"></ul>
-          <button type="button" id="btn-new-mail-template" class="btn btn-secondary">+ Nouveau modèle</button>
+          <div class="btn-group" style="flex-wrap:wrap;margin-top:0.5rem">
+            <button type="button" id="btn-new-mail-template" class="btn btn-secondary">+ Nouveau modèle</button>
+            <button type="button" id="btn-settings-export-mail" class="btn btn-secondary">Exporter modèle</button>
+            <label class="btn btn-secondary" style="cursor:pointer;margin:0">
+              Importer modèle
+              <input type="file" id="import-mail-template-settings" accept=".json,.html,application/json,text/html" class="hidden">
+            </label>
+          </div>
         </div>
       </div>
 
@@ -296,7 +310,7 @@
         <h2 class="heading-with-help">Destinataires et signature mail
           <button type="button" class="help-trigger" data-help-id="settings-mail" aria-label="Aide : destinataires mail" aria-expanded="false"><span aria-hidden="true">?</span></button>
         </h2>
-        <p class="subsection-title">Le contenu du mail se modifie dans l'onglet <strong>Mail</strong>. Ici : destinataires et signature texte (<code>{{signature}}</code>).</p>
+        <p class="subsection-title">Le contenu du mail se modifie dans l'onglet <strong>Mail</strong>. Ici : destinataires (À, CC, CCI) et signature texte (<code>{{signature}}</code>).</p>
         <div id="recipients-list"></div>
         <button type="button" id="btn-add-recipient" class="btn btn-secondary">+ Ajouter un destinataire</button>
         <div class="form-row" style="margin-top:1rem">
@@ -318,7 +332,7 @@
             <button type="button" id="btn-save-api-key" class="btn">Connecter</button>
           </div>
         </div>
-        <p id="settings-data-intro" class="subsection-title">Les données et modèles sont enregistrés sur le serveur via <strong>api.php</strong>. Utilisez les boutons ci-dessous pour exporter ou importer une copie JSON.</p>
+        <p id="settings-data-intro" class="subsection-title">Les données et modèles sont enregistrés sur le serveur via <strong>api.php</strong>. Exportez ou importez une copie JSON — ou déposez un fichier <strong>.json</strong> / <strong>.csv</strong> n'importe où sur la page.</p>
         <div class="btn-group">
           <button type="button" id="btn-export-json" class="btn btn-secondary">Copie de secours (export)</button>
           <label class="btn btn-secondary" style="cursor:pointer">
@@ -348,11 +362,15 @@
             <button type="button" id="btn-quittance-tab-edit" class="btn btn-secondary template-mode-btn" data-mode="edit">Édition du modèle</button>
           </div>
         </div>
+        <p id="quittance-template-readonly-hint" class="field-hint hidden">Le modèle principal est en lecture seule. Utilisez <strong>Nouveau modèle…</strong> ou <strong>Importer modèle</strong> pour créer une variante.</p>
         <div class="btn-group" style="flex-wrap:wrap">
           <button type="button" id="btn-refresh-quittance" class="btn btn-secondary" title="Recalculer l'aperçu à partir du modèle">Régénérer</button>
           <button type="button" id="btn-quittance-new" class="btn btn-secondary">Nouveau modèle…</button>
-          <button type="button" id="btn-quittance-save" class="btn">Enregistrer</button>
-          <button type="button" id="btn-quittance-save-as" class="btn btn-secondary">Enregistrer sous…</button>
+          <button type="button" id="btn-quittance-export-template" class="btn btn-secondary">Exporter modèle</button>
+          <label class="btn btn-secondary" style="cursor:pointer;margin:0">
+            Importer modèle
+            <input type="file" id="import-quittance-template-tab" accept=".html,text/html" class="hidden">
+          </label>
           <button type="button" id="btn-quittance-set-default" class="btn btn-secondary">Utiliser par défaut</button>
           <button type="button" class="help-trigger" data-help-id="quittance-edit" aria-label="Aide : édition quittance" aria-expanded="false"><span aria-hidden="true">?</span></button>
           <button type="button" id="btn-export-pdf" class="btn" title="Télécharger un fichier PDF">PDF</button>
@@ -397,12 +415,16 @@
             <button type="button" id="btn-mail-tab-edit" class="btn btn-secondary template-mode-btn" data-mode="edit">Édition du modèle</button>
           </div>
         </div>
+        <p id="mail-template-readonly-hint" class="field-hint hidden">Le modèle principal est en lecture seule. Utilisez <strong>Nouveau modèle…</strong> ou <strong>Importer modèle</strong> pour créer une variante.</p>
         <div class="btn-group" style="flex-wrap:wrap">
-          <button type="button" id="btn-refresh-mail" class="btn btn-secondary">Régénérer</button>
           <button type="button" id="btn-mail-new" class="btn btn-secondary">Nouveau modèle…</button>
-          <button type="button" id="btn-mail-save" class="btn">Enregistrer</button>
-          <button type="button" id="btn-mail-save-as" class="btn btn-secondary">Enregistrer sous…</button>
+          <button type="button" id="btn-mail-export-template" class="btn btn-secondary">Exporter modèle</button>
+          <label class="btn btn-secondary" style="cursor:pointer;margin:0">
+            Importer modèle
+            <input type="file" id="import-mail-template-tab" accept=".json,.html,application/json,text/html" class="hidden">
+          </label>
           <button type="button" id="btn-mail-set-default" class="btn btn-secondary">Utiliser par défaut</button>
+          <button type="button" class="help-trigger" data-help-id="mail-edit" aria-label="Aide : édition mail" aria-expanded="false"><span aria-hidden="true">?</span></button>
           <button type="button" id="btn-mail-eml" class="btn" title="Créer un e-mail avec PDF joint">EML + PDF</button>
           <button type="button" id="btn-mail-nav" class="btn btn-secondary" title="Ouvrir votre messagerie web">mailto</button>
           <button type="button" class="help-trigger" data-help-id="quittance-mail" aria-label="Aide : envoi par mail" aria-expanded="false"><span aria-hidden="true">?</span></button>
@@ -453,6 +475,7 @@
             <li><a href="#help-step3">3. Virements</a></li>
             <li><a href="#help-step4">4. Consulter les données</a></li>
             <li><a href="#help-step5">5. Quittance et export</a></li>
+            <li><a href="#help-step6">6. Mail et envoi</a></li>
             <li><a href="#help-deploy">Installation sur un serveur</a></li>
             <li><a href="#help-troubleshoot">Dépannage</a></li>
           </ol>
@@ -470,7 +493,8 @@
             </div>
             <p style="margin-top:1rem">Loyer Manager vous aide à suivre les loyers, enregistrer les virements et produire des quittances. L'application tourne sur <strong>votre serveur</strong> : aucun compte cloud, vos données restent sur le disque.</p>
             <div class="help-callout">
-              <strong>Accès :</strong> ouvrez l'application via son URL (<code>http://…/index.html</code>) — pas en double-cliquant sur le fichier.
+              <strong>Accès :</strong> ouvrez l'application via son URL (<code>http://…/</code>) — pas en double-cliquant sur le fichier.<br>
+              <strong>Import rapide :</strong> glissez-déposez un fichier <code>.json</code> (données) ou <code>.csv</code> (relevé bancaire) n'importe où sur la page.
             </div>
             <h3>Organisation des fichiers (serveur)</h3>
             <pre class="help-folder-tree">LoyerManager/
@@ -512,15 +536,15 @@
             <h3>2.2 — Bailleur et locataire</h3>
             <p>Renseignez les noms et adresses : ils apparaîtront sur la quittance de loyer.</p>
             <h3>2.3 — Signature</h3>
-            <p>Importez une photo ou un scan de votre signature (PNG/JPG, max. 400 Ko). Elle sera placée en bas de la quittance.</p>
+            <p>Importez une photo ou un scan de votre signature (PNG/JPG, max. 5 Mo). Elle sera placée en bas de la quittance.</p>
             <h3>2.4 — Historique des loyers</h3>
             <p>Indiquez le montant actuel du loyer et la date à partir de laquelle il s'applique. Si le loyer a changé dans le passé, ajoutez un palier pour chaque période.</p>
             <h3>2.5 — Émetteurs (pour l'import bancaire)</h3>
             <p>Si vous importez un relevé CSV, configurez le nom du locataire et les mots à repérer dans le libellé bancaire (ex. <em>MARYSE VALLEE</em>).</p>
             <h3>2.6 — Modèles quittance et mail</h3>
-            <p>Dans <strong>Paramètres → Modèles</strong>, personnalisez le HTML avec des mots-clés <code>{{mois}}</code>, <code>{{bailleur.name}}</code>, etc. Deux modes : <strong>Modifier le modèle</strong> (mots-clés visibles) et <strong>Aperçu</strong> (données réelles). Cliquez <strong>Enregistrer</strong> pour écrire dans <code>templates/quittance.html</code>, <code>templates/mail.html</code> et <code>templates/mail-subject.txt</code>. <strong>Réinitialiser</strong> remet le modèle par défaut embarqué.</p>
+            <p>Dans <strong>Paramètres → Modèles</strong>, gérez vos modèles. Le <strong>modèle principal</strong> (<code>principal</code>) est toujours présent, en <strong>lecture seule</strong> : aperçu et export uniquement. Pour le personnaliser, utilisez <strong>+ Nouveau modèle</strong> ou <strong>Importer modèle</strong> (crée un nouveau modèle, ne remplace jamais le principal). L'édition du contenu se fait dans les onglets <strong>Quittance</strong> et <strong>Mail</strong> (mode « Édition du modèle »). Le panneau <strong>Mots-clés</strong> propose les mêmes variables pour quittance et mail (<code>{{paiement}}</code>, <code>{{bailleur.name}}</code>, etc.).</p>
             <h3>2.7 — Destinataires mail (optionnel)</h3>
-            <p>Indiquez les adresses e-mail des destinataires et la signature texte (<code>{{signature}}</code>).</p>
+            <p>Indiquez les adresses e-mail (À, CC, CCI) et la signature texte (<code>{{signature}}</code>).</p>
             <div class="help-actions">
               <button type="button" class="btn btn-secondary help-goto" data-panel="panel-settings" data-help-anchor="settings-templates-section">Ouvrir Modèles</button>
             </div>
@@ -570,8 +594,8 @@
             <h2><span class="help-step-badge">Étape 5</span> Quittance et export</h2>
             <ol>
               <li>Sélectionnez le bon mois dans le <strong>Tableau de bord</strong>.</li>
-              <li>Ouvrez l'onglet <strong>Quittance</strong> : le texte se remplit automatiquement.</li>
-              <li>Relisez et corrigez le texte si besoin (comme dans un traitement de texte).</li>
+              <li>Ouvrez l'onglet <strong>Quittance</strong> : l'aperçu se remplit automatiquement à partir du modèle choisi.</li>
+              <li>Pour modifier le modèle : basculez en <strong>Édition du modèle</strong> (modèles personnalisés uniquement — le principal est en lecture seule).</li>
               <li>Exportez :
                 <ul>
                   <li><strong>PDF</strong> — le plus courant pour envoyer ou imprimer ;</li>
@@ -579,40 +603,60 @@
                   <li><strong>HTML</strong> — page web autonome.</li>
                 </ul>
               </li>
-              <li>Pour envoyer par e-mail : <strong>Mail (EML + PDF)</strong> crée un message prêt à envoyer avec la quittance en pièce jointe.</li>
             </ol>
             <div class="help-callout">
-              Cliquez sur <strong>Régénérer</strong> si vous avez modifié des virements ou des paramètres et souhaitez recalculer le texte automatique.
+              Cliquez sur <strong>Régénérer</strong> après avoir modifié des virements ou des paramètres pour recalculer l'aperçu.
             </div>
             <div class="help-actions">
               <button type="button" class="btn btn-secondary help-goto" data-panel="panel-quittance">Ouvrir Quittance</button>
             </div>
           </article>
 
+          <article id="help-step6" class="card help-article" tabindex="-1">
+            <h2><span class="help-step-badge">Étape 6</span> Mail et envoi</h2>
+            <ol>
+              <li>Sélectionnez le mois dans le <strong>Tableau de bord</strong>.</li>
+              <li>Ouvrez l'onglet <strong>Mail</strong> : objet et corps s'affichent pour le modèle sélectionné.</li>
+              <li>Pour personnaliser le modèle : <strong>Nouveau modèle…</strong> ou <strong>Importer modèle</strong> (.json), puis mode <strong>Édition du modèle</strong>.</li>
+              <li>Utilisez le panneau <strong>Mots-clés</strong> (identique à la quittance) pour insérer <code>{{paiement}}</code>, adresses, etc.</li>
+              <li>Envoyez via <strong>EML + PDF</strong> (fichier .eml avec quittance jointe) ou <strong>mailto</strong> (attachez le PDF manuellement).</li>
+            </ol>
+            <div class="help-callout">
+              Les destinataires (À, CC, CCI) se configurent dans <strong>Paramètres → Destinataires et signature mail</strong>.
+            </div>
+            <div class="help-actions">
+              <button type="button" class="btn btn-secondary help-goto" data-panel="panel-mail">Ouvrir Mail</button>
+            </div>
+          </article>
+
           <article id="help-deploy" class="card help-article" tabindex="-1">
             <h2>Installation sur un serveur (recommandé)</h2>
-            <p>Pour éviter de sélectionner un dossier à chaque actualisation, hébergez l'application sur un serveur web avec <strong>PHP</strong> (présent sur la plupart des hébergeurs mutualisés).</p>
+            <p>Hébergez l'application sur un serveur web avec <strong>PHP</strong>. Vos données restent sur le disque du serveur (<code>data/</code>, <code>templates/</code>).</p>
             <h3>Étapes</h3>
             <ol>
-              <li>Uploadez le dossier du projet sur votre hébergement (FTP ou gestionnaire de fichiers).</li>
-              <li>Vérifiez que <code>data/</code> et <code>templates/</code> sont <strong>inscriptibles</strong> par PHP (droits 755 ou 775).</li>
-              <li>Copiez <code>config.example.php</code> en <code>config.php</code> (optionnel : ajoutez une clé <code>api_key</code> en production).</li>
-              <li>Ouvrez l'application via son URL (<code>https://votre-domaine.fr/loyer/index.html</code>) — <em>pas</em> en double-cliquant sur le fichier.</li>
+              <li>Clonez ou uploadez le projet sur le serveur.</li>
+              <li>Copiez <code>config.example.php</code> en <code>config.php</code> (optionnel : <code>api_key</code> en production).</li>
+              <li>Exécutez <code>./deploy/scripts/fix-permissions.sh</code> pour les droits sur <code>data/</code> et <code>templates/</code>.</li>
+              <li>Ouvrez l'application via son URL (<code>https://votre-domaine.fr/</code>) — pas en double-cliquant sur le fichier.</li>
             </ol>
-            <p class="field-hint">L'application détecte automatiquement <code>api.php</code> et enregistre vos données sur le serveur. Le badge affiche <strong>Enregistré</strong> sans aucune configuration de dossier.</p>
+            <p class="field-hint">Le badge affiche <strong>Enregistré</strong> lorsque <code>api.php</code> répond correctement.</p>
             <h3>Test en local</h3>
-            <p>Dans le dossier du projet, lancez :</p>
+            <p><code>./deploy/debian/install-dev.sh</code> ou :</p>
             <pre class="help-folder-tree">php -S localhost:8080</pre>
-            <p>Puis ouvrez <code>http://localhost:8080/index.html</code> dans votre navigateur.</p>
+            <p>Puis ouvrez <code>http://localhost:8080/</code>.</p>
+            <h3>Jeu de démonstration</h3>
+            <p><code>cp docs/demo/loyer-data.demo.json data/loyer-data.json</code> — voir <code>docs/demo/README.md</code>.</p>
             <div class="help-callout">
-              <strong>Sécurité :</strong> ne partagez pas l'URL publiquement sans définir une <code>api_key</code> dans <code>config.php</code>. Faites aussi une copie de secours régulière via Paramètres → Données.
+              <strong>Sécurité :</strong> ne partagez pas l'URL publiquement sans <code>api_key</code> dans <code>config.php</code>. Exportez régulièrement une copie via Paramètres → Données.
             </div>
           </article>
 
           <article id="help-troubleshoot" class="card help-article" tabindex="-1">
             <h2>Dépannage</h2>
             <h3>Les modèles ne s'enregistrent pas</h3>
-            <p>Vérifiez que nginx et php-fpm tournent, que <code>templates/</code> est inscriptible par PHP, et que le badge affiche <strong>Enregistré</strong>. Test : <code>curl http://localhost/api.php?action=status</code>.</p>
+            <p>Vérifiez nginx/php-fpm, exécutez <code>./deploy/scripts/fix-permissions.sh</code>, et que le badge affiche <strong>Enregistré</strong>. Test : <code>curl http://localhost/api.php?action=status</code>.</p>
+            <h3>Impossible de modifier le modèle principal</h3>
+            <p>C'est normal : le modèle <strong>principal</strong> est en lecture seule. Dupliquez-le ou importez un fichier pour créer une variante personnalisée.</p>
             <h3>Le badge indique « Serveur indisponible »</h3>
             <p>Ouvrez l'app via <code>http://</code> (pas <code>file://</code>). Vérifiez nginx, php8.4-fpm et les droits sur <code>data/</code>.</p>
             <h3>Le fichier JSON est corrompu</h3>
@@ -744,6 +788,13 @@
     </div>
   </div>
 
+  <div id="file-drop-overlay" class="file-drop-overlay hidden" aria-hidden="true">
+    <div class="file-drop-overlay-box">
+      <p class="file-drop-overlay-title">Déposer pour importer</p>
+      <p class="file-drop-overlay-hint"><strong>.json</strong> — restauration des données · <strong>.csv</strong> — relevé bancaire (virements)</p>
+    </div>
+  </div>
+
   <script src="js/site-meta.js"></script>
   <script src="js/default-signature.js"></script>
   <script src="js/template-defaults.js"></script>
@@ -752,6 +803,7 @@
   <script src="js/csv-import.js"></script>
   <script src="js/server-api.js"></script>
   <script src="js/template-manager.js"></script>
+  <script src="js/template-io.js"></script>
   <script src="js/store.js"></script>
   <script src="js/templates.js"></script>
   <script src="js/notify.js"></script>

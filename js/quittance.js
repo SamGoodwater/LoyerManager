@@ -11,6 +11,7 @@
     return global.LoyerTemplates.loadTemplate('quittance', templateId)
       .then(function (template) {
         var quittanceData = global.LoyerCalc.buildQuittanceData(data, year, month);
+        quittanceData.signature = (data.settings.mail && data.settings.mail.signature) || '';
         var html = global.LoyerTemplates.fillTemplate(template, quittanceData);
         global.LoyerEditor.setHtml(html);
         var el = global.LoyerEditor.getExportElement();

@@ -3,14 +3,9 @@
   "settings": {
     "leaseStart": "2024-01-01",
     "rentDueDay": 1,
-    "emitters": ["Locataire exemple"],
-    "emitterProfiles": [
-      {
-        "name": "Locataire exemple",
-        "patterns": ["LOCATAIRE EXEMPLE", "VIR LOYER"]
-      }
-    ],
-    "priceHistory": [{ "from": "2024-01-01", "amount": 650 }],
+    "emitters": [],
+    "emitterProfiles": [],
+    "priceHistory": [],
     "bailleur": {
       "name": "",
       "street": "",

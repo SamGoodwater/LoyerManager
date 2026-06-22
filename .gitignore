@@ -1,10 +1,13 @@
 # Données personnelles (production locale)
 data/loyer-data.json
-data/loyer-data.example.json
 data/signature.jpg
 loyer-data.json
 **/loyer-data.json
-!docs/loyer-data.sample.json
+!docs/demo/loyer-data.demo.json
+
+# Copies / tests locaux dans data/
+data/loyer-data*.json
+!data/loyer-data.example.json
 
 # Modèles personnalisés (défauts versionnés : *.example.*)
 templates/quittance.html

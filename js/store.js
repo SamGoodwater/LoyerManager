@@ -199,6 +199,13 @@
     if (!Array.isArray(data.settings.mail.recipients)) {
       data.settings.mail.recipients = [{ email: '', type: 'to' }];
     }
+    data.settings.mail.recipients = data.settings.mail.recipients.map(function (r) {
+      var type = r && r.type ? String(r.type).toLowerCase() : 'to';
+      if (type !== 'to' && type !== 'cc' && type !== 'bcc') {
+        type = 'to';
+      }
+      return { email: r && r.email != null ? String(r.email) : '', type: type };
+    });
     if (data.settings.mail.signature === undefined) {
       data.settings.mail.signature = '';
     }
@@ -449,7 +456,15 @@
         });
       })
       .then(function (out) {
-        return migrateMailBodyFromData(out.data).then(function () {
+        return migrateMailBodyFromData(out.data).then(function (migrated) {
+          if (migrated) {
+            saveToLocalStorage(out.data);
+            return saveNow(out.data).then(function () {
+              out.mode = 'server';
+              setSaveStatus('saved');
+              return out;
+            });
+          }
           out.mode = 'server';
           setSaveStatus('saved');
           return out;
@@ -562,7 +577,6 @@
       return Promise.resolve(false);
     }
     var tm = global.LoyerTemplateManager;
-    var id = tm.LEGACY_ID;
     var htmlBody = '';
     var subject = '';
 
@@ -578,20 +592,25 @@
       subject = String(mail.subject)
         .replace(/\{mois\}/gi, '{{mois}}')
         .replace(/\{annee\}/gi, '{{annee}}')
-        .replace(/\{bailleur\}/gi, '{{bailleur}}');
+        .replace(/\{bailleur\}/gi, '{{bailleur.name}}');
+    }
+
+    if (!htmlBody && !subject) {
+      return Promise.resolve(false);
     }
 
     return tm
-      .loadMail(id)
-      .then(function (existing) {
-        return tm.saveMail(
-          id,
-          htmlBody || existing.body,
-          subject || existing.subject
-        );
+      .createFrom(data.settings, 'mail', tm.LEGACY_ID, 'Modèle migré (ancien JSON)')
+      .then(function (created) {
+        return tm.loadMail(created.id).then(function (existing) {
+          return tm.saveMail(
+            created.id,
+            htmlBody || existing.body,
+            subject || existing.subject
+          );
+        });
       })
       .then(function () {
-        tm.addToRegistry(data.settings, 'mail', id, 'Modèle principal');
         if (data) saveToLocalStorage(normalizeData(data));
         return true;
       })

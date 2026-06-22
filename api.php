@@ -66,7 +66,7 @@ function assertDirWritable(string $path, string $hint): void
         respondJson([
             'ok' => false,
             'error' => 'Écriture impossible dans ' . $hint
-                . ' — exécutez : sudo ./deploy/scripts/fix-permissions.sh',
+                . ' — vérifiez les droits d\'écriture PHP sur ce dossier (panneau hébergeur ou chmod 775).',
         ], 500);
     }
 }

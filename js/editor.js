@@ -47,8 +47,7 @@
     var calc = global.LoyerCalc || {};
     var sigW = calc.SIGNATURE_IMG_WIDTH || 250;
 
-    var header = root.querySelector('.quittance-header');
-    if (header) {
+    root.querySelectorAll('.quittance-header').forEach(function (header) {
       header.style.display = 'flex';
       header.style.flexDirection = 'row';
       header.style.justifyContent = 'space-between';
@@ -70,13 +69,12 @@
         locataire.style.minWidth = '180px';
         locataire.style.textAlign = 'right';
       }
-    }
+    });
 
-    var footer = root.querySelector('.quittance-footer');
-    if (footer) {
-      footer.style.marginTop = '2rem';
-      footer.style.textAlign = 'right';
-    }
+    root.querySelectorAll('.quittance-footer').forEach(function (footerEl) {
+      footerEl.style.marginTop = '2rem';
+      footerEl.style.textAlign = 'right';
+    });
 
     root.querySelectorAll('.quittance-footer > p').forEach(function (p) {
       p.style.margin = '0';

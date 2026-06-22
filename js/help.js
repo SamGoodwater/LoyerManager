@@ -12,13 +12,17 @@
     'save-badge':
       'Indique si vos données sont bien enregistrées sur le serveur. Vert = api.php a écrit data/loyer-data.json et templates/. Orange = serveur ou clé API à vérifier (Paramètres → Données).',
     'dash-period':
-      'Choisissez l\'année et le mois à examiner. Tous les tableaux et graphiques du tableau de bord se mettent à jour automatiquement.',
+      'Ligne du haut : mois (input natif), bouton « Période » pour ajouter une date de fin, légende colorée à droite. Timeline scrollable en dessous — en mode période, le 1er clic fixe la date « Au », puis les clics à gauche/droite ajustent le début ou la fin ; à l\'intérieur de la plage, le bord le plus proche est modifié. Glisser = sélection directe.',
+    'dash-kpis':
+      'Indicateurs annuels : solde cumulé à date, taux de recouvrement, mois partiels ou impayés, retard moyen. La heatmap colore chaque mois selon son statut — en mode période, un clic ne change que le détail virements et le récap du mois.',
+    'dash-print':
+      'Imprime le tableau de bord (KPIs, tableaux, heatmap). Les graphiques sont masqués à l\'impression car ils ne s\'exportent pas bien en papier.',
     'dash-monthly-table':
-      'Pour chaque mois : le loyer attendu, ce qui a été reçu, la différence et le solde cumulé depuis le début de la location. Cliquez sur une ligne pour sélectionner ce mois.',
+      'Pour chaque mois : statut (payé, partiel, impayé…), loyer attendu, reçu, différence et solde cumulé. Un indicateur +X j signale un retard de paiement.',
     'dash-payments-month':
       'Liste des virements reçus pour le mois sélectionné. Si rien n\'apparaît, vérifiez que vous avez bien saisi ou importé des virements dans l\'onglet Virements.',
     'dash-charts':
-      'Les graphiques visualisent la même information que les tableaux : comparaison attendu / reçu et évolution du solde dans le temps.',
+      'Graphique empilé : part reçue vs reste dû par mois. Courbe de solde : vert = avance locataire, rouge = dette.',
     'dash-yearly':
       'Vue d\'ensemble année par année : utile pour faire le point sur une année complète.',
     'payments-list':
@@ -38,27 +42,29 @@
     'settings-signature':
       'Scan ou photo de votre signature (PNG, JPG, WebP ou GIF, max. 5 Mo). Elle sera placée en bas de la quittance (mot-clé {{signatureHtml}}). Vous pouvez restaurer la signature par défaut à tout moment.',
     'settings-emitters':
-      'Pour l\'import CSV : indiquez le nom du locataire tel qu\'affiché dans l\'app, puis les mots à chercher dans le libellé bancaire (un par ligne). Exemple : MARYSE VALLEE.',
+      'Pour l\'import CSV : indiquez le nom du locataire tel qu\'affiché dans l\'app, puis les mots à chercher dans le libellé bancaire (un par ligne). Exemple : Jean Dupont',
     'settings-prices':
       'Montant du loyer et date à partir de laquelle il s\'applique. Ajoutez un palier si le loyer a changé (ex. révision annuelle).',
     'settings-mail':
       'Destinataires des e-mails (À, CC, CCI) et signature texte (mot-clé {{signature}}). Le corps et l\'objet du mail se modifient dans l\'onglet Mail.',
     'settings-data':
-      'Les données (data/loyer-data.json) et les modèles (templates/) sont enregistrés via api.php sur le serveur. Exportez régulièrement une copie JSON, importez-la via le bouton ou en glissant-déposant un .json sur la page. Si api_key est définie dans config.php, saisissez la clé ici.',
+      'Les données (data/loyer-data.json) et les modèles (templates/) sont enregistrés via api.php. La clé API (config.php) n\'est pas un compte : c\'est un secret qui autorise le navigateur à lire/écrire ces fichiers. Exportez régulièrement une copie JSON ; import par bouton ou glisser-déposer.',
     'settings-templates':
       'Liste des modèles enregistrés sur le serveur. Le modèle principal est fourni par défaut en lecture seule (aperçu et export possibles ; édition interdite). Importez un fichier pour créer un nouveau modèle, ou dupliquez le principal via « + Nouveau modèle ».',
     'mail-period':
-      'Aperçu du mail pour le mois choisi dans le Tableau de bord. Le modèle principal est en lecture seule — dupliquez-le ou importez un fichier pour en créer un. Enregistrement automatique en revenant à l\'aperçu pour les modèles personnalisés.',
+      'Mois ou période via la barre en haut (timeline incluse sur Quittance et Mail). En plage, le mail utilise {{periodeText}} et le PDF joint contient toutes les quittances.',
     'mail-edit':
-      'Même panneau de mots-clés que pour la quittance : {{paiement}}, {{bailleur.name}}, {{locataire.city}}, etc. Cliquez un mot-clé pour l\'insérer dans l\'objet ou le corps. Le modèle principal est en lecture seule — utilisez « Nouveau modèle… » ou « Importer modèle ».',
+      'Mots-clés : {{periodeText}}, {{moisDebutText}}, {{moisFinText}}, {{texteQuittancesJointes}}, etc. En plage, {{periodeText}} affiche « janvier 2025 → juin 2025 » ; en mois unique, le mois seul.',
     'quittance-period':
-      'La quittance correspond au mois choisi dans le Tableau de bord. Changez le mois là-bas si vous voulez une autre période.',
+      'Mois ou période via la barre en haut (timeline incluse). En plage, l\'aperçu et les exports PDF/DOCX/HTML génèrent une quittance par mois.',
     'quittance-edit':
       'Le modèle principal est en lecture seule (aperçu uniquement). Pour le personnaliser, dupliquez-le via « Nouveau modèle… » ou importez un fichier .html. Les autres modèles s\'éditent normalement ; l\'enregistrement est automatique en revenant à l\'aperçu. Panneau Mots-clés à droite.',
     'quittance-export':
-      'PDF : pour imprimer ou archiver. DOCX : pour Word. HTML : fichier web autonome. Le PDF est le plus courant pour envoyer au locataire.',
+      'PDF, DOCX ou HTML pour le mois ou la période sélectionnée. « Exporter plusieurs… » reste disponible pour une plage manuelle distincte.',
+    'batch-quittance-export':
+      'Choisissez une plage Du/Au (intersectée avec la période de bail). Le modèle actuellement sélectionné dans l\'onglet Quittance est utilisé. Au-delà de 24 mois, l\'export peut être lent.',
     'quittance-mail':
-      'EML + PDF : crée un fichier e-mail avec la quittance en pièce jointe. mailto : ouvre votre webmail avec objet et corps préremplis — attachez le PDF manuellement.',
+      'EML + PDF : crée un fichier e-mail avec la quittance en pièce jointe (mise en forme conservée). mailto : ouvre votre webmail — le corps HTML est copié (collez avec Ctrl+V pour gras, italique, etc.) ; le lien mailto ne transmet que du texte brut avec sauts de ligne.',
     'csv-import-modal':
       'Cochez les virements à importer. Les lignes déjà présentes sont marquées comme doublons et ne seront pas reimportées. Validez avec « Importer la sélection ».',
     'payment-form-modal':

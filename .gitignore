@@ -20,7 +20,6 @@ templates/**/*.bak
 
 # Exports JSON téléchargés depuis l'app
 *-export.json
-loyer-data.corrompu.json
 
 # Configuration serveur (clé API)
 config.php

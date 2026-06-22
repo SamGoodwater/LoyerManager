@@ -29,11 +29,11 @@
 
   var MAIL_HTML =
     '<p>Bonjour,</p>' +
-    '<p>Vous trouverez en pièce jointe la quittance de loyer pour <strong>{{mois}} {{annee}}</strong>.</p>' +
+    '<p>Vous trouverez en pièce jointe {{texteQuittancesJointes}}.</p>' +
     '<p>Cordialement,</p>' +
     '<p>{{signature}}</p>';
 
-  var MAIL_SUBJECT = 'Envoi de la quittance de loyer - {{mois}} {{annee}}';
+  var MAIL_SUBJECT = 'Envoi quittance(s) de loyer — {{periodeText}}';
 
   global.LOYER_TEMPLATE_DEFAULTS = {
     'templates/quittance.html': QUITTANCE_HTML,

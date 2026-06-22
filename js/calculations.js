@@ -251,6 +251,181 @@
       .replace(/"/g, '&quot;');
   }
 
+  function getRentDueDate(year, month, rentDueDay) {
+    var day = Math.min(rentDueDay || 1, endOfMonth(year, month).getDate());
+    return new Date(year, month - 1, day);
+  }
+
+  function isCurrentMonth(year, month, today) {
+    today = today || new Date();
+    return year === today.getFullYear() && month === today.getMonth() + 1;
+  }
+
+  function isMonthPast(year, month, today) {
+    today = today || new Date();
+    var monthStart = startOfMonth(year, month);
+    var currentStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    return monthStart < currentStart;
+  }
+
+  function getMonthStatus(row, options) {
+    options = options || {};
+    var today = options.today || new Date();
+    if (!row || !row.attendu) return 'hors_periode';
+    if (row.recu >= row.attendu) {
+      return row.recu > row.attendu ? 'avance' : 'paye';
+    }
+    if (row.recu > 0) return 'partiel';
+    if (isCurrentMonth(row.year, row.month, today)) {
+      var rentDueDay = options.rentDueDay != null ? options.rentDueDay : 1;
+      var due = getRentDueDate(row.year, row.month, rentDueDay);
+      if (today < due) return 'en_cours';
+    }
+    if (isMonthPast(row.year, row.month, today)) return 'impaye';
+    return 'en_cours';
+  }
+
+  var MONTH_STATUS_LABELS = {
+    paye: 'Payé',
+    partiel: 'Partiel',
+    impaye: 'Impayé',
+    avance: 'En avance',
+    en_cours: 'En cours',
+    hors_periode: '—'
+  };
+
+  function getMonthStatusLabel(status) {
+    return MONTH_STATUS_LABELS[status] || status;
+  }
+
+  function daysBetween(fromDate, toDate) {
+    var ms = toDate.getTime() - fromDate.getTime();
+    return Math.max(0, Math.floor(ms / (24 * 60 * 60 * 1000)));
+  }
+
+  function getPaymentDelayDays(data, year, month, today) {
+    today = today || new Date();
+    var settings = data.settings || {};
+    var row = computeMonthlyRows(data, today).find(function (r) {
+      return r.year === year && r.month === month;
+    });
+    if (!row || !row.attendu) return null;
+
+    var due = getRentDueDate(year, month, settings.rentDueDay);
+    var payments = filterPaymentsInMonth(data.payments, year, month);
+
+    if (payments.length) {
+      var firstPay = parseDate(payments[0].date);
+      if (firstPay <= due) return 0;
+      return daysBetween(due, firstPay);
+    }
+
+    if (isMonthPast(year, month, today) || (isCurrentMonth(year, month, today) && today > due)) {
+      return daysBetween(due, today);
+    }
+    return null;
+  }
+
+  function listMonthsInRange(fromYear, fromMonth, toYear, toMonth, data, upToDate) {
+    var rows = computeMonthlyRows(data, upToDate);
+    var fromKey = monthKey(fromYear, fromMonth);
+    var toKey = monthKey(toYear, toMonth);
+    if (fromKey > toKey) {
+      var tmpY = fromYear;
+      var tmpM = fromMonth;
+      fromYear = toYear;
+      fromMonth = toMonth;
+      toYear = tmpY;
+      toMonth = tmpM;
+      fromKey = monthKey(fromYear, fromMonth);
+      toKey = monthKey(toYear, toMonth);
+    }
+    return rows.filter(function (r) {
+      return r.key >= fromKey && r.key <= toKey;
+    });
+  }
+
+  function computeDashboardKpis(data, year, today) {
+    today = today || new Date();
+    var rows = computeMonthlyRows(data, today);
+    var yearRows = rows.filter(function (r) {
+      return r.year === year;
+    });
+    var settings = data.settings || {};
+    var statusOpts = { today: today, rentDueDay: settings.rentDueDay };
+
+    var attenduTotal = 0;
+    var recuTotal = 0;
+    var counts = { paye: 0, partiel: 0, impaye: 0, avance: 0, en_cours: 0 };
+    var delaySum = 0;
+    var delayCount = 0;
+
+    yearRows.forEach(function (row) {
+      attenduTotal += row.attendu;
+      recuTotal += row.recu;
+      var status = getMonthStatus(row, statusOpts);
+      if (counts[status] != null) counts[status] += 1;
+      var delay = getPaymentDelayDays(data, row.year, row.month, today);
+      if (delay != null && delay > 0) {
+        delaySum += delay;
+        delayCount += 1;
+      }
+    });
+
+    var lastRow = rows.length ? rows[rows.length - 1] : null;
+    var soldeADate = lastRow ? lastRow.soldeCumule : 0;
+    var tauxRecouvrement = attenduTotal > 0 ? recuTotal / attenduTotal : null;
+
+    return {
+      year: year,
+      soldeADate: soldeADate,
+      tauxRecouvrement: tauxRecouvrement,
+      counts: counts,
+      moisProblematiques: counts.partiel + counts.impaye,
+      retardMoyenJours: delayCount > 0 ? Math.round(delaySum / delayCount) : null
+    };
+  }
+
+  function computeKpisForRows(data, filterRows, today) {
+    today = today || new Date();
+    var allRows = computeMonthlyRows(data, today);
+    var settings = data.settings || {};
+    var statusOpts = { today: today, rentDueDay: settings.rentDueDay };
+
+    var attenduTotal = 0;
+    var recuTotal = 0;
+    var counts = { paye: 0, partiel: 0, impaye: 0, avance: 0, en_cours: 0 };
+    var delaySum = 0;
+    var delayCount = 0;
+
+    (filterRows || []).forEach(function (row) {
+      attenduTotal += row.attendu;
+      recuTotal += row.recu;
+      var status = getMonthStatus(row, statusOpts);
+      if (counts[status] != null) counts[status] += 1;
+      var delay = getPaymentDelayDays(data, row.year, row.month, today);
+      if (delay != null && delay > 0) {
+        delaySum += delay;
+        delayCount += 1;
+      }
+    });
+
+    var lastInSelection = filterRows && filterRows.length ? filterRows[filterRows.length - 1] : null;
+    var lastAll = allRows.length ? allRows[allRows.length - 1] : null;
+    var soldeADate = lastInSelection ? lastInSelection.soldeCumule : lastAll ? lastAll.soldeCumule : 0;
+
+    return {
+      soldeADate: soldeADate,
+      tauxRecouvrement: attenduTotal > 0 ? recuTotal / attenduTotal : null,
+      counts: counts,
+      moisProblematiques: counts.partiel + counts.impaye,
+      retardMoyenJours: delayCount > 0 ? Math.round(delaySum / delayCount) : null,
+      attenduTotal: attenduTotal,
+      recuTotal: recuTotal,
+      differenceTotal: recuTotal - attenduTotal
+    };
+  }
+
   function buildQuittanceData(data, year, month) {
     var settings = data.settings;
     var detail = getMonthDetail(data, year, month);
@@ -295,9 +470,11 @@
 
   global.LoyerCalc = {
     MONTH_NAMES: MONTH_NAMES,
+    MONTH_STATUS_LABELS: MONTH_STATUS_LABELS,
     generateId: generateId,
     parseDate: parseDate,
     formatDateISO: formatDateISO,
+    monthKey: monthKey,
     formatMonthLong: formatMonthLong,
     formatMonthShort: formatMonthShort,
     formatCurrency: formatCurrency,
@@ -308,6 +485,12 @@
     getAvailableYears: getAvailableYears,
     getMonthDetail: getMonthDetail,
     filterPaymentsInMonth: filterPaymentsInMonth,
+    getMonthStatus: getMonthStatus,
+    getMonthStatusLabel: getMonthStatusLabel,
+    getPaymentDelayDays: getPaymentDelayDays,
+    listMonthsInRange: listMonthsInRange,
+    computeDashboardKpis: computeDashboardKpis,
+    computeKpisForRows: computeKpisForRows,
     buildQuittanceData: buildQuittanceData,
     buildSignatureHtml: buildSignatureHtml,
     SIGNATURE_IMG_WIDTH: SIGNATURE_IMG_WIDTH

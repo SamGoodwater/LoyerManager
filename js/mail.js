@@ -29,8 +29,8 @@
     return { to: to, cc: cc, bcc: bcc };
   }
 
-  function buildMailContent(data, year, month, mailId) {
-    return global.LoyerTemplates.loadFilledMail(data, year, month, mailId).then(function (filled) {
+  function buildMailContent(data, year, month, mailId, periodCtx) {
+    return global.LoyerTemplates.loadFilledMail(data, year, month, mailId, periodCtx).then(function (filled) {
       var settings = data.settings || data;
       var plain = global.LoyerTemplates.htmlToPlainText(filled.bodyHtml);
       return {
@@ -106,35 +106,145 @@
     if (bcc) params.push('bcc=' + encodeURIComponent(bcc));
     params.push('subject=' + encodeURIComponent(mailContent.subject));
     params.push('body=' + encodeURIComponent(mailContent.body));
-    window.location.href = 'mailto:' + encodeURIComponent(to) + '?' + params.join('&');
+
+    function launchMailto() {
+      window.location.href = 'mailto:' + encodeURIComponent(to) + '?' + params.join('&');
+    }
+
+    var html = mailContent.bodyHtml || '';
+    var plain = mailContent.body || '';
+    var copiedRich = false;
+
+    function afterCopy() {
+      launchMailto();
+      if (global.LoyerNotify && copiedRich) {
+        global.LoyerNotify.info(
+          'Corps HTML copié — collez (Ctrl+V) dans le mail pour la mise en forme.'
+        );
+      }
+    }
+
+    if (navigator.clipboard && html && window.ClipboardItem) {
+      navigator.clipboard
+        .write([
+          new ClipboardItem({
+            'text/html': new Blob([html], { type: 'text/html' }),
+            'text/plain': new Blob([plain], { type: 'text/plain' })
+          })
+        ])
+        .then(function () {
+          copiedRich = true;
+          afterCopy();
+        })
+        .catch(function () {
+          if (navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(plain).then(afterCopy);
+          }
+          afterCopy();
+        });
+      return;
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(plain).then(afterCopy).catch(afterCopy);
+      return;
+    }
+
+    afterCopy();
   }
 
-  function prepareMail(mode, data, year, month, quittanceContainer, mailId) {
-    return buildMailContent(data, year, month, mailId).then(function (mailContent) {
-      var filename = global.LoyerQuittance.getFilename(year, month);
+  function prepareMail(mode, data, year, month, quittanceContainer, mailId, periodCtx, quittanceTemplateId) {
+    periodCtx =
+      periodCtx ||
+      {
+        isRange: false,
+        fromYear: year,
+        fromMonth: month,
+        toYear: year,
+        toMonth: month
+      };
 
+    function singleFilename() {
+      return global.LoyerQuittance.getFilename(year, month);
+    }
+
+    function batchFilename() {
+      return global.LoyerQuittance.getBatchFilename(
+        global.LoyerCalc.monthKey(periodCtx.fromYear, periodCtx.fromMonth),
+        global.LoyerCalc.monthKey(periodCtx.toYear, periodCtx.toMonth)
+      );
+    }
+
+    var qId =
+      quittanceTemplateId ||
+      (global.LoyerTemplates
+        ? global.LoyerTemplates.resolveDefaultId('quittance', data.settings)
+        : 'principal');
+
+    function exportRangePdf() {
+      return global.LoyerQuittance.exportBatch(
+        data,
+        periodCtx.fromYear,
+        periodCtx.fromMonth,
+        periodCtx.toYear,
+        periodCtx.toMonth,
+        qId,
+        'pdf'
+      );
+    }
+
+    function getRangePdfBlobPack() {
+      return global.LoyerQuittance.getPeriodPdfBlob(
+        data,
+        periodCtx.fromYear,
+        periodCtx.fromMonth,
+        periodCtx.toYear,
+        periodCtx.toMonth,
+        qId
+      ).then(function (blob) {
+        var fn = batchFilename();
+        return { blob: blob, filename: fn, emlBase: fn };
+      });
+    }
+
+    return buildMailContent(data, year, month, mailId, periodCtx).then(function (mailContent) {
       if (mode === 'mailto') {
         openMailto(mailContent);
-        return global.LoyerExport.exportPdf(quittanceContainer, filename).then(function () {
+        var dl = periodCtx.isRange
+          ? exportRangePdf()
+          : global.LoyerExport.exportPdf(quittanceContainer, singleFilename());
+        return dl.then(function () {
           if (global.LoyerNotify) {
-            global.LoyerNotify.info('PDF téléchargé — attachez-le manuellement au mail.');
+            global.LoyerNotify.info(
+              periodCtx.isRange
+                ? 'PDF multi-quittances téléchargé — attachez-le manuellement au mail.'
+                : 'PDF téléchargé — attachez-le manuellement au mail.'
+            );
           }
         });
       }
 
       if (mode === 'pdf') {
-        return global.LoyerExport.exportPdf(quittanceContainer, filename);
+        if (periodCtx.isRange) {
+          return exportRangePdf();
+        }
+        return global.LoyerExport.exportPdf(quittanceContainer, singleFilename());
       }
 
-      return global.LoyerExport.getPdfBlob(quittanceContainer)
-        .then(function (pdfBlob) {
-          return blobToBase64(pdfBlob);
-        })
-        .then(function (pdfBase64) {
-          var eml = generateEml(mailContent, pdfBase64, filename + '.pdf');
-          downloadEml(eml, 'Quittance_' + year + '-' + String(month).padStart(2, '0') + '.eml');
+      var pdfPromise = periodCtx.isRange
+        ? getRangePdfBlobPack()
+        : global.LoyerExport.getPdfBlob(quittanceContainer).then(function (blob) {
+            var fn = singleFilename();
+            return { blob: blob, filename: fn, emlBase: fn };
+          });
+
+      return pdfPromise.then(function (pack) {
+        return blobToBase64(pack.blob).then(function (pdfBase64) {
+          var eml = generateEml(mailContent, pdfBase64, pack.filename + '.pdf');
+          downloadEml(eml, pack.emlBase + '.eml');
           if (global.LoyerNotify) global.LoyerNotify.success('Fichier EML généré.');
         });
+      });
     });
   }
 

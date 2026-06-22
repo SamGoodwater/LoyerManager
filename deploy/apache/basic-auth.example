@@ -1,0 +1,27 @@
+# Exemple — HTTP Basic Auth (Apache 2.4)
+#
+# Deux méthodes (choisissez une seule) :
+#
+# A) Panneau d'hébergement (recommandé, sans terminal)
+#    Outil « Confidentialité / Protection du répertoire » — le panneau
+#    génère automatiquement .htaccess et .htpasswd.
+#
+# B) Manuel — ajoutez les lignes Auth* ci-dessous en TÊTE du .htaccess
+#    du dossier à protéger (même niveau que index.html).
+#
+# Générer .htpasswd (si vous avez accès shell) :
+#   htpasswd -c /chemin/HORS/web/loyer.htpasswd mon_utilisateur
+#
+# Ou utilisez un générateur htpasswd en ligne de confiance, puis placez
+# le fichier HORS du répertoire public (public_html).
+
+AuthType Basic
+AuthName "Loyer Manager"
+AuthUserFile /chemin/absolu/hors/web/loyer.htpasswd
+Require valid-user
+
+# Apache 2.2 (très ancien — rare) :
+# AuthType Basic
+# AuthName "Loyer Manager"
+# AuthUserFile /chemin/absolu/hors/web/loyer.htpasswd
+# Require valid-user

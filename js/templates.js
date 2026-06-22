@@ -18,6 +18,16 @@
     { key: '{{moisText}}', label: 'Mois en toutes lettres' },
     { key: '{{mois}}', label: 'Mois (nom)' },
     { key: '{{annee}}', label: 'Année' },
+    { key: '{{moisDebutText}}', label: 'Premier mois sélectionné' },
+    { key: '{{moisFinText}}', label: 'Dernier mois sélectionné' },
+    { key: '{{moisDebut}}', label: 'Mois début (nom)' },
+    { key: '{{moisFin}}', label: 'Mois fin (nom)' },
+    { key: '{{anneeDebut}}', label: 'Année début' },
+    { key: '{{anneeFin}}', label: 'Année fin' },
+    { key: '{{periodeText}}', label: 'Période (mois ou plage)' },
+    { key: '{{periode}}', label: 'Alias période' },
+    { key: '{{periodeNbMois}}', label: 'Nombre de mois (plage)' },
+    { key: '{{texteQuittancesJointes}}', label: 'Phrase pièce jointe (mail)' },
     { key: '{{paiement}}', label: 'Montant reçu (formaté)' },
     { key: '{{attendu}}', label: 'Montant attendu (formaté)' },
     { key: '{{date}}', label: 'Début de période' },
@@ -117,8 +127,15 @@
     });
   }
 
-  function buildMailData(data, year, month) {
+  function buildMailData(data, year, month, periodCtx) {
     var settings = data.settings || data;
+    periodCtx = periodCtx || {
+      isRange: false,
+      fromYear: year,
+      fromMonth: month,
+      toYear: year,
+      toMonth: month
+    };
     var base = global.LoyerCalc
       ? global.LoyerCalc.buildQuittanceData(data, year, month)
       : {
@@ -129,17 +146,53 @@
           annee: String(year)
         };
     base.signature = (settings.mail && settings.mail.signature) || '';
+
+    var fromY = periodCtx.fromYear;
+    var fromM = periodCtx.fromMonth;
+    var toY = periodCtx.toYear;
+    var toM = periodCtx.toMonth;
+    base.moisDebutText = global.LoyerCalc.formatMonthLong(fromY, fromM);
+    base.moisFinText = global.LoyerCalc.formatMonthLong(toY, toM);
+    base.moisDebut = global.LoyerCalc.MONTH_NAMES[fromM - 1];
+    base.moisFin = global.LoyerCalc.MONTH_NAMES[toM - 1];
+    base.anneeDebut = String(fromY);
+    base.anneeFin = String(toY);
+
+    if (periodCtx.isRange) {
+      var months = global.LoyerCalc.listMonthsInRange(fromY, fromM, toY, toM, data);
+      base.periodeNbMois = String(months.length);
+      base.periodeText = base.moisDebutText + ' → ' + base.moisFinText;
+      base.texteQuittancesJointes =
+        'les quittances de loyer pour la période du ' +
+        base.moisDebutText +
+        ' au ' +
+        base.moisFinText +
+        ' (' +
+        months.length +
+        ' mois)';
+    } else {
+      base.periodeNbMois = '1';
+      base.periodeText = base.moisText;
+      base.moisDebutText = base.moisText;
+      base.moisFinText = base.moisText;
+      base.moisDebut = base.mois;
+      base.moisFin = base.mois;
+      base.anneeDebut = base.annee;
+      base.anneeFin = base.annee;
+      base.texteQuittancesJointes = 'la quittance de loyer pour ' + base.moisText;
+    }
+    base.periode = base.periodeText;
     return base;
   }
 
-  function loadFilledMail(data, year, month, mailId) {
+  function loadFilledMail(data, year, month, mailId, periodCtx) {
     var settings = data.settings || data;
     mailId = mailId || resolveDefaultId('mail', settings);
     return Promise.all([loadTemplate('mail', mailId, 'subject'), loadTemplate('mail', mailId, 'body')]).then(
       function (parts) {
         var subjectTpl = parts[0];
         var bodyTpl = parts[1];
-        var fillData = buildMailData(data, year, month);
+        var fillData = buildMailData(data, year, month, periodCtx);
         return {
           subject: fillTemplate(subjectTpl, fillData).replace(/\s+/g, ' ').trim(),
           bodyHtml: fillTemplate(bodyTpl, fillData),
@@ -150,9 +203,62 @@
   }
 
   function htmlToPlainText(html) {
+    if (!html) return '';
     var div = document.createElement('div');
-    div.innerHTML = html || '';
-    return (div.textContent || div.innerText || '').replace(/\n{3,}/g, '\n\n').trim();
+    div.innerHTML = html;
+
+    var blockTags = {
+      P: 1,
+      DIV: 1,
+      H1: 1,
+      H2: 1,
+      H3: 1,
+      H4: 1,
+      LI: 1,
+      TR: 1,
+      BLOCKQUOTE: 1
+    };
+
+    function walk(node, parts) {
+      if (!node) return;
+      if (node.nodeType === 3) {
+        parts.push(node.textContent);
+        return;
+      }
+      if (node.nodeType !== 1) return;
+      var tag = node.tagName;
+      if (tag === 'BR') {
+        parts.push('\n');
+        return;
+      }
+      if (tag === 'STRONG' || tag === 'B') {
+        parts.push('**');
+        for (var i = 0; i < node.childNodes.length; i++) walk(node.childNodes[i], parts);
+        parts.push('**');
+        return;
+      }
+      if (tag === 'EM' || tag === 'I') {
+        parts.push('_');
+        for (var j = 0; j < node.childNodes.length; j++) walk(node.childNodes[j], parts);
+        parts.push('_');
+        return;
+      }
+      for (var k = 0; k < node.childNodes.length; k++) {
+        walk(node.childNodes[k], parts);
+      }
+      if (blockTags[tag]) {
+        parts.push('\n\n');
+      }
+    }
+
+    var chunks = [];
+    walk(div, chunks);
+    return chunks
+      .join('')
+      .replace(/[ \t]+\n/g, '\n')
+      .replace(/\n[ \t]+/g, '\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
   }
 
   function getPlaceholderCatalog(type) {

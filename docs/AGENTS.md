@@ -44,18 +44,21 @@ Pas de File System Access API.
 ## Déploiement local
 
 ```bash
-cd LoyerManager
-./deploy/debian/install-dev.sh
-# ou : php -S 0.0.0.0:8080
+php -S localhost:8080
 ```
 
-Production : nginx/Apache, PHP 7.4+, droits écriture `data/` et `templates/`, `config.php` avec `api_key` si exposé.
+Optionnel : dossier [`deploy/`](../deploy/README.md) (scripts dev, nginx Debian).
 
-```bash
-./deploy/scripts/fix-permissions.sh
-./deploy/scripts/healthcheck.sh
-```
+Production mutualisée : [`docs/HEBERGEMENT-MUTUALISE.md`](HEBERGEMENT-MUTUALISE.md) — **sans scripts**.
+
+Guides utilisateur : [`docs/SECURITE.md`](SECURITE.md).
 
 ## Priorités arbitrage
 
 P0 sauvegarde fiable + calculs → P1 quittance/mail/CSV → P2 modèles/aide → P3 scripts deploy
+
+## Période et exports
+
+- **Période partagée** : barre `#period-bar` + [`js/period-picker.js`](../js/period-picker.js) — mois unique (Quittance/Mail) ou plage optionnelle (Tableau de bord) ; timeline scrollable du début de bail à aujourd'hui.
+- **Calculs dashboard** : `getMonthStatus`, `computeDashboardKpis`, `listMonthsInRange` dans `calculations.js`.
+- **Export groupé quittances** : `LoyerQuittance.buildBatchHtml` + `LoyerExport.exportPdfFromHtml` / `exportDocxFromHtml` / `exportHtmlFromHtml` — une section `.quittance-export-page` par mois, sauts de page CSS.

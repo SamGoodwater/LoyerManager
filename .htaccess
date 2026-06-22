@@ -1,4 +1,12 @@
 Options -Indexes
+
+# Bloquer l'accès HTTP direct aux données et modèles (Apache)
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^data/ - [F,L]
+  RewriteRule ^templates/ - [F,L]
+</IfModule>
+
 # Bloquer l'accès direct à la configuration
 <Files "config.php">
   Require all denied

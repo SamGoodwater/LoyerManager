@@ -10,6 +10,16 @@
     data: null,
     selectedYear: new Date().getFullYear(),
     selectedMonth: new Date().getMonth() + 1,
+    period: {
+      rangeUiOpen: false,
+      fromYear: new Date().getFullYear(),
+      fromMonth: new Date().getMonth() + 1,
+      toYear: new Date().getFullYear(),
+      toMonth: new Date().getMonth() + 1
+    },
+    focusYear: new Date().getFullYear(),
+    focusMonth: new Date().getMonth() + 1,
+    dashboardChartYear: new Date().getFullYear(),
     editingPaymentId: null,
     csvImportItems: [],
     quittanceUi: {
@@ -257,6 +267,36 @@
     if (ed) state.mailUi.raw = ed.getHtml();
   }
 
+  function flushTemplateEditsIfNeeded(type) {
+    var ui = type === 'quittance' ? state.quittanceUi : state.mailUi;
+    if (ui.mode !== 'edit' || !ui.dirty) {
+      return Promise.resolve();
+    }
+    if (type === 'quittance') {
+      if (!isQuittanceTemplateEditable()) {
+        ui.dirty = false;
+        return Promise.resolve();
+      }
+      return saveQuittanceTemplateFromTab({ silent: true });
+    }
+    if (!isMailTemplateEditable()) {
+      ui.dirty = false;
+      return Promise.resolve();
+    }
+    return saveMailTemplateFromTab({ silent: true });
+  }
+
+  function withTemplatesSaved(types, work) {
+    types = types || ['quittance', 'mail'];
+    var chain = Promise.resolve();
+    types.forEach(function (type) {
+      chain = chain.then(function () {
+        return flushTemplateEditsIfNeeded(type);
+      });
+    });
+    return chain.then(work);
+  }
+
   function loadQuittanceTemplateEditor(content) {
     state.quittanceUi.raw = content;
     var ed = LoyerEditor.get('template-quittance');
@@ -417,6 +457,28 @@
 
   function renderQuittancePreview() {
     var id = state.quittanceUi.selectedId || LoyerTemplateManager.getDefaultId(state.data.settings, 'quittance');
+    var ctx = getExportPeriodContext();
+    var hint = $('#quittance-preview-hint');
+    if (ctx.isRange) {
+      if (hint) {
+        hint.textContent =
+          LoyerCalc.listMonthsInRange(ctx.fromYear, ctx.fromMonth, ctx.toYear, ctx.toMonth, state.data).length +
+          ' quittances seront générées à l\'export (PDF, DOCX, HTML, mail).';
+        hint.classList.remove('hidden');
+      }
+      return LoyerQuittance.renderBatchPreview(
+        state.data,
+        ctx.fromYear,
+        ctx.fromMonth,
+        ctx.toYear,
+        ctx.toMonth,
+        id
+      ).catch(function (err) {
+        console.error(err);
+        LoyerNotify.error('Impossible de générer les quittances.');
+      });
+    }
+    if (hint) hint.classList.add('hidden');
     return LoyerQuittance.render(state.data, state.selectedYear, state.selectedMonth, id).catch(function (err) {
       console.error(err);
       LoyerNotify.error('Impossible de générer la quittance.');
@@ -472,17 +534,30 @@
 
   function renderMailPreview() {
     var id = state.mailUi.selectedId || LoyerTemplateManager.getDefaultId(state.data.settings, 'mail');
-    return LoyerTemplates.loadFilledMail(state.data, state.selectedYear, state.selectedMonth, id).then(
-      function (filled) {
-        var subjectInp = $('#mail-preview-subject');
-        if (subjectInp) subjectInp.value = filled.subject;
-        var previewEd = LoyerEditor.get('mail-preview');
-        if (previewEd) {
-          previewEd.setHtml(filled.bodyHtml);
-          setEditorReadOnly('mail-preview', true);
-        }
+    var ctx = getExportPeriodContext();
+    var refYear = ctx.isRange ? ctx.toYear : state.selectedYear;
+    var refMonth = ctx.isRange ? ctx.toMonth : state.selectedMonth;
+    var hint = $('#mail-preview-hint');
+    if (hint) {
+      if (ctx.isRange) {
+        hint.textContent =
+          'Mail rédigé pour la période — le PDF joint contiendra ' +
+          LoyerCalc.listMonthsInRange(ctx.fromYear, ctx.fromMonth, ctx.toYear, ctx.toMonth, state.data).length +
+          ' quittance(s).';
+        hint.classList.remove('hidden');
+      } else {
+        hint.classList.add('hidden');
       }
-    );
+    }
+    return LoyerTemplates.loadFilledMail(state.data, refYear, refMonth, id, ctx).then(function (filled) {
+      var subjectInp = $('#mail-preview-subject');
+      if (subjectInp) subjectInp.value = filled.subject;
+      var previewEd = LoyerEditor.get('mail-preview');
+      if (previewEd) {
+        previewEd.setHtml(filled.bodyHtml);
+        setEditorReadOnly('mail-preview', true);
+      }
+    });
   }
 
   function initTemplatesUi() {
@@ -600,29 +675,12 @@
   }
 
   function exportTemplateFromTab(type) {
-    if (type === 'quittance') {
-      captureQuittanceEditorRaw();
-      if (state.quittanceUi.mode === 'edit') {
-        LoyerTemplateIo.exportQuittanceTemplate(
-          getTemplateDisplayName('quittance', state.quittanceUi.selectedId),
-          state.quittanceUi.raw
-        );
-        LoyerNotify.success('Modèle quittance exporté.');
-        return Promise.resolve();
+    return flushTemplateEditsIfNeeded(type).then(function () {
+      if (type === 'quittance') {
+        return exportTemplateById('quittance', state.quittanceUi.selectedId);
       }
-      return exportTemplateById('quittance', state.quittanceUi.selectedId);
-    }
-    captureMailEditorRaw();
-    if (state.mailUi.mode === 'edit') {
-      LoyerTemplateIo.exportMailTemplate(
-        getTemplateDisplayName('mail', state.mailUi.selectedId),
-        state.mailUi.mailSubjectRaw,
-        state.mailUi.raw
-      );
-      LoyerNotify.success('Modèle mail exporté.');
-      return Promise.resolve();
-    }
-    return exportTemplateById('mail', state.mailUi.selectedId);
+      return exportTemplateById('mail', state.mailUi.selectedId);
+    });
   }
 
   function exportTemplateFromSettings(type) {
@@ -997,51 +1055,373 @@
     if (id === 'panel-settings') {
       renderTemplateRegistry();
     }
+    updatePeriodBarVisibility(id);
+    updateHeaderSelection();
   }
 
-  function selectMonth(month) {
-    state.selectedMonth = month;
-    var monthSel = $('#sel-month');
-    if (monthSel) monthSel.value = String(month);
-    renderDashboard();
+  var PERIOD_PANELS = ['panel-dashboard', 'panel-quittance', 'panel-mail'];
+
+  function syncPeriodBoundsToMonth() {
+    state.period.fromYear = state.selectedYear;
+    state.period.fromMonth = state.selectedMonth;
+    state.period.toYear = state.selectedYear;
+    state.period.toMonth = state.selectedMonth;
+  }
+
+  function getActivePanelId() {
+    var p = $('.panel.active');
+    return p ? p.id : 'panel-dashboard';
   }
 
   function getMonthlyRows() {
     return LoyerCalc.computeMonthlyRows(state.data);
   }
 
-  function refreshSelectors() {
-    var rows = getMonthlyRows();
+  function getDashboardSelectionRows(allRows) {
+    allRows = allRows || getMonthlyRows();
+    if (!global.LoyerPeriod) return allRows;
+    var keys = LoyerPeriod.getFilterKeys();
+    return allRows.filter(function (r) {
+      return keys.indexOf(r.key) !== -1;
+    });
+  }
+
+  function getPeriodDisplayLabel() {
+    if (global.LoyerPeriod) return LoyerPeriod.formatPeriodLabel();
+    return LoyerCalc.formatMonthLong(state.selectedYear, state.selectedMonth);
+  }
+
+  function getExportPeriodContext() {
+    if (!isRangeActive()) {
+      return {
+        isRange: false,
+        fromYear: state.selectedYear,
+        fromMonth: state.selectedMonth,
+        toYear: state.selectedYear,
+        toMonth: state.selectedMonth
+      };
+    }
+    var period = state.period;
+    var fromKey = LoyerCalc.monthKey(period.fromYear, period.fromMonth);
+    var toKey = LoyerCalc.monthKey(period.toYear, period.toMonth);
+    if (fromKey <= toKey) {
+      return {
+        isRange: true,
+        fromYear: period.fromYear,
+        fromMonth: period.fromMonth,
+        toYear: period.toYear,
+        toMonth: period.toMonth
+      };
+    }
+    return {
+      isRange: true,
+      fromYear: period.toYear,
+      fromMonth: period.toMonth,
+      toYear: period.fromYear,
+      toMonth: period.fromMonth
+    };
+  }
+
+  function updatePeriodTabLabels() {
+    var label = getPeriodDisplayLabel();
+    var qLabel = $('#quittance-period-label');
+    var mLabel = $('#mail-period-label');
+    if (qLabel) qLabel.textContent = label;
+    if (mLabel) mLabel.textContent = label;
+    var dashLabel = $('#dash-period-label');
+    if (dashLabel) dashLabel.textContent = label;
+    updateHeaderSelection();
+  }
+
+  function updateHeaderSelection() {
+    var wrap = $('#header-selection');
+    var text = $('#header-selection-text');
+    if (!wrap || !text) return;
+    var panel = getActivePanelId();
+    var show = PERIOD_PANELS.indexOf(panel) !== -1;
+    wrap.classList.toggle('hidden', !show);
+    if (!show) return;
+    var rangeActive = global.LoyerPeriod && LoyerPeriod.isRangeActive();
+    var periodLabel = getPeriodDisplayLabel();
+    if (rangeActive && panel === 'panel-dashboard') {
+      text.textContent =
+        periodLabel + ' · Détail : ' + LoyerCalc.formatMonthLong(state.focusYear, state.focusMonth);
+    } else {
+      text.textContent = periodLabel;
+    }
+  }
+
+  function updatePeriodBarVisibility(panelId) {
+    var bar = $('#period-bar');
+    if (!bar) return;
+    var show = PERIOD_PANELS.indexOf(panelId) !== -1;
+    bar.classList.toggle('hidden', !show);
+    if (show && global.LoyerPeriod) {
+      LoyerPeriod.setCompactMode(false);
+      LoyerPeriod.refresh();
+    }
+  }
+
+  function initPeriodPicker() {
+    if (!global.LoyerPeriod) return;
+    syncPeriodBoundsToMonth();
+    LoyerPeriod.init({
+      mountEl: $('#period-picker-mount'),
+      getState: function () {
+        return state;
+      },
+      getRows: getMonthlyRows,
+      callbacks: {
+        onSelectMonth: function (year, month) {
+          setSelectedPeriod(year, month);
+        },
+        onToggleRangeUi: function () {
+          state.period.rangeUiOpen = !state.period.rangeUiOpen;
+          if (state.period.rangeUiOpen) {
+            state.period.fromYear = state.selectedYear;
+            state.period.fromMonth = state.selectedMonth;
+            state.period.toYear = state.selectedYear;
+            state.period.toMonth = state.selectedMonth;
+          }
+          LoyerPeriod.refresh();
+          onPeriodChanged();
+        },
+        onSetRange: function (fromY, fromM, toY, toM) {
+          state.period.rangeUiOpen = true;
+          state.period.fromYear = fromY;
+          state.period.fromMonth = fromM;
+          state.period.toYear = toY;
+          state.period.toMonth = toM;
+          var fromKey = LoyerCalc.monthKey(fromY, fromM);
+          var toKey = LoyerCalc.monthKey(toY, toM);
+          var target = toKey >= fromKey ? { year: toY, month: toM } : { year: fromY, month: fromM };
+          setSelectedPeriod(target.year, target.month, { keepRange: true });
+        }
+      }
+    });
+  }
+
+  function onPeriodChanged() {
+    updatePeriodTabLabels();
+    if (global.LoyerPeriod) LoyerPeriod.refresh();
+    renderDashboard();
+    var panel = getActivePanelId();
+    if (panel === 'panel-quittance' && state.quittanceUi.mode === 'preview') {
+      renderQuittancePreview();
+    }
+    if (panel === 'panel-mail' && state.mailUi.mode === 'preview') {
+      renderMailPreview();
+    }
+  }
+
+  function setSelectedPeriod(year, month, options) {
+    options = options || {};
+    state.selectedYear = year;
+    state.selectedMonth = month;
+    state.focusYear = year;
+    state.focusMonth = month;
+    if (!options.keepRange) {
+      state.period.rangeUiOpen = false;
+      syncPeriodBoundsToMonth();
+    }
+    if (!options.skipRender) onPeriodChanged();
+  }
+
+  function isRangeActive() {
+    return global.LoyerPeriod && LoyerPeriod.isRangeActive();
+  }
+
+  function isRowInPeriodRange(row) {
+    if (!isRangeActive()) return false;
+    var fromKey = LoyerCalc.monthKey(state.period.fromYear, state.period.fromMonth);
+    var toKey = LoyerCalc.monthKey(state.period.toYear, state.period.toMonth);
+    if (fromKey > toKey) {
+      var t = fromKey;
+      fromKey = toKey;
+      toKey = t;
+    }
+    return row.key >= fromKey && row.key <= toKey;
+  }
+
+  function isRowFocused(row) {
+    return row.year === state.focusYear && row.month === state.focusMonth;
+  }
+
+  function setFocusMonth(year, month) {
+    state.focusYear = year;
+    state.focusMonth = month;
+    renderDashboard();
+  }
+
+  function handleDashboardMonthClick(year, month) {
+    if (isRangeActive()) {
+      setFocusMonth(year, month);
+    } else {
+      setSelectedPeriod(year, month);
+    }
+  }
+
+  function selectMonth(year, month) {
+    handleDashboardMonthClick(year, month);
+  }
+
+  function getDashboardChartYear(allRows) {
+    var years = LoyerCalc.getAvailableYears(allRows);
+    if (!years.length) return state.dashboardChartYear;
+    if (years.indexOf(state.dashboardChartYear) === -1) {
+      state.dashboardChartYear = years[years.length - 1];
+    }
+    return state.dashboardChartYear;
+  }
+
+  function shiftDashboardChartYear(delta, allRows) {
+    var years = LoyerCalc.getAvailableYears(allRows);
+    if (!years.length) return;
+    var idx = years.indexOf(state.dashboardChartYear);
+    if (idx === -1) idx = years.length - 1;
+    var next = idx + delta;
+    if (next < 0 || next >= years.length) return;
+    state.dashboardChartYear = years[next];
+    renderDashboard();
+  }
+
+  function renderMonthStatusBadge(status) {
+    return (
+      '<span class="month-status month-status-' +
+      status +
+      '">' +
+      escapeHtml(LoyerCalc.getMonthStatusLabel(status)) +
+      '</span>'
+    );
+  }
+
+  function heatmapCellHtml(row, year, month, status, extraClass) {
+    var statusLabel = LoyerCalc.getMonthStatusLabel(status);
+    var monthLabel = LoyerCalc.formatMonthLong(year, month);
+    var title =
+      monthLabel +
+      '\nStatut : ' +
+      statusLabel +
+      '\nAttendu : ' +
+      fmt(row.attendu) +
+      '\nReçu : ' +
+      fmt(row.recu);
+    return (
+      '<button type="button" class="heatmap-btn month-status-' +
+      status +
+      extraClass +
+      '" data-year="' +
+      year +
+      '" data-month="' +
+      month +
+      '" data-status="' +
+      status +
+      '" title="' +
+      escapeHtml(title) +
+      '" aria-label="' +
+      escapeHtml(monthLabel + ', ' + statusLabel) +
+      '">' +
+      '<span class="heatmap-cell-tip" role="tooltip">' +
+      '<strong>' +
+      escapeHtml(statusLabel) +
+      '</strong><span>' +
+      escapeHtml(monthLabel) +
+      '</span></span></button>'
+    );
+  }
+
+  function renderDashboardHeatmap(rows) {
+    var el = $('#dashboard-heatmap');
+    if (!el) return;
+
     var years = LoyerCalc.getAvailableYears(rows);
     if (!years.length) {
-      years = [new Date().getFullYear()];
-    }
-    if (years.indexOf(state.selectedYear) === -1) {
-      state.selectedYear = years[years.length - 1];
+      el.innerHTML = '<p class="empty-msg">Aucune donnée</p>';
+      return;
     }
 
-    var yearSel = $('#sel-year');
-    var monthSel = $('#sel-month');
-    yearSel.innerHTML = years
-      .map(function (y) {
-        return '<option value="' + y + '"' + (y === state.selectedYear ? ' selected' : '') + '>' + y + '</option>';
+    var rowByKey = {};
+    rows.forEach(function (r) {
+      rowByKey[r.key] = r;
+    });
+    var settings = state.data.settings || {};
+    var statusOpts = { rentDueDay: settings.rentDueDay };
+
+    var monthHeaders = LoyerCalc.MONTH_NAMES.map(function (name) {
+      return '<div class="heatmap-col-label">' + name.slice(0, 3) + '</div>';
+    }).join('');
+
+    var body = years
+      .map(function (year) {
+        var cells = '<div class="heatmap-row-label">' + year + '</div>';
+        for (var m = 1; m <= 12; m++) {
+          var key = LoyerCalc.monthKey(year, m);
+          var row = rowByKey[key];
+          if (!row) {
+            cells += '<div class="heatmap-cell heatmap-empty" aria-hidden="true"></div>';
+            continue;
+          }
+          var status = LoyerCalc.getMonthStatus(row, statusOpts);
+          var extra = '';
+          if (isRowInPeriodRange(row)) extra += ' heatmap-in-range';
+          if (isRowFocused(row)) extra += ' heatmap-focused';
+          cells += '<div class="heatmap-cell">' + heatmapCellHtml(row, year, m, status, extra) + '</div>';
+        }
+        return cells;
       })
       .join('');
 
-    monthSel.innerHTML = LoyerCalc.MONTH_NAMES.map(function (name, i) {
-      var m = i + 1;
-      return '<option value="' + m + '"' + (m === state.selectedMonth ? ' selected' : '') + '>' + name + '</option>';
-    }).join('');
+    el.innerHTML =
+      '<div class="heatmap-grid"><div class="heatmap-corner"></div>' +
+      monthHeaders +
+      body +
+      '</div>';
+  }
+
+  function refreshSelectors() {
+    if (global.LoyerPeriod) LoyerPeriod.refresh();
+    updatePeriodTabLabels();
   }
 
   function renderDashboard() {
-    refreshSelectors();
-    var rows = getMonthlyRows();
-    var yearly = LoyerCalc.computeYearlySummary(rows);
-    var yearRows = rows.filter(function (r) {
-      return r.year === state.selectedYear;
-    });
-    var detail = LoyerCalc.getMonthDetail(state.data, state.selectedYear, state.selectedMonth);
+    var allRows = getMonthlyRows();
+    var selectionRows = getDashboardSelectionRows(allRows);
+    var rangeActive = global.LoyerPeriod && LoyerPeriod.isRangeActive();
+    var periodLabel = getPeriodDisplayLabel();
+    var settings = state.data.settings || {};
+    var statusOpts = { rentDueDay: settings.rentDueDay };
+    var kpis = LoyerCalc.computeKpisForRows(state.data, selectionRows);
+    var yearly = LoyerCalc.computeYearlySummary(allRows);
+
+    updatePeriodTabLabels();
+    if (global.LoyerPeriod) LoyerPeriod.refresh();
+
+    var kpiEl = $('#dash-kpis');
+    if (kpiEl) {
+      var taux =
+        kpis.tauxRecouvrement != null ? Math.round(kpis.tauxRecouvrement * 100) + ' %' : '—';
+      var soldeClass = kpis.soldeADate >= 0 ? 'positive' : 'negative';
+      var kpiScope = rangeActive ? 'Période' : 'Mois';
+      kpiEl.innerHTML =
+        '<div class="stat-box"><div class="label">Solde fin de période</div><div class="value ' +
+        soldeClass +
+        '">' +
+        fmt(kpis.soldeADate) +
+        '</div></div>' +
+        '<div class="stat-box"><div class="label">Recouvrement (' +
+        kpiScope +
+        ')</div><div class="value">' +
+        taux +
+        '</div></div>' +
+        '<div class="stat-box"><div class="label">Mois partiels / impayés</div><div class="value">' +
+        kpis.moisProblematiques +
+        '</div></div>' +
+        (kpis.retardMoyenJours != null
+          ? '<div class="stat-box"><div class="label">Retard moyen</div><div class="value">' +
+            kpis.retardMoyenJours +
+            ' j</div></div>'
+          : '');
+    }
 
     $('#yearly-table tbody').innerHTML = yearly
       .map(function (y) {
@@ -1056,47 +1436,277 @@
       })
       .join('') || '<tr><td colspan="5" class="empty-msg">Aucune donnée</td></tr>';
 
-    $('#monthly-table tbody').innerHTML = yearRows
+    $('#monthly-table tbody').innerHTML = selectionRows
       .map(function (r) {
         var diffClass = r.difference >= 0 ? 'positive' : 'negative';
-        var classes = 'row-clickable' + (r.month === state.selectedMonth ? ' row-selected' : '');
+        var classes = 'row-clickable';
+        if (rangeActive && isRowInPeriodRange(r)) classes += ' row-in-range';
+        if (isRowFocused(r)) {
+          classes += rangeActive ? ' row-focused' : ' row-selected';
+        }
+        var status = LoyerCalc.getMonthStatus(r, statusOpts);
+        var delay = LoyerCalc.getPaymentDelayDays(state.data, r.year, r.month);
+        var delayHint =
+          delay != null && delay > 0
+            ? ' <span class="month-delay-hint" title="Retard de paiement">+' +
+              delay +
+              ' j</span>'
+            : '';
         return (
-          '<tr class="' + classes + '" data-month="' + r.month + '" role="button" tabindex="0">' +
-          '<td>' + LoyerCalc.MONTH_NAMES[r.month - 1] + '</td>' +
-          '<td class="num">' + fmt(r.attendu) + '</td>' +
-          '<td class="num">' + fmt(r.recu) + '</td>' +
-          '<td class="num ' + diffClass + '">' + fmt(r.difference) + '</td>' +
-          '<td class="num">' + fmt(r.soldeCumule) + '</td></tr>'
+          '<tr class="' +
+          classes +
+          '" data-year="' +
+          r.year +
+          '" data-month="' +
+          r.month +
+          '" role="button" tabindex="0">' +
+          '<td>' +
+          LoyerCalc.formatMonthLong(r.year, r.month) +
+          delayHint +
+          '</td>' +
+          '<td>' +
+          renderMonthStatusBadge(status) +
+          '</td>' +
+          '<td class="num">' +
+          fmt(r.attendu) +
+          '</td>' +
+          '<td class="num">' +
+          fmt(r.recu) +
+          '</td>' +
+          '<td class="num ' +
+          diffClass +
+          '">' +
+          fmt(r.difference) +
+          '</td>' +
+          '<td class="num">' +
+          fmt(r.soldeCumule) +
+          '</td></tr>'
         );
       })
-      .join('') || '<tr><td colspan="5" class="empty-msg">Aucune donnée pour cette année</td></tr>';
+      .join('') ||
+      '<tr><td colspan="6" class="empty-msg">Aucune donnée pour cette période</td></tr>';
 
-    var yearLabel = $('#dash-year-label');
-    if (yearLabel) yearLabel.textContent = state.selectedYear;
+    var tableHint = $('#dash-table-hint');
+    if (tableHint) {
+      tableHint.textContent = rangeActive
+        ? selectionRows.length + ' mois dans la plage — cliquez une ligne pour le détail virements.'
+        : 'Cliquez sur une ligne pour sélectionner un mois.';
+    }
 
-    if (detail.row) {
+    var focusLabel = LoyerCalc.formatMonthLong(state.focusYear, state.focusMonth);
+    var paymentsLabel = $('#dash-payments-label');
+    if (paymentsLabel) {
+      paymentsLabel.textContent = rangeActive ? focusLabel : periodLabel;
+    }
+
+    var paymentsHint = $('#dash-payments-hint');
+    if (paymentsHint) {
+      paymentsHint.textContent = rangeActive
+        ? 'Virements reçus pour ce mois (période : ' + periodLabel + ').'
+        : 'Virements reçus ce mois-ci.';
+    }
+
+    var focusDetail = LoyerCalc.getMonthDetail(state.data, state.focusYear, state.focusMonth);
+    if (rangeActive) {
+      if (focusDetail.row) {
+        $('#month-stats').innerHTML =
+          '<div class="stat-box"><div class="label">Attendu (' +
+          focusLabel +
+          ')</div><div class="value">' +
+          fmt(focusDetail.row.attendu) +
+          '</div></div>' +
+          '<div class="stat-box"><div class="label">Reçu</div><div class="value">' +
+          fmt(focusDetail.row.recu) +
+          '</div></div>' +
+          '<div class="stat-box"><div class="label">Différence</div><div class="value ' +
+          (focusDetail.row.difference >= 0 ? 'positive' : 'negative') +
+          '">' +
+          fmt(focusDetail.row.difference) +
+          '</div></div>' +
+          '<div class="stat-box"><div class="label">Solde cumulé</div><div class="value">' +
+          fmt(focusDetail.row.soldeCumule) +
+          '</div></div>';
+      } else {
+        $('#month-stats').innerHTML = '<p class="empty-msg">Mois hors période de location.</p>';
+      }
+    } else if (focusDetail.row) {
       $('#month-stats').innerHTML =
-        '<div class="stat-box"><div class="label">Attendu</div><div class="value">' + fmt(detail.row.attendu) + '</div></div>' +
-        '<div class="stat-box"><div class="label">Reçu</div><div class="value">' + fmt(detail.row.recu) + '</div></div>' +
-        '<div class="stat-box"><div class="label">Différence</div><div class="value ' + (detail.row.difference >= 0 ? 'positive' : 'negative') + '">' + fmt(detail.row.difference) + '</div></div>' +
-        '<div class="stat-box"><div class="label">Solde cumulé</div><div class="value">' + fmt(detail.row.soldeCumule) + '</div></div>';
+        '<div class="stat-box"><div class="label">Attendu</div><div class="value">' +
+        fmt(focusDetail.row.attendu) +
+        '</div></div>' +
+        '<div class="stat-box"><div class="label">Reçu</div><div class="value">' +
+        fmt(focusDetail.row.recu) +
+        '</div></div>' +
+        '<div class="stat-box"><div class="label">Différence</div><div class="value ' +
+        (focusDetail.row.difference >= 0 ? 'positive' : 'negative') +
+        '">' +
+        fmt(focusDetail.row.difference) +
+        '</div></div>' +
+        '<div class="stat-box"><div class="label">Solde cumulé</div><div class="value">' +
+        fmt(focusDetail.row.soldeCumule) +
+        '</div></div>';
     } else {
       $('#month-stats').innerHTML = '<p class="empty-msg">Mois hors période de location.</p>';
     }
 
-    $('#payments-month-table tbody').innerHTML = detail.payments
+    var dashPayments = focusDetail.payments || [];
+
+    $('#payments-month-table tbody').innerHTML = dashPayments
       .map(function (p) {
         return '<tr>' + renderPaymentRowCells(p, { dataLabels: true }) + '</tr>';
       })
       .join('') ||
       '<tr class="payments-empty-row"><td colspan="7" class="empty-msg">Aucun virement ce mois</td></tr>';
 
-    var canvasBar = $('#chart-monthly');
+    var canvasStack = $('#chart-monthly-stack');
+    var canvasYear = $('#chart-yearly-bar');
     var canvasLine = $('#chart-balance');
-    if (canvasBar && typeof Chart !== 'undefined') {
-      LoyerCharts.renderMonthlyBar(canvasBar, rows, state.selectedYear);
-      LoyerCharts.renderBalanceLine(canvasLine, rows);
+    var stackLabel = $('#dash-chart-stack-label');
+    var yearLabel = $('#dash-chart-year-label');
+    var balanceLabel = $('#dash-chart-balance-label');
+    var balanceHint = $('#dash-chart-balance-hint');
+    if (stackLabel) stackLabel.textContent = periodLabel;
+    var chartYear = getDashboardChartYear(allRows);
+    if (yearLabel) yearLabel.textContent = String(chartYear);
+    if (balanceLabel) balanceLabel.textContent = rangeActive ? 'Solde cumulé — ' + periodLabel : 'Solde cumulé';
+    if (balanceHint) {
+      balanceHint.textContent = rangeActive
+        ? 'Solde cumulé sur les mois de la plage sélectionnée.'
+        : 'Solde cumulé jusqu\'au mois sélectionné.';
     }
+
+    var balanceRows = rangeActive
+      ? selectionRows
+      : allRows.filter(function (r) {
+          var key = LoyerCalc.monthKey(r.year, r.month);
+          var sel = LoyerCalc.monthKey(state.selectedYear, state.selectedMonth);
+          return key <= sel;
+        });
+
+    var yearRows = allRows.filter(function (r) {
+      return r.year === chartYear;
+    });
+
+    if (canvasStack && typeof Chart !== 'undefined') {
+      LoyerCharts.renderMonthlyStackedBar(canvasStack, selectionRows, periodLabel);
+      LoyerCharts.renderYearlyBar(canvasYear, yearRows, String(chartYear));
+      LoyerCharts.renderBalanceLine(canvasLine, balanceRows, periodLabel);
+    }
+
+    var years = LoyerCalc.getAvailableYears(allRows);
+    var yearIdx = years.indexOf(chartYear);
+    var prevBtn = $('#btn-chart-year-prev');
+    var nextBtn = $('#btn-chart-year-next');
+    if (prevBtn) prevBtn.disabled = yearIdx <= 0;
+    if (nextBtn) nextBtn.disabled = yearIdx === -1 || yearIdx >= years.length - 1;
+
+    renderDashboardHeatmap(allRows);
+  }
+
+  function populateBatchExportSelects() {
+    var rows = getMonthlyRows();
+    var years = LoyerCalc.getAvailableYears(rows);
+    if (!years.length) years = [new Date().getFullYear()];
+
+    var monthOpts = LoyerCalc.MONTH_NAMES.map(function (name, i) {
+      return '<option value="' + (i + 1) + '">' + name + '</option>';
+    }).join('');
+    var yearOpts = years
+      .map(function (y) {
+        return '<option value="' + y + '">' + y + '</option>';
+      })
+      .join('');
+
+    ['batch-from-month', 'batch-to-month'].forEach(function (id) {
+      var el = $('#' + id);
+      if (el) el.innerHTML = monthOpts;
+    });
+    ['batch-from-year', 'batch-to-year'].forEach(function (id) {
+      var el = $('#' + id);
+      if (el) el.innerHTML = yearOpts;
+    });
+
+    var first = rows[0];
+    var last = rows[rows.length - 1];
+    if (first) {
+      $('#batch-from-month').value = String(first.month);
+      $('#batch-from-year').value = String(first.year);
+    }
+    $('#batch-to-month').value = String(state.selectedMonth);
+    $('#batch-to-year').value = String(state.selectedYear);
+    updateBatchExportSummary();
+  }
+
+  function updateBatchExportSummary() {
+    var summary = $('#batch-export-summary');
+    if (!summary) return;
+    var fromM = parseInt($('#batch-from-month').value, 10);
+    var fromY = parseInt($('#batch-from-year').value, 10);
+    var toM = parseInt($('#batch-to-month').value, 10);
+    var toY = parseInt($('#batch-to-year').value, 10);
+    var months = LoyerCalc.listMonthsInRange(fromY, fromM, toY, toM, state.data);
+    if (!months.length) {
+      summary.textContent = 'Plage invalide ou hors période de bail.';
+      return;
+    }
+    summary.textContent =
+      months.length +
+      ' quittance(s) seront générées (' +
+      LoyerCalc.formatMonthLong(months[0].year, months[0].month) +
+      ' → ' +
+      LoyerCalc.formatMonthLong(months[months.length - 1].year, months[months.length - 1].month) +
+      ').';
+    if (months.length > 24) {
+      summary.textContent += ' Attention : export volumineux, cela peut prendre du temps.';
+    }
+  }
+
+  function openBatchExportModal() {
+    populateBatchExportSelects();
+    $('#modal-batch-quittance').classList.remove('hidden');
+  }
+
+  function closeBatchExportModal() {
+    $('#modal-batch-quittance').classList.add('hidden');
+  }
+
+  function runBatchExport(format) {
+    var fromM = parseInt($('#batch-from-month').value, 10);
+    var fromY = parseInt($('#batch-from-year').value, 10);
+    var toM = parseInt($('#batch-to-month').value, 10);
+    var toY = parseInt($('#batch-to-year').value, 10);
+    var months = LoyerCalc.listMonthsInRange(fromY, fromM, toY, toM, state.data);
+    if (!months.length) {
+      LoyerNotify.warn('Plage invalide ou hors période de bail.');
+      return;
+    }
+    if (months.length > 24) {
+      LoyerNotify.warn('Export de ' + months.length + ' mois — patientez…');
+    } else {
+      LoyerNotify.info('Génération en cours…');
+    }
+    var templateId =
+      state.quittanceUi.selectedId ||
+      LoyerTemplateManager.getDefaultId(state.data.settings, 'quittance');
+    flushTemplateEditsIfNeeded('quittance')
+      .then(function () {
+        return LoyerQuittance.exportBatch(
+          state.data,
+          fromY,
+          fromM,
+          toY,
+          toM,
+          templateId,
+          format
+        );
+      })
+      .then(function () {
+        closeBatchExportModal();
+        LoyerNotify.success('Export groupé terminé.');
+      })
+      .catch(function (err) {
+        LoyerNotify.error(err.message || 'Export impossible.');
+      });
   }
 
   function escapeHtml(s) {
@@ -1248,7 +1858,7 @@
           '<div class="form-row"><label>Nom affiché</label>' +
           '<input type="text" class="emitter-name" data-index="' + i + '" value="' + escapeHtml(profile.name) + '"></div>' +
           '<div class="form-row"><label>Motifs dans le libellé bancaire</label>' +
-          '<textarea class="emitter-patterns" data-index="' + i + '" rows="3" placeholder="MLLE MARYSE VALLEE">' +
+          '<textarea class="emitter-patterns" data-index="' + i + '" rows="3" placeholder="Jean Dupont">' +
           escapeHtml((profile.patterns || []).join('\n')) +
           '</textarea></div>' +
           '<button type="button" class="btn btn-danger btn-rm-emitter" data-index="' + i + '">Supprimer</button></div>'
@@ -1530,6 +2140,69 @@
     return LoyerQuittance.getExportElement();
   }
 
+  function getQuittanceExportFilename(ctx) {
+    if (ctx.isRange) {
+      return LoyerQuittance.getBatchFilename(
+        LoyerCalc.monthKey(ctx.fromYear, ctx.fromMonth),
+        LoyerCalc.monthKey(ctx.toYear, ctx.toMonth)
+      );
+    }
+    return LoyerQuittance.getFilename(state.selectedYear, state.selectedMonth);
+  }
+
+  function exportQuittanceFormat(format) {
+    var ctx = getExportPeriodContext();
+    var id = state.quittanceUi.selectedId || LoyerTemplateManager.getDefaultId(state.data.settings, 'quittance');
+    return renderQuittancePreview().then(function () {
+      var fn = getQuittanceExportFilename(ctx);
+      if (format === 'pdf') {
+        if (ctx.isRange) {
+          return LoyerQuittance.exportBatch(
+            state.data,
+            ctx.fromYear,
+            ctx.fromMonth,
+            ctx.toYear,
+            ctx.toMonth,
+            id,
+            'pdf'
+          );
+        }
+        return LoyerExport.exportPdf(getQuittanceExportEl(), fn);
+      }
+      if (ctx.isRange) {
+        return LoyerQuittance.exportBatch(
+          state.data,
+          ctx.fromYear,
+          ctx.fromMonth,
+          ctx.toYear,
+          ctx.toMonth,
+          id,
+          format
+        );
+      }
+      if (format === 'docx') return LoyerExport.exportDocx(getQuittanceExportEl(), fn);
+      return LoyerExport.exportHtml(getQuittanceExportEl(), fn);
+    });
+  }
+
+  function prepareMailAction(mode) {
+    var mailId = state.mailUi.selectedId || LoyerTemplateManager.getDefaultId(state.data.settings, 'mail');
+    var qId = state.quittanceUi.selectedId || LoyerTemplateManager.getDefaultId(state.data.settings, 'quittance');
+    var ctx = getExportPeriodContext();
+    return renderQuittancePreview().then(function () {
+      return LoyerMail.prepareMail(
+        mode,
+        state.data,
+        state.selectedYear,
+        state.selectedMonth,
+        getQuittanceExportEl(),
+        mailId,
+        ctx,
+        qId
+      );
+    });
+  }
+
   function renderAll() {
     renderDashboard();
     renderPayments();
@@ -1616,25 +2289,77 @@
       });
     });
 
-    $('#sel-year').addEventListener('change', function () {
-      state.selectedYear = parseInt(this.value, 10);
-      renderDashboard();
-    });
-    $('#sel-month').addEventListener('change', function () {
-      selectMonth(parseInt(this.value, 10));
+    initPeriodPicker();
+    updatePeriodBarVisibility('panel-dashboard');
+
+    bindIf('#btn-print-report', function (el) {
+      el.addEventListener('click', function () {
+        window.print();
+      });
     });
 
     $('#monthly-table').addEventListener('click', function (e) {
       var row = e.target.closest('tr[data-month]');
       if (!row) return;
-      selectMonth(parseInt(row.dataset.month, 10));
+      handleDashboardMonthClick(parseInt(row.dataset.year, 10), parseInt(row.dataset.month, 10));
     });
+
+    bindIf('#dashboard-heatmap', function (el) {
+      el.addEventListener('click', function (e) {
+        var btn = e.target.closest('.heatmap-btn');
+        if (!btn) return;
+        handleDashboardMonthClick(parseInt(btn.dataset.year, 10), parseInt(btn.dataset.month, 10));
+      });
+    });
+
+    bindIf('#btn-chart-year-prev', function (el) {
+      el.addEventListener('click', function () {
+        shiftDashboardChartYear(-1, getMonthlyRows());
+      });
+    });
+
+    bindIf('#btn-chart-year-next', function (el) {
+      el.addEventListener('click', function () {
+        shiftDashboardChartYear(1, getMonthlyRows());
+      });
+    });
+
+    bindIf('#btn-export-batch', function (el) {
+      el.addEventListener('click', openBatchExportModal);
+    });
+
+    ['batch-from-month', 'batch-from-year', 'batch-to-month', 'batch-to-year'].forEach(function (id) {
+      bindIf('#' + id, function (el) {
+        el.addEventListener('change', updateBatchExportSummary);
+      });
+    });
+
+    $$('[data-batch-modal-close]').forEach(function (btn) {
+      btn.addEventListener('click', closeBatchExportModal);
+    });
+
+    bindIf('#btn-batch-export-pdf', function (el) {
+      el.addEventListener('click', function () {
+        runBatchExport('pdf');
+      });
+    });
+    bindIf('#btn-batch-export-docx', function (el) {
+      el.addEventListener('click', function () {
+        runBatchExport('docx');
+      });
+    });
+    bindIf('#btn-batch-export-html', function (el) {
+      el.addEventListener('click', function () {
+        runBatchExport('html');
+      });
+    });
+
     $('#monthly-table').addEventListener('keydown', function (e) {
       if (e.key !== 'Enter' && e.key !== ' ') return;
       var row = e.target.closest('tr[data-month]');
       if (!row) return;
       e.preventDefault();
-      selectMonth(parseInt(row.dataset.month, 10));
+      handleDashboardMonthClick(parseInt(row.dataset.year, 10), parseInt(row.dataset.month, 10));
     });
 
     $('#form-payment').addEventListener('submit', function (e) {
@@ -2080,63 +2805,68 @@
     });
 
     bindIf('#btn-refresh-quittance', function (el) {
-      el.addEventListener('click', renderQuittancePreview);
+      el.addEventListener('click', function () {
+        flushTemplateEditsIfNeeded('quittance')
+          .then(renderQuittancePreview)
+          .catch(function (err) {
+            LoyerNotify.error(err.message || 'Enregistrement impossible.');
+          });
+      });
     });
     bindIf('#btn-refresh-mail', function (el) {
-      el.addEventListener('click', renderMailPreview);
+      el.addEventListener('click', function () {
+        flushTemplateEditsIfNeeded('mail')
+          .then(renderMailPreview)
+          .catch(function (err) {
+            LoyerNotify.error(err.message || 'Enregistrement impossible.');
+          });
+      });
     });
 
     bindIf('#btn-mail-eml', function (el) {
       el.addEventListener('click', function () {
-        var mailId = state.mailUi.selectedId || LoyerTemplateManager.getDefaultId(state.data.settings, 'mail');
-        renderQuittancePreview()
-          .then(function () {
-            return LoyerMail.prepareMail(
-              'eml',
-              state.data,
-              state.selectedYear,
-              state.selectedMonth,
-              getQuittanceExportEl(),
-              mailId
-            );
-          })
-          .catch(function (err) {
-            LoyerNotify.error('Erreur : ' + err.message);
-          });
+        withTemplatesSaved(['mail', 'quittance'], function () {
+          return prepareMailAction('eml');
+        }).catch(function (err) {
+          LoyerNotify.error('Erreur : ' + err.message);
+        });
       });
     });
     bindIf('#btn-mail-nav', function (el) {
       el.addEventListener('click', function () {
-        var mailId = state.mailUi.selectedId || LoyerTemplateManager.getDefaultId(state.data.settings, 'mail');
-        renderQuittancePreview().then(function () {
-          LoyerMail.prepareMail(
-            'mailto',
-            state.data,
-            state.selectedYear,
-            state.selectedMonth,
-            getQuittanceExportEl(),
-            mailId
-          );
+        withTemplatesSaved(['mail', 'quittance'], function () {
+          return prepareMailAction('mailto');
+        }).catch(function (err) {
+          LoyerNotify.error('Erreur : ' + err.message);
         });
       });
     });
 
     bindIf('#btn-export-pdf', function (el) {
       el.addEventListener('click', function () {
-        var fn = LoyerQuittance.getFilename(state.selectedYear, state.selectedMonth);
-        LoyerExport.exportPdf(getQuittanceExportEl(), fn);
+        withTemplatesSaved(['quittance'], function () {
+          return exportQuittanceFormat('pdf');
+        }).catch(function (err) {
+          LoyerNotify.error(err.message || 'Enregistrement impossible.');
+        });
       });
     });
     bindIf('#btn-export-docx', function (el) {
       el.addEventListener('click', function () {
-        var fn = LoyerQuittance.getFilename(state.selectedYear, state.selectedMonth);
-        LoyerExport.exportDocx(getQuittanceExportEl(), fn);
+        withTemplatesSaved(['quittance'], function () {
+          return exportQuittanceFormat('docx');
+        }).catch(function (err) {
+          LoyerNotify.error(err.message || 'Enregistrement impossible.');
+        });
       });
     });
     bindIf('#btn-export-html', function (el) {
       el.addEventListener('click', function () {
-        var fn = LoyerQuittance.getFilename(state.selectedYear, state.selectedMonth);
-        LoyerExport.exportHtml(getQuittanceExportEl(), fn);
+        withTemplatesSaved(['quittance'], function () {
+          return exportQuittanceFormat('html');
+        }).catch(function (err) {
+          LoyerNotify.error(err.message || 'Enregistrement impossible.');
+        });
       });
     });
   }

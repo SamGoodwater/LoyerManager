@@ -16,84 +16,79 @@ Développé par **Goodwater** — logiciel libre sous [licence MIT](LICENSE).
 ## Prérequis
 
 - PHP 7.4+ (8.x recommandé), extension JSON
-- Serveur web : nginx + php-fpm, Apache, ou PHP intégré pour les tests
+- Serveur web Apache (mutualisé) ou nginx / PHP intégré (local)
 - Navigateur récent (Chrome, Firefox, Edge)
 
-## Installation rapide
+## Installation — hébergement web (production)
+
+**Aucun script requis.** L'application est autonome : uploadez les fichiers et c'est tout.
+
+1. Envoyez le projet sur votre hébergeur (FTP ou gestionnaire de fichiers).
+2. Copiez `config.example.php` → `config.php`.
+3. Vérifiez que PHP peut écrire dans `data/` et `templates/` (souvent droits **755** ou **775** via le panneau).
+4. Ouvrez l'URL du site dans le navigateur.
+
+Guide détaillé : [`docs/HEBERGEMENT-MUTUALISE.md`](docs/HEBERGEMENT-MUTUALISE.md)
+
+Sécurité (HTTPS, mot de passe site, clé API) : [`docs/SECURITE.md`](docs/SECURITE.md)
+
+## Installation — test local (développement)
 
 ```bash
 git clone https://github.com/SamGoodwater/LoyerManager.git
 cd LoyerManager
 cp config.example.php config.php
-# Production : définir api_key dans config.php (recommandé si URL publique)
-
-./deploy/scripts/fix-permissions.sh
+php -S localhost:8080
 ```
 
-### Test local (PHP intégré)
+Ouvrez `http://localhost:8080/` (pas en `file://`). La clé API peut rester **vide** en local.
 
-```bash
-./deploy/debian/install-dev.sh
-# ou : php -S 0.0.0.0:8080
-```
-
-Ouvrez `http://localhost:8080/` (pas en `file://`).
-
-### Production Debian / nginx
-
-Voir [`deploy/debian/README`](deploy/debian/README).
-
-```bash
-sudo ./deploy/debian/install-nginx.sh
-curl http://localhost/api.php?action=status
-```
+Le dossier [`deploy/`](deploy/README.md) est **optionnel** (scripts dev, exemple nginx Debian).
 
 ## Configuration
 
 | Élément | Rôle |
 |---------|------|
-| `config.php` | Clé API optionnelle (`api_key`) — **non versionné** |
+| `config.php` | Clé API optionnelle (`api_key`) — voir ci-dessous |
 | `data/loyer-data.json` | Paramètres, virements, registre des modèles — **non versionné** |
 | `templates/quittances/` | Modèles HTML quittance — **non versionné** |
 | `templates/mails/` | Modèles mail (corps + objet) — **non versionné** |
 | `templates/*.example.*` | Modèles d'exemple versionnés |
 
-Au premier lancement, l'application crée `data/loyer-data.json` et migre d'éventuels anciens fichiers plats (`templates/quittance.html`, etc.) vers `templates/quittances/principal.html`.
+### Clé API (`api_key`) — c'est quoi ?
+
+Ce n'est **pas** un compte utilisateur. C'est un **mot de passe technique** entre votre navigateur et `api.php` :
+
+- Protège la **lecture et l'écriture** de `data/loyer-data.json` et des modèles sur le serveur.
+- Vous la saisissez **une fois** dans Paramètres → Données ; le navigateur la retient le temps de la session.
+- **Vide** en local : pas de clé demandée.
+- **Renseignée** en production : recommandé si l'URL est accessible sur Internet.
+
+Distinct du **mot de passe du site** (fenêtre du navigateur avant d'afficher les pages) — les deux se complètent. Détails : [`docs/SECURITE.md`](docs/SECURITE.md).
+
+Au premier lancement, l'application crée `data/loyer-data.json` si besoin.
 
 ## Jeu de démonstration
 
-Données **100 % fictives** pour tester sans informations personnelles :
-
 ```bash
 cp docs/demo/loyer-data.demo.json data/loyer-data.json
-./deploy/scripts/fix-permissions.sh
 ```
 
-Voir [`docs/demo/README.md`](docs/demo/README.md) pour le CSV d'import bancaire associé.
+Voir [`docs/demo/README.md`](docs/demo/README.md).
 
 ## Données personnelles
 
-Ne pas committer (déjà dans `.gitignore`) :
-
-- `data/loyer-data.json`, `data/signature.jpg`
-- `config.php`
-- `templates/quittances/*`, `templates/mails/*`
-
-Exportez régulièrement une copie via **Paramètres → Données**.
+Ne pas committer (déjà dans `.gitignore`) : `data/loyer-data.json`, `config.php`, modèles personnalisés dans `templates/`.
 
 ## Structure du projet
 
 ```
 LoyerManager/
-├── index.html          # Interface
-├── api.php             # API JSON + modèles
-├── js/                 # Application (vanilla JS, sans build)
-├── css/
-├── templates/          # Exemples versionnés (*.example.*)
-├── data/               # Données utilisateur (gitignored)
-├── docs/demo/          # Jeu de démonstration
-├── deploy/             # nginx, systemd, scripts
-└── docs/AGENTS.md      # Guide développeurs
+├── index.html, api.php, .htaccess   ← suffisent avec js/, css/, lib/
+├── js/ css/ lib/
+├── data/ templates/
+├── docs/          ← guides utilisateur (sécurité, mutualisé)
+└── deploy/        ← optionnel (dev local, exemples nginx)
 ```
 
 ## Modèles (résumé)
@@ -106,8 +101,6 @@ LoyerManager/
 | Importer | Crée un **nouveau** modèle (.html) | Crée un **nouveau** modèle (.json) |
 | Exporter | .html | .json (objet + corps) |
 
-Le panneau **Mots-clés** (édition) propose les mêmes variables pour quittance et mail : `{{paiement}}`, `{{bailleur.name}}`, `{{locataire.city}}`, etc.
-
 ## Licence
 
 [MIT](LICENSE)
@@ -115,4 +108,4 @@ Le panneau **Mots-clés** (édition) propose les mêmes variables pour quittance
 ## Liens
 
 - Dépôt : https://github.com/SamGoodwater/LoyerManager
-- Documentation développeur : [`docs/AGENTS.md`](docs/AGENTS.md)
+- [`docs/SECURITE.md`](docs/SECURITE.md) · [`docs/HEBERGEMENT-MUTUALISE.md`](docs/HEBERGEMENT-MUTUALISE.md) · [`docs/AGENTS.md`](docs/AGENTS.md)

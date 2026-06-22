@@ -31,6 +31,10 @@
         </span>
       </a>
       <div class="app-header-meta">
+        <div id="header-selection" class="header-selection hidden" aria-live="polite">
+          <span class="header-selection-kicker">Sélection</span>
+          <strong id="header-selection-text">—</strong>
+        </div>
         <button type="button" id="save-status-badge" class="save-status-badge save-status-needs-setup hidden" title="État de la sauvegarde">
           Sauvegarde
         </button>
@@ -47,43 +51,37 @@
     </nav>
   </header>
 
+  <div id="period-bar" class="period-bar no-print hidden" aria-label="Sélection de période">
+    <div id="period-picker-mount" class="period-bar-inner"></div>
+  </div>
+
   <main id="main-content">
     <!-- Tableau de bord -->
     <section id="panel-dashboard" class="panel active" role="tabpanel" aria-labelledby="tab-dashboard">
       <div class="card no-print">
-        <h2 class="heading-with-help">Période sélectionnée
+        <h2 class="heading-with-help">Tableau de bord
           <button type="button" class="help-trigger" data-help-id="dash-period" aria-label="Aide : période" aria-expanded="false"><span aria-hidden="true">?</span></button>
         </h2>
-        <p class="field-hint">Choisissez l'année et le mois à consulter. Les chiffres ci-dessous se mettent à jour tout seuls.</p>
-        <div class="filters">
-          <div class="form-row">
-            <div class="label-with-help">
-              <label for="sel-year">Année</label>
-            </div>
-            <select id="sel-year" aria-describedby="hint-sel-year"></select>
-            <p id="hint-sel-year" class="field-hint">Exemple : 2025 pour l'année en cours.</p>
-          </div>
-          <div class="form-row">
-            <div class="label-with-help">
-              <label for="sel-month">Mois</label>
-            </div>
-            <select id="sel-month" aria-describedby="hint-sel-month"></select>
-            <p id="hint-sel-month" class="field-hint">Le mois choisi sert aussi pour la quittance.</p>
-          </div>
-        </div>
+        <p class="field-hint">Utilisez la barre de période ci-dessus. La sélection du mois est partagée avec Quittance et Mail.</p>
+        <div id="dash-kpis" class="stats-row dash-kpis"></div>
         <div id="month-stats" class="stats-row"></div>
+        <div class="btn-group" style="margin-top:0.5rem">
+          <button type="button" id="btn-print-report" class="btn btn-secondary">Imprimer le rapport</button>
+          <button type="button" class="help-trigger" data-help-id="dash-print" aria-label="Aide : impression rapport" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        </div>
       </div>
 
       <div class="dashboard-period-grid">
         <div class="card">
-          <h2 class="heading-with-help">Détail par mois (<span id="dash-year-label"></span>)
+          <h2 class="heading-with-help">Détail — <span id="dash-period-label">—</span>
             <button type="button" class="help-trigger" data-help-id="dash-monthly-table" aria-label="Aide : tableau mensuel" aria-expanded="false"><span aria-hidden="true">?</span></button>
           </h2>
-          <p class="table-hint">Cliquez sur une ligne de mois pour la sélectionner rapidement.</p>
+          <p class="table-hint" id="dash-table-hint">Cliquez sur une ligne pour sélectionner un mois.</p>
           <table class="data-table" id="monthly-table">
             <thead>
               <tr>
                 <th>Mois</th>
+                <th>Statut</th>
                 <th class="num">Attendu</th>
                 <th class="num">Reçu</th>
                 <th class="num">Différence</th>
@@ -95,10 +93,10 @@
         </div>
 
         <div class="card card-dashboard-payments">
-          <h2 class="heading-with-help">Virements du mois sélectionné
+          <h2 class="heading-with-help">Virements — <span id="dash-payments-label">—</span>
             <button type="button" class="help-trigger" data-help-id="dash-payments-month" aria-label="Aide : virements du mois" aria-expanded="false"><span aria-hidden="true">?</span></button>
           </h2>
-          <p class="field-hint table-hint">Aperçu des encaissements du mois choisi ci-dessus.</p>
+          <p class="field-hint table-hint" id="dash-payments-hint">Encaissements de la période affichée.</p>
           <p class="table-scroll-hint">← Faites glisser le tableau horizontalement pour voir toutes les colonnes →</p>
           <div class="payments-table-scroll payments-table-scroll--dashboard">
             <table class="data-table data-table-payments data-table-dashboard-payments" id="payments-month-table">
@@ -119,36 +117,58 @@
         </div>
       </div>
 
-      <div class="grid-2">
-        <div class="card">
-          <h2 class="heading-with-help">Graphique — Attendu vs reçu
+      <div class="dashboard-viz-grid no-print">
+        <div class="card dashboard-heatmap-card">
+          <h2 class="heading-with-help">Heatmap — Statuts par mois
+            <button type="button" class="help-trigger" data-help-id="dash-kpis" aria-label="Aide : heatmap" aria-expanded="false"><span aria-hidden="true">?</span></button>
+          </h2>
+          <p class="field-hint table-hint">Survolez un mois pour le statut. Clic = détail virements (la période reste active en mode plage).</p>
+          <div id="dashboard-heatmap" class="dashboard-heatmap"></div>
+        </div>
+        <div class="card dashboard-chart-months-card">
+          <h2 class="heading-with-help">Graphique — <span id="dash-chart-stack-label">Reçu vs reste dû</span>
             <button type="button" class="help-trigger" data-help-id="dash-charts" aria-label="Aide : graphiques" aria-expanded="false"><span aria-hidden="true">?</span></button>
           </h2>
-          <div class="chart-wrap"><canvas id="chart-monthly"></canvas></div>
-        </div>
-        <div class="card">
-          <h2>Graphique — Solde cumulé</h2>
-          <p class="field-hint">Évolution de la dette ou de l'avance du locataire mois après mois.</p>
-          <div class="chart-wrap"><canvas id="chart-balance"></canvas></div>
+          <div class="chart-wrap chart-wrap--compact"><canvas id="chart-monthly-stack"></canvas></div>
         </div>
       </div>
 
-      <div class="card">
-        <h2 class="heading-with-help">Récapitulatif par année
-          <button type="button" class="help-trigger" data-help-id="dash-yearly" aria-label="Aide : récapitulatif annuel" aria-expanded="false"><span aria-hidden="true">?</span></button>
-        </h2>
-        <table class="data-table" id="yearly-table">
-          <thead>
-            <tr>
-              <th>Année</th>
-              <th class="num">Attendu</th>
-              <th class="num">Reçu</th>
-              <th class="num">Différence</th>
-              <th class="num">Solde cumulé</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+      <div class="dashboard-viz-grid-2 no-print">
+        <div class="card">
+          <div class="card-header-row">
+            <h2 class="heading-with-help">Graphique — Année <span id="dash-chart-year-label">—</span>
+              <button type="button" class="help-trigger" data-help-id="dash-charts" aria-label="Aide : graphique annuel" aria-expanded="false"><span aria-hidden="true">?</span></button>
+            </h2>
+            <div class="btn-group">
+              <button type="button" id="btn-chart-year-prev" class="btn btn-secondary btn-sm" aria-label="Année précédente">‹</button>
+              <button type="button" id="btn-chart-year-next" class="btn btn-secondary btn-sm" aria-label="Année suivante">›</button>
+            </div>
+          </div>
+          <div class="chart-wrap chart-wrap--compact"><canvas id="chart-yearly-bar"></canvas></div>
+        </div>
+        <div class="card">
+          <h2 class="heading-with-help">Récapitulatif par année
+            <button type="button" class="help-trigger" data-help-id="dash-yearly" aria-label="Aide : récapitulatif annuel" aria-expanded="false"><span aria-hidden="true">?</span></button>
+          </h2>
+          <table class="data-table" id="yearly-table">
+            <thead>
+              <tr>
+                <th>Année</th>
+                <th class="num">Attendu</th>
+                <th class="num">Reçu</th>
+                <th class="num">Différence</th>
+                <th class="num">Solde cumulé</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card no-print dashboard-balance-card">
+        <h2>Graphique — <span id="dash-chart-balance-label">Solde cumulé</span></h2>
+        <p class="field-hint" id="dash-chart-balance-hint">Évolution du solde sur la période affichée.</p>
+        <div class="chart-wrap"><canvas id="chart-balance"></canvas></div>
       </div>
     </section>
 
@@ -348,10 +368,11 @@
     <!-- Quittance -->
     <section id="panel-quittance" class="panel" role="tabpanel" aria-labelledby="tab-quittance">
       <div class="card no-print">
-        <h2 class="heading-with-help">Quittance — période du tableau de bord
+        <h2 class="heading-with-help">Quittance — <span id="quittance-period-label">—</span>
           <button type="button" class="help-trigger" data-help-id="quittance-period" aria-label="Aide : période de la quittance" aria-expanded="false"><span aria-hidden="true">?</span></button>
         </h2>
-        <p class="field-hint">Le mois sélectionné dans le tableau de bord est utilisé ici.</p>
+        <p class="field-hint">Sélectionnez le mois ou la période via la barre en haut de page (timeline incluse).</p>
+        <p id="quittance-preview-hint" class="field-hint hidden"></p>
         <div class="template-mode-bar" style="flex-wrap:wrap;gap:0.75rem;margin-bottom:0.75rem">
           <div class="form-row" style="margin:0;min-width:200px">
             <label for="sel-quittance-template">Modèle</label>
@@ -376,6 +397,7 @@
           <button type="button" id="btn-export-pdf" class="btn" title="Télécharger un fichier PDF">PDF</button>
           <button type="button" id="btn-export-docx" class="btn" title="Télécharger un fichier Word">DOCX</button>
           <button type="button" id="btn-export-html" class="btn btn-secondary" title="Télécharger une page web">HTML</button>
+          <button type="button" id="btn-export-batch" class="btn btn-secondary" title="Exporter plusieurs quittances sur une plage de dates">Exporter plusieurs…</button>
           <button type="button" class="help-trigger" data-help-id="quittance-export" aria-label="Aide : export quittance" aria-expanded="false"><span aria-hidden="true">?</span></button>
         </div>
       </div>
@@ -401,10 +423,11 @@
     <!-- Mail -->
     <section id="panel-mail" class="panel" role="tabpanel" aria-labelledby="tab-mail">
       <div class="card no-print">
-        <h2 class="heading-with-help">Mail — période du tableau de bord
+        <h2 class="heading-with-help">Mail — <span id="mail-period-label">—</span>
           <button type="button" class="help-trigger" data-help-id="mail-period" aria-label="Aide : mail du mois" aria-expanded="false"><span aria-hidden="true">?</span></button>
         </h2>
-        <p class="field-hint">Objet et corps du mail pour le mois sélectionné dans le tableau de bord.</p>
+        <p class="field-hint">Sélectionnez le mois ou la période via la barre en haut de page (timeline incluse).</p>
+        <p id="mail-preview-hint" class="field-hint hidden"></p>
         <div class="template-mode-bar" style="flex-wrap:wrap;gap:0.75rem;margin-bottom:0.75rem">
           <div class="form-row" style="margin:0;min-width:200px">
             <label for="sel-mail-template">Modèle</label>
@@ -540,7 +563,7 @@
             <h3>2.4 — Historique des loyers</h3>
             <p>Indiquez le montant actuel du loyer et la date à partir de laquelle il s'applique. Si le loyer a changé dans le passé, ajoutez un palier pour chaque période.</p>
             <h3>2.5 — Émetteurs (pour l'import bancaire)</h3>
-            <p>Si vous importez un relevé CSV, configurez le nom du locataire et les mots à repérer dans le libellé bancaire (ex. <em>MARYSE VALLEE</em>).</p>
+            <p>Si vous importez un relevé CSV, configurez le nom du locataire et les mots à repérer dans le libellé bancaire (ex. <em>Jean Dupont</em>).</p>
             <h3>2.6 — Modèles quittance et mail</h3>
             <p>Dans <strong>Paramètres → Modèles</strong>, gérez vos modèles. Le <strong>modèle principal</strong> (<code>principal</code>) est toujours présent, en <strong>lecture seule</strong> : aperçu et export uniquement. Pour le personnaliser, utilisez <strong>+ Nouveau modèle</strong> ou <strong>Importer modèle</strong> (crée un nouveau modèle, ne remplace jamais le principal). L'édition du contenu se fait dans les onglets <strong>Quittance</strong> et <strong>Mail</strong> (mode « Édition du modèle »). Le panneau <strong>Mots-clés</strong> propose les mêmes variables pour quittance et mail (<code>{{paiement}}</code>, <code>{{bailleur.name}}</code>, etc.).</p>
             <h3>2.7 — Destinataires mail (optionnel)</h3>
@@ -579,11 +602,12 @@
             <h2><span class="help-step-badge">Étape 4</span> Consulter les données</h2>
             <p>L'onglet <strong>Tableau de bord</strong> centralise la vue d'ensemble.</p>
             <ul>
-              <li>Choisissez une <strong>année</strong> et un <strong>mois</strong> en haut.</li>
-              <li>Le tableau « Détail par mois » compare le loyer <strong>attendu</strong>, le montant <strong>reçu</strong>, la <strong>différence</strong> et le <strong>solde cumulé</strong>.</li>
-              <li>Cliquez sur une ligne de mois pour la sélectionner rapidement.</li>
+              <li>Utilisez la <strong>barre de période</strong> sous le menu : sélecteur de mois, timeline colorée, ou « Afficher une période » pour une plage.</li>
+              <li>Les <strong>indicateurs</strong> résument le solde à date, le recouvrement et les mois problématiques.</li>
+              <li>Le tableau « Détail par mois » affiche un <strong>statut</strong> (payé, partiel, impayé…) et un éventuel retard (+X j).</li>
+              <li>La <strong>heatmap</strong> colore chaque mois — cliquez une cellule pour la sélectionner.</li>
               <li>Les graphiques et le récapitulatif annuel reprennent les mêmes chiffres sous forme visuelle.</li>
-              <li>La liste « Virements du mois sélectionné » détaille les encaissements du mois choisi.</li>
+              <li><strong>Imprimer le rapport</strong> pour une vue papier (tableaux et heatmap).</li>
             </ul>
             <div class="help-actions">
               <button type="button" class="btn btn-secondary help-goto" data-panel="panel-dashboard">Ouvrir Tableau de bord</button>
@@ -593,14 +617,15 @@
           <article id="help-step5" class="card help-article" tabindex="-1">
             <h2><span class="help-step-badge">Étape 5</span> Quittance et export</h2>
             <ol>
-              <li>Sélectionnez le bon mois dans le <strong>Tableau de bord</strong>.</li>
-              <li>Ouvrez l'onglet <strong>Quittance</strong> : l'aperçu se remplit automatiquement à partir du modèle choisi.</li>
+              <li>Choisissez le mois dans l'onglet <strong>Quittance</strong> (ou Tableau de bord / Mail — même sélecteur).</li>
+              <li>L'aperçu se remplit automatiquement à partir du modèle choisi.</li>
               <li>Pour modifier le modèle : basculez en <strong>Édition du modèle</strong> (modèles personnalisés uniquement — le principal est en lecture seule).</li>
               <li>Exportez :
                 <ul>
                   <li><strong>PDF</strong> — le plus courant pour envoyer ou imprimer ;</li>
                   <li><strong>DOCX</strong> — pour modifier dans Word ;</li>
-                  <li><strong>HTML</strong> — page web autonome.</li>
+                  <li><strong>HTML</strong> — page web autonome ;</li>
+                  <li><strong>Exporter plusieurs…</strong> — un seul fichier PDF, DOCX ou HTML pour une plage de mois.</li>
                 </ul>
               </li>
             </ol>
@@ -615,8 +640,8 @@
           <article id="help-step6" class="card help-article" tabindex="-1">
             <h2><span class="help-step-badge">Étape 6</span> Mail et envoi</h2>
             <ol>
-              <li>Sélectionnez le mois dans le <strong>Tableau de bord</strong>.</li>
-              <li>Ouvrez l'onglet <strong>Mail</strong> : objet et corps s'affichent pour le modèle sélectionné.</li>
+              <li>Choisissez le mois dans l'onglet <strong>Mail</strong> (sélecteur partagé avec Tableau de bord et Quittance).</li>
+              <li>Objet et corps s'affichent pour le modèle sélectionné.</li>
               <li>Pour personnaliser le modèle : <strong>Nouveau modèle…</strong> ou <strong>Importer modèle</strong> (.json), puis mode <strong>Édition du modèle</strong>.</li>
               <li>Utilisez le panneau <strong>Mots-clés</strong> (identique à la quittance) pour insérer <code>{{paiement}}</code>, adresses, etc.</li>
               <li>Envoyez via <strong>EML + PDF</strong> (fichier .eml avec quittance jointe) ou <strong>mailto</strong> (attachez le PDF manuellement).</li>
@@ -636,25 +661,25 @@
             <ol>
               <li>Clonez ou uploadez le projet sur le serveur.</li>
               <li>Copiez <code>config.example.php</code> en <code>config.php</code> (optionnel : <code>api_key</code> en production).</li>
-              <li>Exécutez <code>./deploy/scripts/fix-permissions.sh</code> pour les droits sur <code>data/</code> et <code>templates/</code>.</li>
+              <li>Vérifiez que PHP peut écrire dans <code>data/</code> et <code>templates/</code> (droits 755 ou 775 dans le panneau hébergeur).</li>
               <li>Ouvrez l'application via son URL (<code>https://votre-domaine.fr/</code>) — pas en double-cliquant sur le fichier.</li>
             </ol>
             <p class="field-hint">Le badge affiche <strong>Enregistré</strong> lorsque <code>api.php</code> répond correctement.</p>
             <h3>Test en local</h3>
-            <p><code>./deploy/debian/install-dev.sh</code> ou :</p>
-            <pre class="help-folder-tree">php -S localhost:8080</pre>
-            <p>Puis ouvrez <code>http://localhost:8080/</code>.</p>
+            <p>Dans le dossier du projet : <code>php -S localhost:8080</code> puis ouvrez <code>http://localhost:8080/</code>. Aucun script ni dossier <code>deploy/</code> n'est nécessaire.</p>
             <h3>Jeu de démonstration</h3>
             <p><code>cp docs/demo/loyer-data.demo.json data/loyer-data.json</code> — voir <code>docs/demo/README.md</code>.</p>
+            <h3>HTTPS et mot de passe</h3>
+            <p>Sur une URL publique, activez <strong>HTTPS</strong> et un <strong>mot de passe devant le site</strong> (outil « protection de répertoire » de votre hébergeur, ou configuration nginx/Apache). Complétez avec une <strong>clé API</strong> dans <code>config.php</code>. Guide complet : <code>docs/SECURITE.md</code> et <code>docs/HEBERGEMENT-MUTUALISE.md</code> (mutualisé sans terminal).</p>
             <div class="help-callout">
-              <strong>Sécurité :</strong> ne partagez pas l'URL publiquement sans <code>api_key</code> dans <code>config.php</code>. Exportez régulièrement une copie via Paramètres → Données.
+              <strong>Sécurité :</strong> trois couches recommandées — HTTPS, mot de passe site, clé API. Pas de comptes ni base de données. Exportez régulièrement une copie via Paramètres → Données.
             </div>
           </article>
 
           <article id="help-troubleshoot" class="card help-article" tabindex="-1">
             <h2>Dépannage</h2>
             <h3>Les modèles ne s'enregistrent pas</h3>
-            <p>Vérifiez nginx/php-fpm, exécutez <code>./deploy/scripts/fix-permissions.sh</code>, et que le badge affiche <strong>Enregistré</strong>. Test : <code>curl http://localhost/api.php?action=status</code>.</p>
+            <p>Vérifiez nginx/php-fpm ou Apache, les droits d'écriture sur <code>templates/</code>, et que le badge affiche <strong>Enregistré</strong>. Test : <code>curl https://votre-site/api.php?action=status</code>.</p>
             <h3>Impossible de modifier le modèle principal</h3>
             <p>C'est normal : le modèle <strong>principal</strong> est en lecture seule. Dupliquez-le ou importez un fichier pour créer une variante personnalisée.</p>
             <h3>Le badge indique « Serveur indisponible »</h3>
@@ -672,6 +697,44 @@
       </div>
     </section>
   </main>
+
+  <!-- Modal export quittances groupé -->
+  <div id="modal-batch-quittance" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-batch-quittance-title">
+    <div class="modal-backdrop" data-batch-modal-close></div>
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 id="modal-batch-quittance-title">Exporter plusieurs quittances</h2>
+        <button type="button" class="help-trigger" data-help-id="batch-quittance-export" aria-label="Aide : export groupé" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        <button type="button" class="modal-close" data-batch-modal-close aria-label="Fermer">×</button>
+      </div>
+      <p class="field-hint">Génère un fichier unique contenant une quittance par mois dans la plage choisie (modèle sélectionné dans l'onglet).</p>
+      <div class="grid-2">
+        <div class="form-row">
+          <label for="batch-from-month">Du — mois</label>
+          <select id="batch-from-month"></select>
+        </div>
+        <div class="form-row">
+          <label for="batch-from-year">Du — année</label>
+          <select id="batch-from-year"></select>
+        </div>
+        <div class="form-row">
+          <label for="batch-to-month">Au — mois</label>
+          <select id="batch-to-month"></select>
+        </div>
+        <div class="form-row">
+          <label for="batch-to-year">Au — année</label>
+          <select id="batch-to-year"></select>
+        </div>
+      </div>
+      <p id="batch-export-summary" class="field-hint"></p>
+      <div class="btn-group modal-actions">
+        <button type="button" id="btn-batch-export-pdf" class="btn">PDF</button>
+        <button type="button" id="btn-batch-export-docx" class="btn btn-secondary">DOCX</button>
+        <button type="button" id="btn-batch-export-html" class="btn btn-secondary">HTML</button>
+        <button type="button" class="btn btn-secondary" data-batch-modal-close>Annuler</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Modal import CSV -->
   <div id="modal-csv-import" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-csv-import-title">
@@ -809,6 +872,7 @@
   <script src="js/notify.js"></script>
   <script src="js/editor.js"></script>
   <script src="js/charts.js"></script>
+  <script src="js/period-picker.js"></script>
   <script src="js/quittance.js"></script>
   <script src="js/export.js"></script>
   <script src="js/mail.js"></script>

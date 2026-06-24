@@ -4,6 +4,7 @@
 (function (global) {
   'use strict';
 
+  /** template name from filename. */
   function templateNameFromFilename(filename) {
     var name = String(filename || '').replace(/^.*[\\/]/, '');
     name = name.replace(/\.[^.]+$/, '');
@@ -11,6 +12,7 @@
     return name.trim() || 'Modèle importé';
   }
 
+  /** sanitize filename. */
   function sanitizeFilename(name) {
     return String(name || 'modele')
       .normalize('NFD')
@@ -20,6 +22,7 @@
       .slice(0, 80) || 'modele';
   }
 
+  /** download text. */
   function downloadText(content, filename, mime) {
     var blob = new Blob([content], { type: mime || 'text/plain;charset=utf-8' });
     var url = URL.createObjectURL(blob);
@@ -30,10 +33,12 @@
     URL.revokeObjectURL(url);
   }
 
+  /** Exporte export quittance template. */
   function exportQuittanceTemplate(displayName, html) {
     downloadText(html || '', sanitizeFilename(displayName) + '-quittance.html', 'text/html;charset=utf-8');
   }
 
+  /** Exporte export mail template. */
   function exportMailTemplate(displayName, subject, body) {
     var payload = JSON.stringify(
       {
@@ -48,10 +53,12 @@
     downloadText(payload, sanitizeFilename(displayName) + '-mail.json', 'application/json;charset=utf-8');
   }
 
+  /** Valide HTML importé comme nouveau modèle quittance. */
   function parseQuittanceImport(text) {
     return { body: text || '', subject: null };
   }
 
+  /** Valide JSON importé {subject, body} pour modèle mail. */
   function parseMailImport(text, filename) {
     var trimmed = String(text || '').trim();
     var lower = String(filename || '').toLowerCase();
@@ -68,6 +75,7 @@
     return { body: text || '', subject: null };
   }
 
+  /** read template file. */
   function readTemplateFile(type, file) {
     return new Promise(function (resolve, reject) {
       if (!file) {

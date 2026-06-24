@@ -29,7 +29,12 @@
     { key: '{{periodeNbMois}}', label: 'Nombre de mois (plage)' },
     { key: '{{texteQuittancesJointes}}', label: 'Phrase pièce jointe (mail)' },
     { key: '{{paiement}}', label: 'Montant reçu (formaté)' },
-    { key: '{{attendu}}', label: 'Montant attendu (formaté)' },
+    { key: '{{loyer}}', label: 'Loyer hors charges dû (formaté)' },
+    { key: '{{charges}}', label: 'Charges locatives dues (formaté)' },
+    { key: '{{totalAttendu}}', label: 'Total dû loyer + charges (formaté)' },
+    { key: '{{montantTotal}}', label: 'Alias total dû (formaté)' },
+    { key: '{{texteMontants}}', label: 'Texte « loyer X + charges Y = total Z »' },
+    { key: '{{attendu}}', label: 'Montant total attendu (formaté)' },
     { key: '{{date}}', label: 'Début de période' },
     { key: '{{datePlusUnMois}}', label: 'Fin de période' },
     { key: '{{listePaiements}}', label: 'Liste des virements (HTML/texte)' },
@@ -45,6 +50,7 @@
     mail: SHARED_PLACEHOLDER_ITEMS
   };
 
+  /** Échappe escape html. */
   function escapeHtml(str) {
     return String(str || '')
       .replace(/&/g, '&amp;')
@@ -53,6 +59,7 @@
       .replace(/"/g, '&quot;');
   }
 
+  /** Lit une propriété pointée obj.key dans le contexte. */
   function getNestedValue(data, keyPath) {
     var parts = keyPath.split('.');
     var val = data;
@@ -62,6 +69,7 @@
     return val;
   }
 
+  /** resolve template value. */
   function resolveTemplateValue(data, key) {
     var val = getNestedValue(data, key);
     if ((key === 'bailleur' || key === 'locataire') && val && typeof val === 'object' && val.name !== undefined) {
@@ -70,6 +78,7 @@
     return val;
   }
 
+  /** fill template. */
   function fillTemplate(template, data) {
     if (!template) return '';
     var html = template.replace(/\{\{signatureHtml\}\}/g, data.signatureHtml || '');
@@ -81,29 +90,24 @@
     });
   }
 
+  /** resolve default id. */
   function resolveDefaultId(type, settings) {
     if (global.LoyerTemplateManager && settings) {
       return global.LoyerTemplateManager.getDefaultId(settings, type);
     }
-    return global.LoyerTemplateManager ? global.LoyerTemplateManager.LEGACY_ID : 'principal';
+    return global.LoyerTemplateManager ? global.LoyerTemplateManager.COMPLET_ID : 'complet';
   }
 
-  function getDefaultContent(type, part) {
-    part = part || 'body';
-    if (global.LoyerTemplateManager) {
-      return global.LoyerTemplateManager.getDefaultContent(type, part);
-    }
-    return '';
-  }
-
+  /** Charge load template. */
   function loadTemplate(type, id, part) {
     part = part || 'body';
-    if (global.LoyerTemplateManager) {
-      return global.LoyerTemplateManager.load(type, id, part);
+    if (!global.LoyerTemplateManager) {
+      return Promise.reject(new Error('Gestionnaire de modèles indisponible.'));
     }
-    return Promise.resolve(getDefaultContent(type, part));
+    return global.LoyerTemplateManager.load(type, id, part);
   }
 
+  /** Persiste contenu modèle via template-io. */
   function saveTemplate(type, id, content, subject) {
     if (!global.LoyerTemplateManager) {
       return Promise.reject(new Error('Gestionnaire de modèles indisponible.'));
@@ -114,19 +118,27 @@
     return global.LoyerTemplateManager.saveQuittance(id, content);
   }
 
+  /** reset template. */
   function resetTemplate(type, id) {
-    var content = getDefaultContent(type, 'body');
+    var sourceId = global.LoyerTemplateManager ? global.LoyerTemplateManager.COMPLET_ID : 'complet';
     if (type === 'mail') {
-      var subject = getDefaultContent('mail', 'subject');
-      return saveTemplate('mail', id, content, subject).then(function () {
-        return { body: content, subject: subject };
+      return Promise.all([
+        loadTemplate('mail', sourceId, 'body'),
+        loadTemplate('mail', sourceId, 'subject')
+      ]).then(function (parts) {
+        return saveTemplate('mail', id, parts[0], parts[1]).then(function () {
+          return { body: parts[0], subject: parts[1] };
+        });
       });
     }
-    return saveTemplate('quittance', id, content).then(function () {
-      return content;
+    return loadTemplate(type, sourceId, 'body').then(function (content) {
+      return saveTemplate(type, id, content).then(function () {
+        return content;
+      });
     });
   }
 
+  /** Construit build mail data. */
   function buildMailData(data, year, month, periodCtx) {
     var settings = data.settings || data;
     periodCtx = periodCtx || {
@@ -185,6 +197,7 @@
     return base;
   }
 
+  /** Charge load filled mail. */
   function loadFilledMail(data, year, month, mailId, periodCtx) {
     var settings = data.settings || data;
     mailId = mailId || resolveDefaultId('mail', settings);
@@ -202,6 +215,7 @@
     );
   }
 
+  /** html to plain text. */
   function htmlToPlainText(html) {
     if (!html) return '';
     var div = document.createElement('div');
@@ -261,6 +275,7 @@
       .trim();
   }
 
+  /** Catalogue complet mots-clés pour sidebar. */
   function getPlaceholderCatalog(type) {
     if (type === 'quittance' || type === 'mail') {
       return SHARED_PLACEHOLDER_ITEMS.slice();
@@ -273,7 +288,6 @@
     loadTemplate: loadTemplate,
     saveTemplate: saveTemplate,
     resetTemplate: resetTemplate,
-    getDefaultContent: getDefaultContent,
     resolveDefaultId: resolveDefaultId,
     buildMailData: buildMailData,
     loadFilledMail: loadFilledMail,

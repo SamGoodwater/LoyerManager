@@ -1,64 +1,77 @@
 # Loyer Manager — guide développeurs
 
-Application **vanilla** (HTML + JS + PHP), **sans build**, **sans framework**.
+Application **vanilla** (HTML + JS + PHP), **sans build**, **sans framework**. Version **1.0.0**.
 
 ## Arborescence
 
 ```
 LoyerManager/
-├── index.html          # Point d'entrée ; ordre des scripts important
-├── api.php             # Persistance : data/ + templates/
+├── index.html          # App principale (après auth)
+├── login.html          # Connexion / création de compte
+├── api.php             # Routeur HTTP → php/handlers/
+├── php/
+│   ├── bootstrap.php, http.php, auth.php, oauth.php, mail-send.php, smtp.php
+│   ├── handlers/       # system, data, templates, auth-api, oauth-api, mail-api, activity-api
+│   └── migrations/
+├── vendor/             # Dépendances PHP (versionnées)
 ├── js/
-│   ├── server-api.js   # Client HTTP api.php (avant store.js)
-│   ├── store.js        # État + sauvegarde
-│   ├── template-manager.js
-│   ├── templates.js    # Remplissage {{mots-clés}}
-│   ├── main.js         # UI
-│   └── …
-├── data/loyer-data.json      # gitignored
-└── templates/quittances|mails/  # gitignored (sauf *.example.*)
+│   ├── version.js, auth.js, server-api.js, store.js, help.js
+│   ├── app/            # core.js, period.js, shell.js (LoyerApp)
+│   ├── ui/             # dashboard, payments, settings, templates-ui, quittance, mail
+│   └── main.js         # Init (~110 lignes)
+├── data/loyer-data.json      # gitignored — métier JSON
+├── data/loyer.db             # gitignored — compte, OAuth mail, historique
+├── builtin-templates/        # Modèles complet/court versionnés (bootstrap PHP)
+└── templates/quittances|mails/
 ```
 
-## Persistance (priorité)
+**Architecture détaillée :** [`docs/ARCHITECTURE.md`](ARCHITECTURE.md)
 
-1. **Serveur** : `api.php` → `data/loyer-data.json` + `templates/`
-2. **Cache** : `localStorage` si serveur injoignable (lecture seule disque)
+## Persistance
+
+1. **Données métier** : `api.php` → `data/loyer-data.json` + `templates/`
+2. **Compte, OAuth mail, SMTP, historique** : `data/loyer.db` (SQLite)
+3. **Cache navigateur** : `localStorage` miroir des données si le serveur est temporairement injoignable (**lecture seule** — toute écriture passe par `api.php`)
 
 Pas de File System Access API.
 
 ## Modèles
 
-- Registre JSON : `settings.templates` (liste + `defaultQuittanceId` / `defaultMailId`)
+- Registre JSON : `settings.templates`
 - Fichiers : `templates/quittances/{id}.html`, `templates/mails/{id}.html` + `{id}-subject.txt`
-- **`principal`** : modèle par défaut, **non modifiable** (403 API, UI lecture seule)
-- Import fichier : **crée** un nouveau modèle (ne remplace jamais `principal`)
-- Mots-clés : catalogue partagé dans `templates.js` (`SHARED_PLACEHOLDER_ITEMS`)
+- **`complet`** et **`court`** : modèles de base, lecture seule (403 API si modification/suppression)
+- Legacy **`principal`** : migré automatiquement vers `complet`
+- Import : **crée** un nouveau modèle (ne remplace jamais les modèles de base)
+- Embarqués versionnés : `builtin-templates/` (copiés au bootstrap PHP)
+
+## Commentaires code
+
+- Chaque **fonction** (JS et PHP) doit avoir un commentaire : rôle, paramètres clés, effets de bord.
+- Les blocs **métier non évidents** (calculs loyer, doublons CSV, flux OAuth auth vs mail) méritent un paragraphe inline.
+- Script de maintenance : `_analysis/add_comments.py` (ajoute ou complète les docblocks).
+- Fichiers prioritaires pour relecture manuelle : `store.js`, `calculations.js`, `oauth.php`, `mail-send.php`.
 
 ## Conventions code
 
 - IIFE : `(function (global) { … })(window)`
 - UI et aide en **français**
 - Diffs minimaux ; ne pas modifier `lib/` ni `_analysis/`
-- Gitignore : données utilisateur, `config.php`, templates personnalisés
+- Exporter les fonctions UI sur `LoyerApp` (voir `js/ui/*.js`)
 
-## Déploiement local
+## Déploiement
 
 ```bash
-php -S localhost:8080
+php -S localhost:8080   # dev
 ```
 
-Optionnel : dossier [`deploy/`](../deploy/README.md) (scripts dev, nginx Debian).
-
-Production mutualisée : [`docs/HEBERGEMENT-MUTUALISE.md`](HEBERGEMENT-MUTUALISE.md) — **sans scripts**.
-
-Guides utilisateur : [`docs/SECURITE.md`](SECURITE.md).
+Production : [`deploy/README.md`](../deploy/README.md) ou [`docs/HEBERGEMENT-MUTUALISE.md`](HEBERGEMENT-MUTUALISE.md)
 
 ## Priorités arbitrage
 
-P0 sauvegarde fiable + calculs → P1 quittance/mail/CSV → P2 modèles/aide → P3 scripts deploy
+P0 sauvegarde + calculs → P1 quittance/mail/CSV → P2 modèles/aide → P3 déploiement
 
-## Période et exports
+## Période, mail, historique
 
-- **Période partagée** : barre `#period-bar` + [`js/period-picker.js`](../js/period-picker.js) — mois unique (Quittance/Mail) ou plage optionnelle (Tableau de bord) ; timeline scrollable du début de bail à aujourd'hui.
-- **Calculs dashboard** : `getMonthStatus`, `computeDashboardKpis`, `listMonthsInRange` dans `calculations.js`.
-- **Export groupé quittances** : `LoyerQuittance.buildBatchHtml` + `LoyerExport.exportPdfFromHtml` / `exportDocxFromHtml` / `exportHtmlFromHtml` — une section `.quittance-export-page` par mois, sauts de page CSS.
+- Barre `#period-bar` + `js/period-picker.js` — mois unique ou plage
+- Mail : `send-mail`, `save-mail-draft` → [`docs/OAUTH-MAIL.md`](OAUTH-MAIL.md)
+- Historique : `activity-log` + `js/activity-log.js`

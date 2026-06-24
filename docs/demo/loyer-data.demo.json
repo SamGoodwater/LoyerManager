@@ -10,13 +10,14 @@
         "patterns": [
           "CLAIRE MARTIN",
           "MME CLAIRE MARTIN",
-          "VIR LOYER MARTIN"
+          "VIR LOYER MARTIN",
+          "LOYER MARTIN"
         ]
       }
     ],
     "priceHistory": [
-      { "from": "2024-01-01", "amount": 650 },
-      { "from": "2025-01-01", "amount": 680 }
+      { "from": "2024-01-01", "amount": 580, "charges": 70 },
+      { "from": "2025-01-01", "amount": 600, "charges": 80 }
     ],
     "bailleur": {
       "name": "SCI Les Tilleuls",
@@ -38,24 +39,226 @@
       "signature": "Cordialement,\nSCI Les Tilleuls"
     },
     "templates": {
-      "defaultQuittanceId": "principal",
-      "defaultMailId": "principal",
+      "defaultQuittanceId": "complet",
+      "defaultMailId": "complet",
       "quittances": [
-        { "id": "principal", "name": "Modèle principal" }
+        { "id": "complet", "name": "Modèle complet" },
+        { "id": "court", "name": "Modèle court" }
       ],
       "mails": [
-        { "id": "principal", "name": "Modèle principal" }
+        { "id": "complet", "name": "Modèle complet" },
+        { "id": "court", "name": "Modèle court" }
       ]
     }
   },
   "payments": [
     {
-      "id": "p_demo_202601",
-      "date": "2026-01-06",
+      "id": "p_demo_202401",
+      "date": "2024-01-04",
+      "emitter": "Mme Claire Martin",
+      "amount": 650,
+      "bankLabel": "VIR SEPA CLAIRE MARTIN LOYER JANV 2024 2401112233445566",
+      "bankRef": "2401112233445566",
+      "status": "importé",
+      "comment": "Premier loyer (580 € + 70 € charges)"
+    },
+    {
+      "id": "p_demo_202402",
+      "date": "2024-02-05",
+      "emitter": "Mme Claire Martin",
+      "amount": 650,
+      "bankLabel": "VIR SEPA MME CLAIRE MARTIN LOYER FEV 2024 2402112233445567",
+      "bankRef": "2402112233445567",
+      "status": "importé",
+      "comment": ""
+    },
+    {
+      "id": "p_demo_202403",
+      "date": "2024-03-05",
+      "emitter": "Mme Claire Martin",
+      "amount": 650,
+      "bankLabel": "",
+      "bankRef": "",
+      "status": "manuel",
+      "comment": "Saisie manuelle (encaissement reporté sans relevé)"
+    },
+    {
+      "id": "p_demo_202404",
+      "date": "2024-04-04",
+      "emitter": "Mme Claire Martin",
+      "amount": 650,
+      "bankLabel": "VIR SEPA CLAIRE MARTIN LOYER AVR 2024 2404112233445568",
+      "bankRef": "2404112233445568",
+      "status": "importé",
+      "comment": ""
+    },
+    {
+      "id": "p_demo_202405",
+      "date": "2024-05-03",
+      "emitter": "Mme Claire Martin",
+      "amount": 660,
+      "bankLabel": "VIR SEPA MME CLAIRE MARTIN LOYER MAI 2024 2405112233445569",
+      "bankRef": "2405112233445569",
+      "status": "importé",
+      "comment": "Léger trop-perçu (+10 €)"
+    },
+    {
+      "id": "p_demo_202406",
+      "date": "2024-06-05",
+      "emitter": "Mme Claire Martin",
+      "amount": 650,
+      "bankLabel": "VIR LOYER MARTIN JUIN 2024 2406112233445570",
+      "bankRef": "2406112233445570",
+      "status": "importé",
+      "comment": ""
+    },
+    {
+      "id": "p_demo_202407",
+      "date": "2024-07-08",
+      "emitter": "Mme Claire Martin",
+      "amount": 650,
+      "bankLabel": "VIR SEPA CLAIRE MARTIN LOYER JUIL 2024 2407112233445571",
+      "bankRef": "2407112233445571",
+      "status": "importé",
+      "comment": "Paiement tardif (reçu le 8, échéance le 5)"
+    },
+    {
+      "id": "p_demo_202408",
+      "date": "2024-08-06",
+      "emitter": "Mme Claire Martin",
+      "amount": 600,
+      "bankLabel": "VIR SEPA MME CLAIRE MARTIN LOYER AOUT 2024 2408112233445572",
+      "bankRef": "2408112233445572",
+      "status": "importé",
+      "comment": "Sous-paiement (−50 € vs 650 € dus)"
+    },
+    {
+      "id": "p_demo_202410",
+      "date": "2024-10-04",
+      "emitter": "Mme Claire Martin",
+      "amount": 650,
+      "bankLabel": "VIR SEPA CLAIRE MARTIN LOYER OCT 2024 2410112233445574",
+      "bankRef": "2410112233445574",
+      "status": "importé",
+      "comment": ""
+    },
+    {
+      "id": "p_demo_202411",
+      "date": "2024-11-05",
+      "emitter": "Mme Claire Martin",
+      "amount": 650,
+      "bankLabel": "VIR SEPA MME CLAIRE MARTIN LOYER NOV 2024 2411112233445575",
+      "bankRef": "2411112233445575",
+      "status": "importé",
+      "comment": ""
+    },
+    {
+      "id": "p_demo_202412",
+      "date": "2024-12-05",
+      "emitter": "Mme Claire Martin",
+      "amount": 650,
+      "bankLabel": "VIR INST MME CLAIRE MARTIN LOYER DEC 2024 2412112233445576",
+      "bankRef": "2412112233445576",
+      "status": "importé",
+      "comment": "Dernier mois au palier 650 €"
+    },
+    {
+      "id": "p_demo_202501",
+      "date": "2025-01-06",
       "emitter": "Mme Claire Martin",
       "amount": 680,
-      "bankLabel": "VIR SEPA MME CLAIRE MARTIN LOYER JANV 2026 6128112502771877",
-      "bankRef": "6128112502771877",
+      "bankLabel": "VIR SEPA MME CLAIRE MARTIN LOYER JANV 2025 2501112233445577",
+      "bankRef": "2501112233445577",
+      "status": "importé",
+      "comment": "Nouveau palier (600 € + 80 € charges)"
+    },
+    {
+      "id": "p_demo_202502",
+      "date": "2025-02-05",
+      "emitter": "Mme Claire Martin",
+      "amount": 680,
+      "bankLabel": "VIR SEPA CLAIRE MARTIN LOYER FEV 2025 2502112233445578",
+      "bankRef": "2502112233445578",
+      "status": "importé",
+      "comment": ""
+    },
+    {
+      "id": "p_demo_202503",
+      "date": "2025-03-05",
+      "emitter": "Mme Claire Martin",
+      "amount": 680,
+      "bankLabel": "VIR SEPA MME CLAIRE MARTIN LOYER MARS 2025 2503112233445579",
+      "bankRef": "2503112233445579",
+      "status": "importé",
+      "comment": ""
+    },
+    {
+      "id": "p_demo_202504",
+      "date": "2025-04-04",
+      "emitter": "Mme Claire Martin",
+      "amount": 680,
+      "bankLabel": "VIR SEPA CLAIRE MARTIN LOYER AVR 2025 2504112233445580",
+      "bankRef": "2504112233445580",
+      "status": "importé",
+      "comment": ""
+    },
+    {
+      "id": "p_demo_202505",
+      "date": "2025-05-05",
+      "emitter": "Mme Claire Martin",
+      "amount": 680,
+      "bankLabel": "VIR SEPA MME CLAIRE MARTIN LOYER MAI 2025 2505112233445581",
+      "bankRef": "2505112233445581",
+      "status": "vérifié",
+      "comment": "Virement contrôlé manuellement"
+    },
+    {
+      "id": "p_demo_202506",
+      "date": "2025-06-03",
+      "emitter": "Mme Claire Martin",
+      "amount": 680,
+      "bankLabel": "VIR SEPA CLAIRE MARTIN LOYER JUIN 2025 2506112233445582",
+      "bankRef": "2506112233445582",
+      "status": "importé",
+      "comment": ""
+    },
+    {
+      "id": "p_demo_202507",
+      "date": "2025-07-04",
+      "emitter": "Mme Claire Martin",
+      "amount": 680,
+      "bankLabel": "VIR SEPA MME CLAIRE MARTIN LOYER JUIL 2025 2507112233445583",
+      "bankRef": "2507112233445583",
+      "status": "importé",
+      "comment": ""
+    },
+    {
+      "id": "p_demo_202508",
+      "date": "2025-08-21",
+      "emitter": "Mme Claire Martin",
+      "amount": 600,
+      "bankLabel": "VIR SEPA MME CLAIRE MARTIN LOYER AOUT 2025 2508112233445584",
+      "bankRef": "2508112233445584",
+      "status": "importé",
+      "comment": "Sous-paiement (−80 € vs 680 € dus)"
+    },
+    {
+      "id": "p_demo_202510a",
+      "date": "2025-10-07",
+      "emitter": "Mme Claire Martin",
+      "amount": 340,
+      "bankLabel": "VIR LOYER MARTIN ACOMPTE OCT 2025 2510112233445586",
+      "bankRef": "2510112233445586",
+      "status": "importé",
+      "comment": "Acompte — solde à importer via CSV"
+    },
+    {
+      "id": "p_demo_202511",
+      "date": "2025-11-04",
+      "emitter": "Mme Claire Martin",
+      "amount": 680,
+      "bankLabel": "VIR SEPA CLAIRE MARTIN LOYER NOV 2025 2511112233445587",
+      "bankRef": "2511112233445587",
       "status": "importé",
       "comment": ""
     },
@@ -64,50 +267,30 @@
       "date": "2025-12-05",
       "emitter": "Mme Claire Martin",
       "amount": 680,
-      "bankLabel": "VIR INST MME CLAIRE MARTIN LOYER DEC 5363133704368111",
-      "bankRef": "5363133704368111",
+      "bankLabel": "VIR INST MME CLAIRE MARTIN LOYER DEC 2025 2512112233445588",
+      "bankRef": "2512112233445588",
       "status": "importé",
       "comment": ""
     },
     {
-      "id": "p_demo_202511",
-      "date": "2025-11-04",
+      "id": "p_demo_202601",
+      "date": "2026-01-06",
       "emitter": "Mme Claire Martin",
       "amount": 680,
-      "bankLabel": "VIR SEPA CLAIRE MARTIN LOYER NOV 2025 5182131946810418",
-      "bankRef": "5182131946810418",
+      "bankLabel": "VIR INST MME CLAIRE MARTIN LOYER JAN 2026 2601112233445589",
+      "bankRef": "2601112233445589",
       "status": "importé",
-      "comment": ""
+      "comment": "Paiement tardif (reçu le 6, échéance le 5)"
     },
     {
-      "id": "p_demo_202510",
-      "date": "2025-10-07",
+      "id": "p_demo_202602",
+      "date": "2026-02-03",
       "emitter": "Mme Claire Martin",
-      "amount": 340,
-      "bankLabel": "VIR LOYER MARTIN ACOMPTE OCT 10278-20-25280020029762",
-      "bankRef": "10278-20-25280020029762",
+      "amount": 730,
+      "bankLabel": "VIR SEPA MME CLAIRE MARTIN LOYER FEV 2026 2602112233445590",
+      "bankRef": "2602112233445590",
       "status": "importé",
-      "comment": "Acompte — solde en attente"
-    },
-    {
-      "id": "p_demo_202508",
-      "date": "2025-08-21",
-      "emitter": "Mme Claire Martin",
-      "amount": 650,
-      "bankLabel": "VIR SEPA MME CLAIRE MARTIN LOYER AOUT 10278-20-25233010009141",
-      "bankRef": "10278-20-25233010009141",
-      "status": "importé",
-      "comment": ""
-    },
-    {
-      "id": "p_demo_202407",
-      "date": "2024-07-03",
-      "emitter": "Mme Claire Martin",
-      "amount": 650,
-      "bankLabel": "VIR SEPA CLAIRE MARTIN LOYER JUIL 2024 4011223344556677",
-      "bankRef": "4011223344556677",
-      "status": "importé",
-      "comment": ""
+      "comment": "Trop-perçu (+50 €) — rattrape partiellement août 2025"
     }
   ]
 }

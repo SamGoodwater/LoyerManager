@@ -6,14 +6,21 @@
 
   var SYSTEM_ID = '_system';
   var SYSTEM_LABEL = 'Modèle par défaut (système)';
+  /** @deprecated Ancien id — migré vers complet */
   var LEGACY_ID = 'principal';
-  var PROTECTED_NAME = 'Modèle principal';
+  var COMPLET_ID = 'complet';
+  var COURT_ID = 'court';
+  var DEFAULT_PROTECTED_ID = COMPLET_ID;
 
-  var SYSTEM_DEFAULT_KEYS = {
-    quittance: { body: 'templates/quittance.html' },
-    mail: { body: 'templates/mail.html', subject: 'templates/mail-subject.txt' }
+  var PROTECTED_NAMES = {
+    complet: 'Modèle complet',
+    court: 'Modèle court',
+    principal: 'Modèle complet'
   };
 
+  var PROTECTED_IDS = [COMPLET_ID, COURT_ID, LEGACY_ID];
+
+  /** Normalise chaîne en identifiant fichier. */
   function slugify(name) {
     var s = String(name || '')
       .toLowerCase()
@@ -22,78 +29,118 @@
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '')
       .slice(0, 64);
-    if (!s || s === SYSTEM_ID || s === LEGACY_ID) {
+    if (!s || s === SYSTEM_ID || PROTECTED_IDS.indexOf(s) !== -1) {
       s = 'modele-' + Date.now();
     }
     return s;
   }
 
+  /** True si id réservé système (_system). */
   function isSystemId(id) {
     return id === SYSTEM_ID;
   }
 
+  /** True si modèle de base (complet, court ou legacy principal) — lecture seule, non supprimable. */
   function isProtectedId(id) {
-    return id === LEGACY_ID;
+    return PROTECTED_IDS.indexOf(id) !== -1;
   }
 
+  /** Libellé affiché d'un modèle protégé. */
+  function getProtectedName(id) {
+    if (id === LEGACY_ID) {
+      return PROTECTED_NAMES[COMPLET_ID];
+    }
+    return PROTECTED_NAMES[id] || id;
+  }
+
+  /** Renomme l'entrée legacy principal → complet dans une liste registre. */
+  function migratePrincipalInList(list) {
+    var seenComplet = false;
+    var out = [];
+    list.forEach(function (entry) {
+      if (!entry || !entry.id) return;
+      var id = entry.id === LEGACY_ID ? COMPLET_ID : entry.id;
+      if (id === COMPLET_ID) {
+        if (seenComplet) return;
+        seenComplet = true;
+        out.push({ id: COMPLET_ID, name: PROTECTED_NAMES[COMPLET_ID] });
+        return;
+      }
+      if (isProtectedId(id)) {
+        out.push({ id: id, name: getProtectedName(id) });
+        return;
+      }
+      out.push(entry);
+    });
+    return out;
+  }
+
+  /** Garantit modèles complet + court dans le registre ; migre principal. */
   function ensureProtectedInRegistry(settings) {
     if (!settings || !settings.templates) return;
     var t = settings.templates;
 
-    function hasPrincipal(list) {
+    t.quittances = migratePrincipalInList(t.quittances || []);
+    t.mails = migratePrincipalInList(t.mails || []);
+
+    function hasId(list, id) {
       for (var i = 0; i < list.length; i++) {
-        if (list[i] && list[i].id === LEGACY_ID) return true;
+        if (list[i] && list[i].id === id) return true;
       }
       return false;
     }
 
-    if (!hasPrincipal(t.quittances)) {
-      t.quittances.unshift({ id: LEGACY_ID, name: PROTECTED_NAME });
+    if (!hasId(t.quittances, COMPLET_ID)) {
+      t.quittances.unshift({ id: COMPLET_ID, name: PROTECTED_NAMES[COMPLET_ID] });
     }
-    if (!hasPrincipal(t.mails)) {
-      t.mails.unshift({ id: LEGACY_ID, name: PROTECTED_NAME });
+    if (!hasId(t.quittances, COURT_ID)) {
+      t.quittances.unshift({ id: COURT_ID, name: PROTECTED_NAMES[COURT_ID] });
     }
-    if (t.defaultQuittanceId === SYSTEM_ID || !t.defaultQuittanceId) {
-      t.defaultQuittanceId = LEGACY_ID;
+    if (!hasId(t.mails, COMPLET_ID)) {
+      t.mails.unshift({ id: COMPLET_ID, name: PROTECTED_NAMES[COMPLET_ID] });
     }
-    if (t.defaultMailId === SYSTEM_ID || !t.defaultMailId) {
-      t.defaultMailId = LEGACY_ID;
+    if (!hasId(t.mails, COURT_ID)) {
+      t.mails.unshift({ id: COURT_ID, name: PROTECTED_NAMES[COURT_ID] });
+    }
+
+    if (!t.defaultQuittanceId || t.defaultQuittanceId === LEGACY_ID || t.defaultQuittanceId === SYSTEM_ID) {
+      t.defaultQuittanceId = COMPLET_ID;
+    }
+    if (!t.defaultMailId || t.defaultMailId === LEGACY_ID || t.defaultMailId === SYSTEM_ID) {
+      t.defaultMailId = COMPLET_ID;
     }
   }
 
-  function getDefaultContent(type, part) {
-    part = part || 'body';
-    var keys = SYSTEM_DEFAULT_KEYS[type];
-    if (!keys) return '';
-    var path = part === 'subject' ? keys.subject : keys.body;
-    if (path && global.LOYER_TEMPLATE_DEFAULTS && global.LOYER_TEMPLATE_DEFAULTS[path]) {
-      return global.LOYER_TEMPLATE_DEFAULTS[path];
-    }
-    return '';
-  }
-
+  /** Valide structure settings.templates (quittances, mails). */
   function normalizeRegistry(settings) {
     if (!settings) return;
     if (!settings.templates) {
       settings.templates = {
-        defaultQuittanceId: LEGACY_ID,
-        defaultMailId: LEGACY_ID,
-        quittances: [{ id: LEGACY_ID, name: 'Modèle principal' }],
-        mails: [{ id: LEGACY_ID, name: 'Modèle principal' }]
+        defaultQuittanceId: COMPLET_ID,
+        defaultMailId: COMPLET_ID,
+        quittances: [
+          { id: COMPLET_ID, name: PROTECTED_NAMES[COMPLET_ID] },
+          { id: COURT_ID, name: PROTECTED_NAMES[COURT_ID] }
+        ],
+        mails: [
+          { id: COMPLET_ID, name: PROTECTED_NAMES[COMPLET_ID] },
+          { id: COURT_ID, name: PROTECTED_NAMES[COURT_ID] }
+        ]
       };
     }
     var t = settings.templates;
     if (!Array.isArray(t.quittances)) t.quittances = [];
     if (!Array.isArray(t.mails)) t.mails = [];
     if (!t.defaultQuittanceId) {
-      t.defaultQuittanceId = t.quittances.length ? t.quittances[0].id : LEGACY_ID;
+      t.defaultQuittanceId = COMPLET_ID;
     }
     if (!t.defaultMailId) {
-      t.defaultMailId = t.mails.length ? t.mails[0].id : LEGACY_ID;
+      t.defaultMailId = COMPLET_ID;
     }
     ensureProtectedInRegistry(settings);
   }
 
+  /** find entry. */
   function findEntry(settings, type, id) {
     normalizeRegistry(settings);
     var list = type === 'quittance' ? settings.templates.quittances : settings.templates.mails;
@@ -103,6 +150,7 @@
     return null;
   }
 
+  /** Id modèle par défaut quittance ou mail. */
   function getDefaultId(settings, type) {
     normalizeRegistry(settings);
     return type === 'quittance'
@@ -110,6 +158,7 @@
       : settings.templates.defaultMailId;
   }
 
+  /** list merged. */
   function listMerged(settings, type) {
     normalizeRegistry(settings);
     var registry = type === 'quittance' ? settings.templates.quittances : settings.templates.mails;
@@ -122,7 +171,7 @@
       byId[entry.id] = true;
       items.push({
         id: entry.id,
-        name: isProtectedId(entry.id) ? PROTECTED_NAME : entry.name || entry.id,
+        name: isProtectedId(entry.id) ? getProtectedName(entry.id) : entry.name || entry.id,
         isProtected: isProtectedId(entry.id),
         isDefault: entry.id === defaultId
       });
@@ -131,6 +180,7 @@
     return items;
   }
 
+  /** sync registry from disk. */
   function syncRegistryFromDisk(settings) {
     if (!global.LoyerServerApi || !global.LoyerServerApi.isActive()) {
       return Promise.resolve({ settings: settings, changed: false });
@@ -162,16 +212,16 @@
 
       if (
         !findEntry(settings, 'quittance', settings.templates.defaultQuittanceId) &&
-        settings.templates.defaultQuittanceId !== LEGACY_ID
+        settings.templates.defaultQuittanceId !== COMPLET_ID
       ) {
-        settings.templates.defaultQuittanceId = LEGACY_ID;
+        settings.templates.defaultQuittanceId = COMPLET_ID;
         changed = true;
       }
       if (
         !findEntry(settings, 'mail', settings.templates.defaultMailId) &&
-        settings.templates.defaultMailId !== LEGACY_ID
+        settings.templates.defaultMailId !== COMPLET_ID
       ) {
-        settings.templates.defaultMailId = LEGACY_ID;
+        settings.templates.defaultMailId = COMPLET_ID;
         changed = true;
       }
 
@@ -179,33 +229,39 @@
     });
   }
 
+  /** Charge load. */
   function load(type, id, part) {
     part = part || 'body';
-    if (isSystemId(id)) {
-      return Promise.resolve(getDefaultContent(type, part));
-    }
     if (!global.LoyerServerApi || !global.LoyerServerApi.isActive()) {
-      return Promise.resolve(getDefaultContent(type, part));
+      return Promise.reject(new Error('Connexion au serveur requise pour charger les modèles.'));
+    }
+    if (isSystemId(id)) {
+      id = COMPLET_ID;
     }
     return global.LoyerServerApi.readTemplateFile(type, id, part).then(function (text) {
-      if (text && text.trim()) return text;
-      return getDefaultContent(type, part);
+      if (!text || !String(text).trim()) {
+        return Promise.reject(new Error('Modèle introuvable sur le serveur.'));
+      }
+      return text;
     });
   }
 
+  /** Charge load quittance. */
   function loadQuittance(id) {
     return load('quittance', id, 'body');
   }
 
+  /** Charge load mail. */
   function loadMail(id) {
     return Promise.all([load('mail', id, 'body'), load('mail', id, 'subject')]).then(function (parts) {
       return { body: parts[0], subject: parts[1] };
     });
   }
 
+  /** Sauvegarde modèle quittance (registre + fichier). */
   function saveQuittance(id, html) {
     if (isSystemId(id) || isProtectedId(id)) {
-      return Promise.reject(new Error('Le modèle principal ne peut pas être modifié directement.'));
+      return Promise.reject(new Error('Les modèles complet et court ne peuvent pas être modifiés directement.'));
     }
     if (!global.LoyerServerApi || !global.LoyerServerApi.isActive()) {
       return Promise.reject(new Error('Serveur indisponible.'));
@@ -213,9 +269,10 @@
     return global.LoyerServerApi.writeTemplateFile('quittance', id, html, 'body');
   }
 
+  /** Sauvegarde modèle mail corps + sujet. */
   function saveMail(id, body, subject) {
     if (isSystemId(id) || isProtectedId(id)) {
-      return Promise.reject(new Error('Le modèle principal ne peut pas être modifié directement.'));
+      return Promise.reject(new Error('Les modèles complet et court ne peuvent pas être modifiés directement.'));
     }
     if (!global.LoyerServerApi || !global.LoyerServerApi.isActive()) {
       return Promise.reject(new Error('Serveur indisponible.'));
@@ -223,6 +280,7 @@
     return global.LoyerServerApi.writeMailTemplate(id, body, subject);
   }
 
+  /** remove from registry. */
   function removeFromRegistry(settings, type, id) {
     if (isProtectedId(id)) {
       return settings;
@@ -235,11 +293,12 @@
     });
     ensureProtectedInRegistry(settings);
     if (settings.templates[defaultKey] === id) {
-      settings.templates[defaultKey] = LEGACY_ID;
+      settings.templates[defaultKey] = COMPLET_ID;
     }
     return settings;
   }
 
+  /** add to registry. */
   function addToRegistry(settings, type, id, name) {
     normalizeRegistry(settings);
     if (findEntry(settings, type, id)) {
@@ -250,6 +309,7 @@
     return settings;
   }
 
+  /** Définit set default. */
   function setDefault(settings, type, id) {
     normalizeRegistry(settings);
     if (type === 'quittance') {
@@ -260,6 +320,7 @@
     return settings;
   }
 
+  /** Crée entrée + fichiers vides pour nouveau modèle. */
   function createFrom(settings, type, sourceId, newName) {
     var id = slugify(newName);
     var name = String(newName || '').trim() || id;
@@ -279,9 +340,10 @@
     });
   }
 
+  /** Retire entrée registre (fichiers gérés par API). */
   function remove(settings, type, id) {
     if (isSystemId(id) || isProtectedId(id)) {
-      return Promise.reject(new Error('Le modèle principal ne peut pas être supprimé.'));
+      return Promise.reject(new Error('Les modèles complet et court ne peuvent pas être supprimés.'));
     }
     normalizeRegistry(settings);
     if (getDefaultId(settings, type) === id) {
@@ -300,12 +362,15 @@
     SYSTEM_ID: SYSTEM_ID,
     SYSTEM_LABEL: SYSTEM_LABEL,
     LEGACY_ID: LEGACY_ID,
-    PROTECTED_NAME: PROTECTED_NAME,
+    COMPLET_ID: COMPLET_ID,
+    COURT_ID: COURT_ID,
+    DEFAULT_PROTECTED_ID: DEFAULT_PROTECTED_ID,
+    PROTECTED_NAMES: PROTECTED_NAMES,
     slugify: slugify,
     isSystemId: isSystemId,
     isProtectedId: isProtectedId,
+    getProtectedName: getProtectedName,
     ensureProtectedInRegistry: ensureProtectedInRegistry,
-    getDefaultContent: getDefaultContent,
     normalizeRegistry: normalizeRegistry,
     listMerged: listMerged,
     syncRegistryFromDisk: syncRegistryFromDisk,

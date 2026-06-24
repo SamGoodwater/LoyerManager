@@ -9,6 +9,7 @@
     '.quittance-export-page:last-child{page-break-after:auto;break-after:auto}' +
     '.quittance-page-break{page-break-before:always;break-before:page;height:0;margin:0;padding:0;border:0;line-height:0;font-size:0}';
 
+  /** Déclenche téléchargement navigateur d'un Blob. */
   function downloadBlob(blob, filename) {
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
@@ -18,19 +19,28 @@
     URL.revokeObjectURL(url);
   }
 
-  function wrapForExport(innerHtml) {
+  /** wrap for export. */
+  function wrapForExport(innerHtml, forDocx) {
+    var headerCss =
+      '.quittance-header{width:100%;border-collapse:collapse;border:none;margin-bottom:1rem}' +
+      '.quittance-header td{border:none;padding:0;vertical-align:top}' +
+      '.quittance-party-bailleur{text-align:left;width:50%}' +
+      '.quittance-party-locataire{text-align:right;width:50%}' +
+      '.quittance-party h3{font-size:0.85rem;letter-spacing:0.05em;margin:0 0 0.35rem;color:#5c6b7a}' +
+      '.quittance-party p{margin:0 0 0.15rem}' +
+      '.ql-align-right{text-align:right}';
+    var bodyMargin = forDocx ? '1rem auto' : '2rem auto';
     return (
       '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">' +
-      '<style>body{font-family:Georgia,serif;max-width:800px;margin:2rem auto;line-height:1.5;color:#111}' +
+      '<style>body{font-family:Georgia,serif;max-width:800px;margin:' +
+      bodyMargin +
+      ';line-height:1.4;color:#111}' +
+      'p{margin:0.35rem 0}' +
       BATCH_EXPORT_CSS +
-      '.quittance-header{display:flex;flex-direction:row;justify-content:space-between;align-items:flex-start;gap:2rem;width:100%;margin-bottom:2rem}' +
-      '.quittance-party{flex:1 1 45%;min-width:180px}' +
-      '.quittance-party-bailleur{text-align:left}' +
-      '.quittance-party-locataire,.quittance-header .quittance-party:last-child{text-align:right}' +
-      '.quittance-party h3{font-size:0.85rem;letter-spacing:0.05em;margin:0 0 0.5rem;color:#5c6b7a}' +
-      '.quittance-title{text-align:center;margin:1.5rem 0}' +
+      headerCss +
+      '.quittance-title{text-align:center;margin:1rem 0}' +
       '.quittance-list,.quittance-payments pre{white-space:pre-wrap;font-family:inherit;background:#f8f8f8;padding:1rem;border-radius:4px;border:none}' +
-      '.quittance-footer{margin-top:2rem;text-align:right}.quittance-footer>p{margin:0}' +
+      '.quittance-footer{margin-top:1.5rem;text-align:right}.quittance-footer>p{margin:0}' +
       '.quittance-signature{margin-top:0.75rem;font-weight:bold;text-align:right}' +
       '.quittance-signature-img,.quittance-footer img{width:250px;height:auto;max-width:250px;display:block;margin-top:0.5rem;margin-left:auto;object-fit:contain}' +
       '.quittance-signature-name{margin-top:0.75rem;margin-bottom:0;font-weight:600;text-align:right}' +
@@ -41,6 +51,16 @@
     );
   }
 
+  /** Prépare le HTML quittance pour export Word. */
+  function prepareDocxHtml(html) {
+    var content = html || '';
+    if (global.LoyerEditor && global.LoyerEditor.prepareHtmlForExport) {
+      content = global.LoyerEditor.prepareHtmlForExport(content);
+    }
+    return content;
+  }
+
+  /** wait for layout. */
   function waitForLayout() {
     return new Promise(function (resolve) {
       requestAnimationFrame(function () {
@@ -49,6 +69,7 @@
     });
   }
 
+  /** Attend le chargement images avant capture PDF. */
   function waitForImages(container) {
     if (!container) return Promise.resolve();
     var imgs = container.querySelectorAll('img');
@@ -67,6 +88,7 @@
     );
   }
 
+  /** split batch html. */
   function splitBatchHtml(html) {
     var host = document.createElement('div');
     host.innerHTML = html;
@@ -79,6 +101,7 @@
     return pages;
   }
 
+  /** Options html2pdf (format A4, marges, scale). */
   function getPdfOptions(filename) {
     return {
       margin: 15,
@@ -89,6 +112,7 @@
     };
   }
 
+  /** Rafraîchit le rendu DOM de render export page. */
   function renderExportPage(el, pageHtml) {
     el.innerHTML = pageHtml;
     applyQuittanceLayout(el);
@@ -97,6 +121,7 @@
     });
   }
 
+  /** Exporte export pdf multi page. */
   function exportPdfMultiPage(pages, filename, asBlob) {
     var el = getExportElement();
     if (!el) return Promise.reject(new Error('Élément export quittance introuvable.'));
@@ -132,12 +157,14 @@
       });
   }
 
+  /** apply quittance layout. */
   function applyQuittanceLayout(el) {
     if (global.LoyerEditor && global.LoyerEditor.applyQuittanceLayout) {
       global.LoyerEditor.applyQuittanceLayout(el);
     }
   }
 
+  /** Élément DOM racine à capturer pour export. */
   function getExportElement() {
     if (global.LoyerEditor && global.LoyerEditor.getExportElement) {
       return global.LoyerEditor.getExportElement();
@@ -145,6 +172,7 @@
     return null;
   }
 
+  /** with export element html. */
   function withExportElementHtml(html, callback) {
     var el = getExportElement();
     if (!el) return Promise.reject(new Error('Élément export quittance introuvable.'));
@@ -164,6 +192,7 @@
       });
   }
 
+  /** Exporte export pdf. */
   function exportPdf(container, filename) {
     if (typeof html2pdf === 'undefined') {
       window.print();
@@ -178,6 +207,7 @@
       });
   }
 
+  /** Blob PDF depuis élément DOM. */
   function getPdfBlob(container) {
     if (typeof html2pdf === 'undefined') {
       return Promise.reject(new Error('html2pdf missing'));
@@ -191,6 +221,7 @@
       });
   }
 
+  /** Exporte export pdf from html. */
   function exportPdfFromHtml(html, filename) {
     if (typeof html2pdf === 'undefined') {
       window.print();
@@ -206,6 +237,7 @@
     return exportPdfMultiPage(pages, filename, false);
   }
 
+  /** Blob PDF depuis chaîne HTML. */
   function getPdfBlobFromHtml(html) {
     if (typeof html2pdf === 'undefined') {
       return Promise.reject(new Error('html2pdf missing'));
@@ -220,33 +252,37 @@
     return exportPdfMultiPage(pages, null, true);
   }
 
+  /** Exporte export html from html. */
   function exportHtmlFromHtml(html, filename) {
     downloadBlob(new Blob([wrapForExport(html)], { type: 'text/html;charset=utf-8' }), filename + '.html');
     return Promise.resolve();
   }
 
+  /** Exporte export html. */
   function exportHtml(container, filename) {
     var html = wrapForExport(container.innerHTML);
     downloadBlob(new Blob([html], { type: 'text/html;charset=utf-8' }), filename + '.html');
     return Promise.resolve();
   }
 
+  /** Exporte export docx from html. */
   function exportDocxFromHtml(html, filename) {
     if (typeof htmlDocx === 'undefined') {
       if (global.LoyerNotify) global.LoyerNotify.error('Bibliothèque DOCX non chargée.');
       return Promise.reject(new Error('htmlDocx missing'));
     }
-    var blob = htmlDocx.asBlob(wrapForExport(html));
+    var blob = htmlDocx.asBlob(wrapForExport(prepareDocxHtml(html), true));
     downloadBlob(blob, filename + '.docx');
     return Promise.resolve();
   }
 
+  /** Exporte export docx. */
   function exportDocx(container, filename) {
     if (typeof htmlDocx === 'undefined') {
       if (global.LoyerNotify) global.LoyerNotify.error('Bibliothèque DOCX non chargée.');
       return Promise.reject(new Error('htmlDocx missing'));
     }
-    var html = wrapForExport(container.innerHTML);
+    var html = wrapForExport(prepareDocxHtml(container.innerHTML), true);
     var blob = htmlDocx.asBlob(html);
     downloadBlob(blob, filename + '.docx');
     return Promise.resolve();

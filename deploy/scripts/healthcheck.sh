@@ -2,8 +2,9 @@
 set -euo pipefail
 
 HOST="${LOYER_HOST:-127.0.0.1}"
-PORT="${LOYER_PORT:-8080}"
-URL="http://${HOST}:${PORT}/api.php?action=status"
+PORT="${LOYER_PORT:-80}"
+ACTION="${LOYER_HEALTH_ACTION:-auth-status}"
+URL="http://${HOST}:${PORT}/api.php?action=${ACTION}"
 
 if curl -sf "${URL}" | grep -q '"ok":true'; then
   echo "OK — ${URL}"

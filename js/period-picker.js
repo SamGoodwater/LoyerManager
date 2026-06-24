@@ -13,30 +13,35 @@
 
   var STATUS_LEGEND = [
     { id: 'paye', label: 'Payé', hint: 'Loyer reçu intégralement pour ce mois.' },
-    { id: 'avance', label: 'En avance', hint: 'Montant reçu supérieur au loyer attendu.' },
-    { id: 'partiel', label: 'Partiel', hint: 'Paiement reçu mais inférieur au loyer attendu.' },
+    { id: 'avance', label: 'En avance', hint: 'Montant reçu supérieur au total dû (loyer + charges).' },
+    { id: 'partiel', label: 'Partiel', hint: 'Paiement reçu mais inférieur au total dû.' },
     { id: 'impaye', label: 'Impayé', hint: 'Aucun paiement ou mois passé sans règlement complet.' },
     { id: 'en_cours', label: 'En cours', hint: 'Mois en cours — échéance pas encore dépassée.' }
   ];
 
+  /** Format YYYY-MM pour input type=month. */
   function monthInputValue(year, month) {
     return year + '-' + String(month).padStart(2, '0');
   }
 
+  /** Parse input month → {year, month}. */
   function parseMonthInput(value) {
     if (!value || value.indexOf('-') === -1) return null;
     var parts = value.split('-');
     return { year: parseInt(parts[0], 10), month: parseInt(parts[1], 10) };
   }
 
+  /** État plage Du→Au (peut être null). */
   function getPeriodState() {
     return getState().period;
   }
 
+  /** Mois principal sélectionné {year, month}. */
   function getMainState() {
     return getState();
   }
 
+  /** True si une plage multi-mois est active. */
   function isRangeActive(period) {
     if (!period.rangeUiOpen) return false;
     var fromKey = global.LoyerCalc.monthKey(period.fromYear, period.fromMonth);
@@ -44,6 +49,7 @@
     return fromKey !== toKey;
   }
 
+  /** Libellé « janvier 2025 » ou « jan → juin 2025 ». */
   function formatPeriodLabel(period, main) {
     if (isRangeActive(period)) {
       return (
@@ -55,6 +61,7 @@
     return global.LoyerCalc.formatMonthLong(main.selectedYear, main.selectedMonth);
   }
 
+  /** Index mois dans liste chronologique bail. */
   function monthIndexInList(months, year, month) {
     var key = global.LoyerCalc.monthKey(year, month);
     return months.findIndex(function (m) {
@@ -62,6 +69,7 @@
     });
   }
 
+  /** Bornes from/to ordonnées chronologiquement. */
   function getNormalizedRange(period) {
     var fromKey = global.LoyerCalc.monthKey(period.fromYear, period.fromMonth);
     var toKey = global.LoyerCalc.monthKey(period.toYear, period.toMonth);
@@ -85,6 +93,7 @@
     };
   }
 
+  /** UX clic timeline : étend ou fixe plage Du→Au. */
   function handleTimelineRangeClick(year, month) {
     var period = getPeriodState();
     var clickKey = global.LoyerCalc.monthKey(year, month);
@@ -106,16 +115,19 @@
     }
   }
 
+  /** Scroll horizontal timeline vers segment actif. */
   function scrollSegmentIntoView(scrollEl, segment) {
     if (!scrollEl || !segment) return;
     var left = segment.offsetLeft - scrollEl.clientWidth / 2 + segment.offsetWidth / 2;
     scrollEl.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
   }
 
+  /** Conteneur DOM #period-picker-mount. */
   function getPickerRoot() {
     return mountEl ? mountEl.querySelector('[data-period-picker]') : null;
   }
 
+  /** HTML badges légende statuts mois. */
   function statusLegendHtml() {
     return STATUS_LEGEND.map(function (item) {
       return (
@@ -136,11 +148,24 @@
     }).join('');
   }
 
+  /** Texte infobulle détaillée pour un mois timeline. */
   function timelineTooltip(row, status, settings) {
     var label = global.LoyerCalc.getMonthStatusLabel(status);
     var monthLabel = global.LoyerCalc.formatMonthLong(row.year, row.month);
     var lines = [monthLabel, 'Statut : ' + label];
-    lines.push('Attendu : ' + global.LoyerCalc.formatCurrency(row.attendu));
+    lines.push('Total dû : ' + global.LoyerCalc.formatCurrency(row.attendu));
+    if (row.chargesAttendu) {
+      lines.push(
+        'Détail : ' +
+          global.LoyerCalc.formatRentBreakdownText({
+            loyer: row.loyerAttendu,
+            charges: row.chargesAttendu,
+            total: row.attendu
+          })
+      );
+    } else {
+      lines.push('Loyer : ' + global.LoyerCalc.formatCurrency(row.loyerAttendu));
+    }
     lines.push('Reçu : ' + global.LoyerCalc.formatCurrency(row.recu));
     var item = STATUS_LEGEND.find(function (s) {
       return s.id === status;
@@ -149,6 +174,7 @@
     return lines.join('\n');
   }
 
+  /** Construit barre timeline cliquable avec statuts. */
   function renderTimeline(rows, period, main, settings) {
     var root = getPickerRoot();
     if (!root || compactMode) return;
@@ -222,6 +248,15 @@
     if (focusBtn) scrollSegmentIntoView(scrollEl, focusBtn);
   }
 
+  /** Libellé bouton « Période » vs « Mois unique ». */
+  function setRangeToggleBtn(btn, rangeOpen) {
+    if (!btn) return;
+    var icon = rangeOpen ? 'fa-calendar-day' : 'fa-calendar-days';
+    var label = rangeOpen ? 'Mois unique' : 'Période';
+    btn.innerHTML = '<i class="fa-solid ' + icon + '" aria-hidden="true"></i> ' + label;
+  }
+
+  /** Synchronise inputs month, timeline et labels avec state. */
   function syncDom() {
     var root = getPickerRoot();
     if (!root) return;
@@ -232,7 +267,7 @@
     var monthInput = root.querySelector('.period-month-input');
     var toWrap = root.querySelector('.period-to-wrap');
     var toInput = root.querySelector('.period-range-to');
-    var sep = root.querySelector('.period-range-sep');
+    var sep = root.querySelector('.period-range-sep-wrap');
     var toggleBtn = root.querySelector('.period-range-toggle');
 
     var fromY = rangeOpen ? period.fromYear : main.selectedYear;
@@ -244,7 +279,7 @@
     if (sep) sep.classList.toggle('hidden', !rangeOpen);
     if (toggleBtn) {
       toggleBtn.classList.toggle('hidden', compactMode);
-      toggleBtn.textContent = rangeOpen ? 'Mois unique' : 'Période';
+      setRangeToggleBtn(toggleBtn, rangeOpen);
       toggleBtn.setAttribute('aria-expanded', rangeOpen ? 'true' : 'false');
       toggleBtn.setAttribute('aria-pressed', rangeOpen ? 'true' : 'false');
     }
@@ -266,6 +301,7 @@
     }
   }
 
+  /** HTML complet barre période (compact ou full). */
   function buildHtml(compact) {
     return (
       '<div class="period-picker' +
@@ -273,38 +309,47 @@
       '" data-period-picker>' +
       '<div class="period-picker-top">' +
       '<div class="period-inputs-row">' +
-      '<button type="button" class="period-nav-btn period-nav-prev" aria-label="Mois précédent">‹</button>' +
+      '<button type="button" class="period-nav-btn period-nav-prev" aria-label="Mois précédent"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>' +
       '<label class="period-month-field">' +
       '<span class="period-month-field-label">' +
       (compact ? 'Mois' : 'Du') +
       '</span>' +
       '<input type="month" class="period-month-input" aria-label="Mois sélectionné">' +
       '</label>' +
-      '<span class="period-range-sep hidden" aria-hidden="true">→</span>' +
+      '<span class="period-range-sep-wrap hidden" aria-hidden="true">' +
+      '<span class="period-month-field-label">&nbsp;</span>' +
+      '<span class="period-range-sep"><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>' +
+      '</span>' +
       '<label class="period-month-field period-to-wrap hidden">' +
       '<span class="period-month-field-label">Au</span>' +
       '<input type="month" class="period-range-to" aria-label="Fin de période">' +
       '</label>' +
-      '<button type="button" class="period-range-toggle btn btn-secondary btn-sm" aria-expanded="false">Période</button>' +
-      '<button type="button" class="period-nav-btn period-nav-next" aria-label="Mois suivant">›</button>' +
+      '<button type="button" class="period-range-toggle btn btn-secondary btn-sm" aria-expanded="false"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i> Période</button>' +
+      '<button type="button" class="period-nav-btn period-nav-next" aria-label="Mois suivant"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>' +
       '</div>' +
       (compact
         ? ''
-        : '<div class="period-status-legend" aria-label="Légende des statuts">' + statusLegendHtml() + '</div>') +
+        : '<div class="period-picker-meta">' +
+          '<div class="period-status-legend" aria-label="Légende des statuts">' +
+          statusLegendHtml() +
+          '</div>' +
+          '<button type="button" class="help-trigger period-bar-help" data-help-id="period-bar" aria-label="Aide : période et statuts" aria-expanded="false"><span aria-hidden="true">?</span></button>' +
+          '</div>') +
       '</div>' +
       (compact
         ? ''
         : '<div class="period-timeline-row">' +
-          '<button type="button" class="timeline-scroll-btn timeline-scroll-left" aria-label="Défiler vers le passé">‹</button>' +
+          '<button type="button" class="timeline-scroll-btn timeline-scroll-left" aria-label="Défiler vers le passé"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>' +
           '<div class="period-timeline-scroll" tabindex="0">' +
           '<div class="period-timeline-track"></div>' +
           '</div>' +
-          '<button type="button" class="timeline-scroll-btn timeline-scroll-right" aria-label="Défiler vers le présent">›</button>' +
+          '<button type="button" class="timeline-scroll-btn timeline-scroll-right" aria-label="Défiler vers le présent"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>' +
           '</div>') +
       '</div>'
     );
   }
 
+  /** Flèche prev/next : décale mois principal ou plage. */
   function navigateMonth(delta) {
     var months = getRows().map(function (r) {
       return { year: r.year, month: r.month, key: r.key };
@@ -320,6 +365,7 @@
     callbacks.onSelectMonth(months[next].year, months[next].month);
   }
 
+  /** Clics timeline, toggle plage, navigation, aide ?. */
   function bindMountEvents() {
     if (!mountEl || mountEl.getAttribute('data-period-bound')) return;
     mountEl.setAttribute('data-period-bound', '1');
@@ -407,12 +453,14 @@
     });
   }
 
+  /** Injecte buildHtml dans le mount et bind events. */
   function renderMarkup() {
     if (!mountEl) return;
     mountEl.innerHTML = buildHtml(compactMode);
     syncDom();
   }
 
+  /** Initialise period picker avec callbacks onChange. */
   function init(options) {
     mountEl = options.mountEl;
     getState = options.getState;
@@ -423,6 +471,7 @@
     renderMarkup();
   }
 
+  /** Mode compact header (masque certains contrôles). */
   function setCompactMode(compact) {
     if (compactMode === compact) {
       syncDom();
@@ -432,14 +481,17 @@
     renderMarkup();
   }
 
+  /** Re-render après changement données/statuts mois. */
   function refresh() {
     syncDom();
   }
 
+  /** Export booléen plage active pour autres modules. */
   function isRangeActiveExport() {
     return isRangeActive(getPeriodState());
   }
 
+  /** Liste {year, month} filtrés selon période courante. */
   function getFilterKeys() {
     var main = getMainState();
     var period = getPeriodState();

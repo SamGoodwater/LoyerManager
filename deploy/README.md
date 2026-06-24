@@ -1,44 +1,90 @@
-# Dossier `deploy/` — optionnel
+# Déploiement — Apache (Debian / WSL)
 
-**En production (hébergement mutualisé)** : vous n'avez **pas besoin** de ce dossier. Uploadez le reste du projet (`index.html`, `api.php`, `js/`, `css/`, `data/`, `templates/`, `.htaccess`…) et suivez [`docs/HEBERGEMENT-MUTUALISE.md`](../docs/HEBERGEMENT-MUTUALISE.md).
+Loyer Manager est une **application web classique** : fichiers statiques + `api.php`.  
+En production, servez-la avec **Apache** et **mod_php** (pas de build, pas de Node).
 
-**Ce dossier sert surtout au développement local** (WSL, Debian, nginx) et aux exemples de configuration serveur.
-
-## Contenu
-
-| Élément | Utilité |
-|---------|---------|
-| [`debian/nginx/loyer-manager.conf`](debian/nginx/loyer-manager.conf) | Exemple de site nginx (VPS) |
-| [`nginx/basic-auth.example.conf`](nginx/basic-auth.example.conf) | Exemple mot de passe nginx |
-| [`apache/basic-auth.example`](apache/basic-auth.example) | Exemple mot de passe Apache |
-| [`server-router.php`](server-router.php) | Routeur pour `php -S` (bloque `data/` en dev) |
-| [`scripts/`](scripts/) | Démarrage PHP local, droits, healthcheck — **dev uniquement** |
-| [`debian/install-dev.sh`](debian/install-dev.sh) | Raccourci dev WSL (optionnel) |
-| [`debian/install-nginx.sh`](debian/install-nginx.sh) | Installation nginx sur Debian (optionnel) |
-
-## Développement local (le plus simple)
-
-Sans aucun script :
+## Installation automatique (Debian / WSL)
 
 ```bash
-cd LoyerManager
+cd /var/www/LoyerManager
+sudo chmod +x deploy/scripts/*.sh
+sudo ./deploy/scripts/install-apache.sh
+```
+
+Le script installe Apache, PHP (avec **pdo_sqlite**), active le site et règle les droits sur `data/` et `templates/`.
+
+Ouvrez **http://localhost/** — la première visite redirige vers `login.html` pour créer le compte.
+
+## Installation manuelle
+
+1. Paquets : `apache2`, `libapache2-mod-php`, `php-sqlite3`, `php-curl`, `php-mbstring`, `php-xml`
+2. Copiez [`apache/loyer-manager.conf`](apache/loyer-manager.conf) vers `/etc/apache2/sites-available/`
+3. Remplacez `@LOYER_ROOT@` par le chemin du projet (ex. `/var/www/LoyerManager`)
+4. `sudo a2enmod rewrite headers && sudo a2ensite loyer-manager && sudo systemctl reload apache2`
+5. `cp config.example.php config.php` — renseignez `encryption_key` en production
+6. Droits : `sudo ./deploy/scripts/fix-permissions.sh`
+
+## Hébergement mutualisé (sans ce dossier)
+
+Uploadez le projet via FTP. Le [`.htaccess`](../.htaccess) à la racine protège déjà `data/` et `config.php`.  
+Guide : [`docs/HEBERGEMENT-MUTUALISE.md`](../docs/HEBERGEMENT-MUTUALISE.md)
+
+## Mot de passe devant le site (optionnel)
+
+En plus de la **connexion Loyer Manager** (`login.html`), vous pouvez ajouter une couche HTTP Basic Auth — voir [`apache/basic-auth.example`](apache/basic-auth.example).
+
+## Scripts utiles
+
+| Script | Rôle |
+|--------|------|
+| [`scripts/install-apache.sh`](scripts/install-apache.sh) | Installation complète Apache + PHP |
+| [`scripts/fix-permissions.sh`](scripts/fix-permissions.sh) | Droits `www-data` sur `data/` et `templates/` |
+| [`scripts/healthcheck.sh`](scripts/healthcheck.sh) | Test `api.php?action=auth-status` |
+| [`scripts/cleanup-artifacts.sh`](scripts/cleanup-artifacts.sh) | Nettoie dossiers parasites dans `data/` |
+
+## Développement local (sans Apache)
+
+```bash
 cp config.example.php config.php
 php -S localhost:8080
 ```
 
-Ouvrez `http://localhost:8080/` (la clé API peut rester **vide** en local).
+Aucun script `deploy/` requis — pratique pour un test rapide. En WSL, préférez Apache pour reproduire la production (sessions PHP, SQLite).
 
-Avec le routeur qui protège `data/` :
+## Dépannage
 
-```bash
-php -S localhost:8080 deploy/server-router.php
-```
+### Apache ne démarre pas (`Job for apache2.service failed`)
 
-## Scripts (si vous voulez)
+**Cause la plus fréquente après migration nginx → Apache :** nginx occupe encore le port 80.
 
 ```bash
-./deploy/scripts/loyer-ctl.sh start   # PHP intégré en arrière-plan
-./deploy/debian/install-dev.sh      # idem + nettoyage artefacts
+sudo systemctl stop nginx
+sudo systemctl disable nginx
+sudo systemctl restart apache2
+curl -sI http://127.0.0.1/ | head -3   # doit afficher Server: Apache
 ```
 
-Voir [`debian/README`](debian/README) pour nginx + systemd sur Debian.
+Si vous n'utilisez plus nginx du tout : `sudo apt remove nginx`.
+
+### Anciens serveurs PHP de dev
+
+Des processus `php -S` peuvent encore tourner (port 8080). Arrêtez-les si besoin :
+
+```bash
+pkill -f 'php -S.*LoyerManager' || true
+```
+
+## Vérification
+
+```bash
+LOYER_PORT=80 ./deploy/scripts/healthcheck.sh
+curl -s http://localhost/api.php?action=auth-status | head -c 200
+php -m | grep -i sqlite   # doit afficher pdo_sqlite
+```
+
+## Sécurité
+
+- HTTPS en production (Let's Encrypt + `certbot --apache`)
+- `encryption_key` dans `config.php` (OAuth mail + SMTP chiffré)
+- Compte applicatif via `login.html` (session PHP)
+- Détails : [`docs/SECURITE.md`](../docs/SECURITE.md)

@@ -6,6 +6,7 @@
 
   var charts = {};
 
+  /** destroy chart. */
   function destroyChart(id) {
     if (charts[id]) {
       charts[id].destroy();
@@ -13,6 +14,7 @@
     }
   }
 
+  /** Rafraîchit le rendu DOM de render monthly stacked bar. */
   function renderMonthlyStackedBar(canvas, monthlyRows, title) {
     destroyChart('monthlyStack');
     var rows = monthlyRows || [];
@@ -66,6 +68,7 @@
     });
   }
 
+  /** Rafraîchit le rendu DOM de render balance line. */
   function renderBalanceLine(canvas, monthlyRows, title) {
     destroyChart('balanceLine');
     var rows = monthlyRows || [];
@@ -130,6 +133,7 @@
     });
   }
 
+  /** Rafraîchit le rendu DOM de render yearly bar. */
   function renderYearlyBar(canvas, monthlyRows, title) {
     destroyChart('yearlyBar');
     var rows = monthlyRows || [];

@@ -4,6 +4,7 @@
 (function (global) {
   'use strict';
 
+  /** Convertit Blob PDF en chaîne base64 pour EML. */
   function blobToBase64(blob) {
     return new Promise(function (resolve, reject) {
       var reader = new FileReader();
@@ -16,6 +17,7 @@
     });
   }
 
+  /** Sépare destinataires to/cc/bcc depuis settings. */
   function splitRecipients(recipients) {
     var to = [];
     var cc = [];
@@ -29,6 +31,7 @@
     return { to: to, cc: cc, bcc: bcc };
   }
 
+  /** Objet + corps HTML mail avec mots-clés remplacés. */
   function buildMailContent(data, year, month, mailId, periodCtx) {
     return global.LoyerTemplates.loadFilledMail(data, year, month, mailId, periodCtx).then(function (filled) {
       var settings = data.settings || data;
@@ -42,6 +45,7 @@
     });
   }
 
+  /** Construit fichier .eml MIME multipart (HTML + PDF). */
   function generateEml(mailContent, pdfBase64, pdfFilename) {
     var boundary = '----=_LoyerManager_' + Date.now();
     var altBoundary = boundary + '_alt';
@@ -87,6 +91,7 @@
     return lines.join('\r\n');
   }
 
+  /** Télécharge le .eml généré. */
   function downloadEml(content, filename) {
     var blob = new Blob([content], { type: 'message/rfc822' });
     var url = URL.createObjectURL(blob);
@@ -97,6 +102,7 @@
     URL.revokeObjectURL(url);
   }
 
+  /** Ouvre client mail (sans PJ) ; copie corps si possible. */
   function openMailto(mailContent) {
     var to = mailContent.recipients.to.join(',');
     var cc = mailContent.recipients.cc.join(',');
@@ -153,6 +159,7 @@
     afterCopy();
   }
 
+  /** Orchestre envoi API, brouillon, EML ou mailto + PDF. */
   function prepareMail(mode, data, year, month, quittanceContainer, mailId, periodCtx, quittanceTemplateId) {
     periodCtx =
       periodCtx ||
@@ -175,11 +182,32 @@
       );
     }
 
+    function periodMeta() {
+      if (!periodCtx.isRange) {
+        return {
+          fromKey: global.LoyerCalc.monthKey(year, month),
+          toKey: global.LoyerCalc.monthKey(year, month),
+          monthCount: 1
+        };
+      }
+      return {
+        fromKey: global.LoyerCalc.monthKey(periodCtx.fromYear, periodCtx.fromMonth),
+        toKey: global.LoyerCalc.monthKey(periodCtx.toYear, periodCtx.toMonth),
+        monthCount: global.LoyerCalc.listMonthsInRange(
+          periodCtx.fromYear,
+          periodCtx.fromMonth,
+          periodCtx.toYear,
+          periodCtx.toMonth,
+          data
+        ).length
+      };
+    }
+
     var qId =
       quittanceTemplateId ||
       (global.LoyerTemplates
         ? global.LoyerTemplates.resolveDefaultId('quittance', data.settings)
-        : 'principal');
+        : 'complet');
 
     function exportRangePdf() {
       return global.LoyerQuittance.exportBatch(
@@ -207,7 +235,53 @@
       });
     }
 
+    function getPdfPack() {
+      return periodCtx.isRange
+        ? getRangePdfBlobPack()
+        : global.LoyerExport.getPdfBlob(quittanceContainer).then(function (blob) {
+            var fn = singleFilename();
+            return { blob: blob, filename: fn, emlBase: fn };
+          });
+    }
+
     return buildMailContent(data, year, month, mailId, periodCtx).then(function (mailContent) {
+      if (mode === 'send' || mode === 'draft') {
+        if (!global.LoyerServerApi || !global.LoyerServerApi.isActive()) {
+          return Promise.reject(new Error('Envoi direct indisponible.'));
+        }
+        return getPdfPack().then(function (pack) {
+          return blobToBase64(pack.blob).then(function (pdfBase64) {
+            var mailPayload = {
+              subject: mailContent.subject,
+              bodyHtml: mailContent.bodyHtml,
+              recipients: mailContent.recipients,
+              pdfBase64: pdfBase64,
+              pdfFilename: pack.filename + '.pdf',
+              periodMeta: periodMeta()
+            };
+            if (mode === 'draft') {
+              return global.LoyerServerApi.saveMailDraft(mailPayload);
+            }
+            return global.LoyerServerApi.sendMail(mailPayload);
+          });
+        }).then(function (result) {
+          if (global.LoyerNotify) {
+            if (mode === 'draft') {
+              global.LoyerNotify.success(
+                'Brouillon enregistré dans ' +
+                  (result.provider === 'google' ? 'Gmail' : result.provider === 'microsoft' ? 'Outlook' : 'votre boîte mail') +
+                  ' — ouvrez votre messagerie pour relire et envoyer.'
+              );
+            } else {
+              global.LoyerNotify.success('Mail envoyé depuis ' + (result.from || 'votre compte') + '.');
+            }
+          }
+          if (global.LoyerActivityLog && global.LoyerActivityLog.loadAndRender) {
+            global.LoyerActivityLog.loadAndRender();
+          }
+        });
+      }
+
       if (mode === 'mailto') {
         openMailto(mailContent);
         var dl = periodCtx.isRange
@@ -231,14 +305,7 @@
         return global.LoyerExport.exportPdf(quittanceContainer, singleFilename());
       }
 
-      var pdfPromise = periodCtx.isRange
-        ? getRangePdfBlobPack()
-        : global.LoyerExport.getPdfBlob(quittanceContainer).then(function (blob) {
-            var fn = singleFilename();
-            return { blob: blob, filename: fn, emlBase: fn };
-          });
-
-      return pdfPromise.then(function (pack) {
+      return getPdfPack().then(function (pack) {
         return blobToBase64(pack.blob).then(function (pdfBase64) {
           var eml = generateEml(mailContent, pdfBase64, pack.filename + '.pdf');
           downloadEml(eml, pack.emlBase + '.eml');

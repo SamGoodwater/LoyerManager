@@ -15,6 +15,7 @@
   var serverMode = false;
   var serverAuthRequired = false;
 
+  /** Définit set save status. */
   function setSaveStatus(status) {
     saveStatus = status;
     saveStatusListeners.forEach(function (fn) {
@@ -22,29 +23,35 @@
     });
   }
 
+  /** on save status change. */
   function onSaveStatusChange(fn) {
     if (typeof fn === 'function') saveStatusListeners.push(fn);
   }
 
+  /** Statut UI sauvegarde : saved, pending, error, needs-api-key. */
   function getSaveStatus() {
     return saveStatus;
   }
 
+  /** corrupt data file error. */
   function CorruptDataFileError(rawText, parseError) {
     this.name = 'CorruptDataFileError';
     this.rawText = rawText || '';
     this.parseError = parseError || '';
-    this.message = 'Le fichier loyer-data.json est corrompu.';
+    this.message = 'Vos données semblent endommagées.';
   }
 
+  /** uses server storage. */
   function usesServerStorage() {
     return serverMode;
   }
 
+  /** True si protocol http/https (requis pour api.php). */
   function isHttpContext() {
     return global.LoyerServerApi && global.LoyerServerApi.isHttpContext && global.LoyerServerApi.isHttpContext();
   }
 
+  /** detect server backend. */
   function detectServerBackend() {
     if (!global.LoyerServerApi) return Promise.resolve(false);
     var api = global.LoyerServerApi;
@@ -60,6 +67,7 @@
     });
   }
 
+  /** True si le serveur exige une session ou clé API. */
   function isServerAuthRequired() {
     if (global.LoyerServerApi && global.LoyerServerApi.isAuthRequired) {
       return global.LoyerServerApi.isAuthRequired();
@@ -67,6 +75,7 @@
     return serverAuthRequired;
   }
 
+  /** reconnect server. */
   function reconnectServer(apiKey) {
     if (!global.LoyerServerApi) {
       return Promise.reject(new Error('API serveur indisponible.'));
@@ -83,6 +92,7 @@
     });
   }
 
+  /** Crée create default data. */
   function createDefaultData() {
     return {
       version: 1,
@@ -96,7 +106,7 @@
             patterns: ['LOCATAIRE EXEMPLE', 'VIR LOYER']
           }
         ],
-        priceHistory: [{ from: '2024-01-01', amount: 650 }],
+        priceHistory: [{ from: '2024-01-01', amount: 580, charges: 70 }],
         bailleur: {
           name: '',
           street: '',
@@ -119,6 +129,7 @@
     };
   }
 
+  /** normalize emitter profiles. */
   function normalizeEmitterProfiles(settings) {
     if (!settings) return;
     if (global.LoyerCsvImport && global.LoyerCsvImport.defaultEmitterProfiles) {
@@ -182,6 +193,7 @@
     });
   }
 
+  /** Normalise le JSON métier (schéma, migrations légères). */
   function normalizeData(raw) {
     var data = raw && typeof raw === 'object' ? raw : createDefaultData();
     if (!data.version) data.version = 1;
@@ -190,6 +202,13 @@
     if (!Array.isArray(data.settings.emitters)) data.settings.emitters = [];
     normalizeEmitterProfiles(data.settings);
     if (!Array.isArray(data.settings.priceHistory)) data.settings.priceHistory = [];
+    data.settings.priceHistory = data.settings.priceHistory.map(function (p) {
+      return {
+        from: p && p.from ? String(p.from) : '',
+        amount: p && p.amount != null ? Number(p.amount) || 0 : 0,
+        charges: p && p.charges != null ? Number(p.charges) || 0 : 0
+      };
+    });
     if (!data.settings.bailleur) data.settings.bailleur = createDefaultData().settings.bailleur;
     if (data.settings.bailleur.signatureImage === undefined) {
       data.settings.bailleur.signatureImage = '';
@@ -230,6 +249,7 @@
     return data;
   }
 
+  /** normalize payment. */
   function normalizePayment(p) {
     if (!p.id) {
       p.id = global.LoyerCalc ? global.LoyerCalc.generateId() : 'p_' + Date.now();
@@ -243,10 +263,12 @@
     return p;
   }
 
+  /** serialize. */
   function serialize(data) {
     return JSON.stringify(normalizeData(data), null, 2);
   }
 
+  /** Charge load from local storage. */
   function loadFromLocalStorage() {
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
@@ -257,61 +279,34 @@
     return null;
   }
 
+  /** Miroir JSON local (cache navigateur, pas source de vérité). */
   function saveToLocalStorage(data) {
     localStorage.setItem(STORAGE_KEY, serialize(data));
   }
 
-  function isEmptyData(data) {
-    if (!data) return true;
-    if (data.payments && data.payments.length > 0) return false;
-    var b = data.settings && data.settings.bailleur;
-    return !(b && b.name);
-  }
-
+  /** apply default signature if empty. */
   function applyDefaultSignatureIfEmpty(bailleur) {
     if (bailleur && !bailleur.signatureImage && global.DEFAULT_SIGNATURE_IMAGE) {
       bailleur.signatureImage = global.DEFAULT_SIGNATURE_IMAGE;
     }
   }
 
-  function getEmbeddedSeed() {
-    if (global.LOYER_SEED_DATA) {
-      var data = normalizeData(global.LOYER_SEED_DATA);
-      applyDefaultSignatureIfEmpty(data.settings.bailleur);
-      return data;
-    }
-    return null;
-  }
-
+  /** Crée create fresh data. */
   function createFreshData() {
     var data = createDefaultData();
     applyDefaultSignatureIfEmpty(data.settings.bailleur);
     return normalizeData(data);
   }
 
-  function loadFallbackData() {
-    try {
-      var stored = loadFromLocalStorage();
-      if (stored && !isEmptyData(stored)) {
-        applyDefaultSignatureIfEmpty(stored.settings.bailleur);
-        return stored;
-      }
-    } catch (e) {
-      console.warn('Données locales invalides.', e);
-      localStorage.removeItem(STORAGE_KEY);
-    }
-    var seed = getEmbeddedSeed();
-    if (seed) return seed;
-    return createFreshData();
-  }
-
+  /** require server api. */
   function requireServerApi() {
     if (!serverMode || !global.LoyerServerApi) {
-      return Promise.reject(new Error('Serveur indisponible — ouvrez l\'application via http:// et vérifiez api.php.'));
+      return Promise.reject(new Error('Connexion au serveur impossible.'));
     }
     return Promise.resolve(global.LoyerServerApi);
   }
 
+  /** Parse JSON profil ; lève CorruptDataFileError si invalide. */
   function parseFileContent(text) {
     if (!text || !text.trim()) {
       return { ok: true, empty: true, data: createFreshData() };
@@ -327,12 +322,14 @@
     }
   }
 
+  /** read backend raw. */
   function readBackendRaw() {
     return requireServerApi().then(function (api) {
       return api.readData();
     });
   }
 
+  /** Charge loyer-data.json via api.php ; gère corruption et seed. */
   function loadDataFromBackend() {
     return readBackendRaw()
       .then(function (text) {
@@ -348,12 +345,8 @@
         }
 
         if (result.empty) {
-          var initial = loadFromLocalStorage();
-          if (!initial || isEmptyData(initial)) {
-            initial = createFreshData();
-          } else {
-            applyDefaultSignatureIfEmpty(initial.settings.bailleur);
-          }
+          localStorage.removeItem(STORAGE_KEY);
+          var initial = createFreshData();
           result.data = initial;
           result.created = true;
         } else {
@@ -373,6 +366,7 @@
       });
   }
 
+  /** Persiste le JSON avec debounce et statut UI. */
   function writeToBackend(data, immediate) {
     if (!serverMode || !global.LoyerServerApi) return Promise.resolve(false);
 
@@ -397,6 +391,7 @@
       return doWrite();
     }
 
+    // Debounce 250 ms : évite de saturer api.php lors de saisies rapides
     return new Promise(function (resolve) {
       if (writeTimer) clearTimeout(writeTimer);
       writeTimer = setTimeout(function () {
@@ -406,6 +401,7 @@
     });
   }
 
+  /** Normalise, cache localStorage et planifie écriture serveur debounced. */
   function save(data) {
     var normalized = normalizeData(data);
     saveToLocalStorage(normalized);
@@ -415,29 +411,31 @@
         if (ok) setSaveStatus('saved');
       });
     } else {
-      setSaveStatus('offline');
+      setSaveStatus('error');
     }
     return normalized;
   }
 
+  /** Sauvegarde immédiate ; échoue si serveur requis injoignable. */
   function saveNow(data) {
     var normalized = normalizeData(data);
     saveToLocalStorage(normalized);
     if (!serverMode) {
-      setSaveStatus('offline');
+      setSaveStatus('error');
       return Promise.reject(new Error('Serveur indisponible — impossible d\'enregistrer sur le disque.'));
     }
     setSaveStatus('pending');
     return writeToBackend(normalized, true).then(function (ok) {
       if (!ok) {
         setSaveStatus('error');
-        return Promise.reject(new Error('Impossible d\'écrire dans data/loyer-data.json.'));
+        return Promise.reject(new Error('Impossible d\'enregistrer vos données.'));
       }
       setSaveStatus('saved');
       return normalized;
     });
   }
 
+  /** Initialise init from server. */
   function initFromServer() {
     return loadDataFromBackend()
       .then(function (out) {
@@ -472,51 +470,47 @@
       });
   }
 
-  function initOfflineFallback(mode) {
-    var fallback = loadFallbackData();
-    saveToLocalStorage(fallback);
-    setSaveStatus('offline');
-    return {
-      data: fallback,
-      created: false,
-      mode: mode || 'offline',
-      offline: true
-    };
-  }
-
+  /** Bootstrap store : détection serveur, chargement données. */
   function init() {
+    if (!isHttpContext()) {
+      return Promise.reject(new Error('Ouvrez l\'application via son adresse web (http ou https).'));
+    }
     return detectServerBackend().then(function (isServer) {
       if (isServer) {
         return initFromServer();
       }
-
-      if (isHttpContext()) {
-        if (isServerAuthRequired()) {
-          var pendingData = loadFallbackData();
-          saveToLocalStorage(pendingData);
-          setSaveStatus('needs-api-key');
-          return {
-            data: pendingData,
-            created: false,
-            mode: 'server-auth',
-            needsApiKey: true
-          };
-        }
-        return initOfflineFallback('server-offline');
+      if (isServerAuthRequired()) {
+        setSaveStatus('needs-api-key');
+        return {
+          data: createFreshData(),
+          created: false,
+          mode: 'server-auth',
+          needsApiKey: true
+        };
       }
-
-      return initOfflineFallback('offline');
+      return Promise.reject(new Error('Connexion au serveur impossible.'));
     });
   }
 
+  /** reset données métier (serveur + local). */
   function reset() {
     localStorage.removeItem(STORAGE_KEY);
+    if (serverMode && global.LoyerServerApi && global.LoyerServerApi.resetProfileData) {
+      return global.LoyerServerApi.resetProfileData()
+        .then(function () {
+          return loadDataFromBackend();
+        })
+        .then(function (out) {
+          return out.data;
+        });
+    }
     var data = createFreshData();
     return saveNow(data).catch(function () {
       return save(data);
     });
   }
 
+  /** recreate after corruption. */
   function recreateAfterCorruption() {
     localStorage.removeItem(STORAGE_KEY);
     var data = createFreshData();
@@ -525,6 +519,7 @@
     });
   }
 
+  /** download text file. */
   function downloadTextFile(content, filename) {
     var blob = new Blob([content], { type: 'application/json;charset=utf-8' });
     var url = URL.createObjectURL(blob);
@@ -535,20 +530,139 @@
     URL.revokeObjectURL(url);
   }
 
+  /** download corrupt backup. */
   function downloadCorruptBackup(rawText) {
     downloadTextFile(rawText || '', 'loyer-data.corrompu.json');
   }
 
-  function exportJson(data) {
-    downloadTextFile(serialize(data), DATA_FILE_NAME);
+  /** Exporte export json. */
+  function exportJson(data, filename) {
+    downloadTextFile(serialize(data), filename || DATA_FILE_NAME);
   }
 
-  function importJson(file) {
+  /** True si export v2 chiffré (mot de passe de sauvegarde). */
+  function isSealedProfileExport(obj) {
+    return !!(
+      obj &&
+      obj.profileExportVersion >= 2 &&
+      obj.security &&
+      obj.security.sealed
+    );
+  }
+
+  /** True si objet export complet profil (v1 en clair ou v2 scellé). */
+  function isFullProfileExport(obj) {
+    return isSealedProfileExport(obj) || !!(obj && obj.profileExportVersion && obj.loyerData);
+  }
+
+  /** True si legacy loyer-data.json seul. */
+  function isLegacyLoyerData(obj) {
+    return !!(obj && obj.settings && (obj.payments || Array.isArray(obj.payments)));
+  }
+
+  /** Demande et confirme le mot de passe de sauvegarde à l'export. */
+  function promptBackupExportPassword() {
+    if (!global.LoyerNotify || !global.LoyerNotify.prompt) {
+      return Promise.reject(new Error('Interface indisponible.'));
+    }
+    return global.LoyerNotify.prompt(
+      'Choisissez un mot de passe de sauvegarde pour chiffrer le fichier exporté. Conservez-le — il sera requis pour restaurer.',
+      {
+        inputType: 'password',
+        placeholder: 'Mot de passe de sauvegarde (min. 8 caractères)',
+        confirmLabel: 'Continuer'
+      }
+    ).then(function (pwd) {
+      if (pwd === null) return Promise.reject(new Error('Export annulé.'));
+      if (!pwd || pwd.length < 8) {
+        return Promise.reject(new Error('Le mot de passe de sauvegarde doit contenir au moins 8 caractères.'));
+      }
+      return global.LoyerNotify.prompt('Confirmez le mot de passe de sauvegarde.', {
+        inputType: 'password',
+        placeholder: 'Confirmer',
+        confirmLabel: 'Exporter'
+      }).then(function (pwd2) {
+        if (pwd2 === null) return Promise.reject(new Error('Export annulé.'));
+        if (pwd !== pwd2) {
+          return Promise.reject(new Error('Les mots de passe de sauvegarde ne correspondent pas.'));
+        }
+        return pwd;
+      });
+    });
+  }
+
+  /** Demande le mot de passe de sauvegarde pour un import v2. */
+  function promptBackupImportPassword() {
+    if (!global.LoyerNotify || !global.LoyerNotify.prompt) {
+      return Promise.reject(new Error('Interface indisponible.'));
+    }
+    return global.LoyerNotify.prompt(
+      'Ce fichier est chiffré. Saisissez le mot de passe de sauvegarde choisi à l\'export.',
+      {
+        inputType: 'password',
+        placeholder: 'Mot de passe de sauvegarde',
+        confirmLabel: 'Importer'
+      }
+    ).then(function (pwd) {
+      if (pwd === null) return Promise.reject(new Error('Import annulé.'));
+      if (!pwd) return Promise.reject(new Error('Mot de passe de sauvegarde requis.'));
+      return pwd;
+    });
+  }
+
+  /** Exporte export profile (JSON métier + SQLite si serveur). */
+  function exportProfile(data) {
+    var d = new Date();
+    var stamp = d.toISOString().slice(0, 10);
+    var filename = 'loyer-profil-' + stamp + '.json';
+    if (serverMode && global.LoyerServerApi && global.LoyerServerApi.exportProfileBackup) {
+      return promptBackupExportPassword().then(function (backupPassword) {
+        return global.LoyerServerApi.exportProfileBackup(backupPassword).then(function (profile) {
+          downloadTextFile(JSON.stringify(profile, null, 2), filename);
+        });
+      });
+    }
+    exportJson(data, filename);
+    return Promise.resolve();
+  }
+
+  /** Importe fichier profil (complet ou legacy JSON). */
+  function importProfileFile(file) {
     return new Promise(function (resolve, reject) {
       var reader = new FileReader();
       reader.onload = function () {
         try {
-          resolve(save(JSON.parse(reader.result)));
+          var parsed = JSON.parse(reader.result);
+          if (!isFullProfileExport(parsed) && !isLegacyLoyerData(parsed)) {
+            reject(new Error('Format de sauvegarde non reconnu.'));
+            return;
+          }
+          if (serverMode && global.LoyerServerApi && global.LoyerServerApi.importProfileBackup) {
+            var chain = Promise.resolve(null);
+            if (isSealedProfileExport(parsed)) {
+              chain = promptBackupImportPassword();
+            }
+            chain
+              .then(function (backupPassword) {
+                var payload = isSealedProfileExport(parsed)
+                  ? { profile: parsed, backupPassword: backupPassword }
+                  : parsed;
+                return global.LoyerServerApi.importProfileBackup(payload);
+              })
+              .then(function () {
+                return loadDataFromBackend();
+              })
+              .then(function (out) {
+                resolve(out.data);
+              })
+              .catch(reject);
+            return;
+          }
+          if (isSealedProfileExport(parsed)) {
+            reject(new Error('Cette sauvegarde chiffrée nécessite le serveur Loyer Manager pour être importée.'));
+            return;
+          }
+          reject(new Error('Import impossible sans connexion au serveur.'));
         } catch (e) {
           reject(new Error('Fichier JSON invalide'));
         }
@@ -560,13 +674,12 @@
     });
   }
 
-  function reloadSeed() {
-    var seed = getEmbeddedSeed() || createFreshData();
-    return saveNow(seed).catch(function () {
-      return save(seed);
-    });
+  /** Importe import json (legacy — préférer importProfileFile). */
+  function importJson(file) {
+    return importProfileFile(file);
   }
 
+  /** migrate mail body from data. */
   function migrateMailBodyFromData(data) {
     var mail = pendingMailMigration;
     pendingMailMigration = null;
@@ -600,7 +713,7 @@
     }
 
     return tm
-      .createFrom(data.settings, 'mail', tm.LEGACY_ID, 'Modèle migré (ancien JSON)')
+      .createFrom(data.settings, 'mail', tm.COMPLET_ID, 'Modèle migré (ancien JSON)')
       .then(function (created) {
         return tm.loadMail(created.id).then(function (existing) {
           return tm.saveMail(
@@ -619,6 +732,7 @@
       });
   }
 
+  /** Chemin affiché data/loyer-data.json (indicateur UI). */
   function getStoragePath() {
     return DATA_FILE_PATH;
   }
@@ -630,7 +744,6 @@
     createDefaultData: createDefaultData,
     normalizeData: normalizeData,
     load: loadFromLocalStorage,
-    loadFallbackData: loadFallbackData,
     init: init,
     save: save,
     saveNow: saveNow,
@@ -638,8 +751,9 @@
     recreateAfterCorruption: recreateAfterCorruption,
     downloadCorruptBackup: downloadCorruptBackup,
     exportJson: exportJson,
+    exportProfile: exportProfile,
+    importProfileFile: importProfileFile,
     importJson: importJson,
-    reloadSeed: reloadSeed,
     onSaveStatusChange: onSaveStatusChange,
     getSaveStatus: getSaveStatus,
     migrateMailBodyFromData: migrateMailBodyFromData,

@@ -1,47 +1,40 @@
 # Hébergement mutualisé (sans terminal)
 
-Guide **générique** pour installer Loyer Manager sur un hébergement web classique (Apache, PHP, panneau type cPanel / Plesk / DirectAdmin). **Aucune commande shell** n'est requise.
-
-Convient à la plupart des hébergeurs français et internationaux.
+Guide pour installer Loyer Manager sur un hébergement web classique (Apache, PHP, panneau type cPanel / Plesk / DirectAdmin). **Aucune commande shell** requise.
 
 ---
 
 ## Prérequis côté hébergeur
 
-- PHP **7.4+** (8.x recommandé)
+- PHP **7.4+** (8.x recommandé), extensions OpenSSL, cURL, JSON et **SQLite**
 - Apache avec **mod_rewrite** (standard)
-- Espace FTP ou **Gestionnaire de fichiers** dans le panneau
+- Dossier **`vendor/`** inclus dans l'archive (pas de Composer sur le serveur)
+- Espace FTP ou **Gestionnaire de fichiers**
 - Certificat **SSL** (Let's Encrypt ou équivalent)
 
 ---
 
 ## 1. Envoyer les fichiers
 
-### Option A — Gestionnaire de fichiers (panneau)
+### Option A — Gestionnaire de fichiers
 
 1. Téléchargez ou clonez le projet sur votre ordinateur.
-2. Compressez le dossier en `.zip` (sans `data/loyer-data.json` ni `config.php` personnels).
-3. Dans le panneau, ouvrez le **Gestionnaire de fichiers**.
-4. Allez dans le dossier cible :
-   - sous-domaine dédié → souvent `public_html/` ou `loyer.votredomaine.fr/`
-   - sous-dossier → `public_html/loyer/` par exemple
-5. Uploadez et **extrayez** l'archive.
+2. Compressez le dossier en `.zip` (sans `data/loyer-data.json`, `data/loyer.db` ni `config.php` personnels).
+3. Uploadez et **extrayez** dans le dossier cible (`public_html/`, sous-domaine dédié, etc.).
 
-### Option B — Client FTP (FileZilla, etc.)
+### Option B — Client FTP
 
-Même arborescence : uploadez tout le contenu du projet (dossiers `js/`, `css/`, `lib/`, `index.html`, `api.php`, etc.).
-
-### Fichiers à ne pas publier par inadvertance
-
-- Vos sauvegardes personnelles `loyer-data.json` si elles contiennent des données réelles que vous ne voulez pas écraser — uploadez-les **volontairement** dans `data/` seulement si vous migrez un site existant.
+Uploadez tout le contenu : `js/`, `css/`, `lib/`, `php/`, `index.html`, `login.html`, `api.php`, etc.
 
 ---
 
-## 2. Configuration PHP
+## 2. Configuration
 
-1. Copiez `config.example.php` en **`config.php`** (même dossier que `index.html`).
-2. Éditez `config.php` dans le gestionnaire de fichiers.
-3. En production, renseignez une **`api_key`** (voir [SECURITE.md](SECURITE.md)).
+1. Copiez `config.example.php` en **`config.php`**.
+2. Renseignez au minimum :
+   - **`encryption_key`** — **obligatoire** si OAuth mail ou SMTP (voir [`OAUTH-MAIL.md`](OAUTH-MAIL.md))
+   - **`api_key`** optionnelle après création du compte (voir [`SECURITE.md`](SECURITE.md))
+   - Identifiants OAuth identité (Google/Microsoft) et OAuth mail si envoi Gmail/Outlook
 
 ---
 
@@ -49,53 +42,43 @@ Même arborescence : uploadez tout le contenu du projet (dossiers `js/`, `css/`,
 
 PHP doit pouvoir créer et modifier :
 
-- `data/` (fichier `loyer-data.json`)
-- `templates/quittances/` et `templates/mails/` (modèles)
-
-Dans le gestionnaire de fichiers, permissions courantes :
-
-| Dossier | Permission |
-|---------|------------|
+| Dossier | Permission courante |
+|---------|---------------------|
 | `data/` | **755** ou **775** |
 | `templates/` | **755** ou **775** |
 
-Si l'app affiche une erreur d'écriture, passez temporairement à **775** ou contactez le support de l'hébergeur.
-
-Au premier accès, l'application crée les fichiers manquants via `api.php`.
+Au premier accès, l'application crée `loyer-data.json` et `loyer.db` dans `data/`.
 
 ---
 
 ## 4. Protéger l'accès (recommandé)
 
-Ne laissez pas l'URL publique sans protection.
-
-1. Panneau → outil **Confidentialité / Protection du répertoire** (nom variable selon l'hébergeur).
+1. Panneau → **Confidentialité / Protection du répertoire**.
 2. Sélectionnez le dossier de Loyer Manager.
-3. Activez la protection par mot de passe.
-4. Créez un utilisateur et un mot de passe.
+3. Créez un utilisateur et un mot de passe.
 
-Détails et couche API : [SECURITE.md](SECURITE.md).
+Complétez avec la **connexion Loyer Manager** (`login.html`) — voir [`SECURITE.md`](SECURITE.md).
 
 ---
 
 ## 5. HTTPS
 
-Activez le SSL pour votre domaine ou sous-domaine (Let's Encrypt, AutoSSL, etc.) dans le panneau.
-
-Testez : `https://votre-adresse/` → le cadenas du navigateur doit être vert.
+Activez le SSL pour votre domaine. Testez : `https://votre-adresse/` → cadenas vert.
 
 ---
 
 ## 6. Premier lancement
 
-1. Ouvrez `https://votre-adresse/` (saisissez le mot de passe du site si configuré).
-2. Le badge doit indiquer **Enregistré** (vert) si `api.php` répond.
-3. Si une clé API est définie : **Paramètres → Données** → collez la clé → **Connecter**.
-4. Renseignez bailleur, locataire, loyer dans **Paramètres**.
+1. Ouvrez `https://votre-adresse/` (mot de passe site si configuré).
+2. Vous êtes redirigé vers **`login.html`** → créez votre compte (e-mail + passphrase, Google ou Microsoft).
+3. Renseignez **Paramètres** : bailleur, locataire, loyer, émetteurs CSV.
+4. Optionnel : **Paramètres → Envoi mail** pour Gmail/Outlook ou SMTP ; **Mon compte** pour changer la passphrase (compte local).
 
-### Jeu de démonstration (test)
+Les paramètres sont **sauvegardés automatiquement** ; le bouton **Enregistrer** en bas à droite force une sauvegarde immédiate.
 
-Uploadez le contenu de `docs/demo/loyer-data.demo.json` vers `data/loyer-data.json` via le gestionnaire de fichiers, puis rechargez la page.
+### Jeu de démonstration
+
+Uploadez `docs/demo/loyer-data.demo.json` vers `data/loyer-data.json`, puis rechargez la page. Voir [`demo/README.md`](demo/README.md).
 
 ---
 
@@ -104,24 +87,44 @@ Uploadez le contenu de `docs/demo/loyer-data.demo.json` vers `data/loyer-data.js
 | Test | Résultat attendu |
 |------|------------------|
 | `https://…/api.php?action=status` | JSON `"ok": true` |
-| `https://…/data/loyer-data.json` | **403** ou **404** (accès direct bloqué) |
-| Export JSON dans Paramètres | Téléchargement d'une copie de secours |
+| `https://…/data/loyer-data.json` | **403** ou **404** |
+| Connexion + export profil | Téléchargement JSON |
+
+---
+
+## 7. Vérifications post-installation
+
+- [ ] `https://votre-adresse/` redirige vers `login.html` si non connecté
+- [ ] Création de compte (passphrase) ou connexion Google/Microsoft OK
+- [ ] Paramètres enregistrés (message ou bouton Enregistrer)
+- [ ] `https://votre-adresse/data/loyer-data.json` → **403** ou **404**
+- [ ] Export profil JSON (Paramètres → Mon compte)
+- [ ] Sauvegarde FTP de `data/loyer.db`, `data/loyer-data.json`, `templates/`, `config.php`
+- [ ] Test envoi mail ou brouillon si OAuth configuré
+
+---
+
+## Sauvegarde (mutualisé)
+
+1. Export profil JSON depuis l'application.
+2. Téléchargez via FTP : `data/loyer.db`, `data/loyer-data.json`, dossier `templates/`, `config.php`.
+3. Lors d'une mise à jour : remplacez les fichiers applicatifs **sans écraser** `data/` ni `config.php`.
 
 ---
 
 ## Dépannage courant
 
-**Badge « Serveur indisponible »**  
-→ Ouvrez le site en `https://`, pas en `file://`. Vérifiez que `api.php` est bien uploadé.
+**Redirection vers login en boucle**  
+→ Vérifiez que PHP peut écrire dans `data/` (sessions et SQLite).
 
-**Erreur 500 sur les modèles**  
-→ Droits d'écriture sur `templates/` (étape 3).
+**Erreur d'écriture**  
+→ Droits sur `data/` et `templates/`.
 
 **Page blanche ou 403 partout**  
-→ Conflit de `.htaccess` avec un autre site (WordPress…) dans le même dossier. Utilisez un **sous-domaine dédié**.
+→ Conflit de `.htaccess` — utilisez un **sous-domaine dédié**.
 
-**Clé API refusée**  
-→ La valeur dans `config.php` doit être **identique** à celle saisie dans Paramètres.
+**Envoi mail impossible**  
+→ `encryption_key`, OAuth ou SMTP — voir [`OAUTH-MAIL.md`](OAUTH-MAIL.md).
 
 ---
 
@@ -129,8 +132,8 @@ Uploadez le contenu de `docs/demo/loyer-data.demo.json` vers `data/loyer-data.js
 
 | | Mutualisé | VPS / Debian |
 |---|-----------|--------------|
-| Installation | FTP / panneau | Scripts `deploy/debian/` |
-| Mot de passe site | Panneau hébergeur | nginx `auth_basic` ou Apache |
-| Mise à jour | Remplacer les fichiers par FTP | `git pull` + scripts |
+| Installation | FTP / panneau | [`deploy/scripts/install-apache.sh`](../deploy/scripts/install-apache.sh) |
+| Mot de passe site | Panneau hébergeur | Apache Basic Auth |
+| Mise à jour | Remplacer les fichiers | `git pull` |
 
-Les deux environnements utilisent la même application et la même [politique de sécurité](SECURITE.md).
+Même application, même [`SECURITE.md`](SECURITE.md).

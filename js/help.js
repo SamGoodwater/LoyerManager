@@ -9,68 +9,121 @@
   var openTriggerEl = null;
 
   var TEXTS = {
-    'save-badge':
-      'Indique si vos données sont bien enregistrées sur le serveur. Vert = api.php a écrit data/loyer-data.json et templates/. Orange = serveur ou clé API à vérifier (Paramètres → Données).',
+    'period-bar':
+      'Sélection partagée entre Tableau de bord, Quittance et Mail. Flèches = mois précédent/suivant. Bouton « Période » = plage Du→Au (« Mois unique » pour revenir). Timeline : clic sur un mois ; en mode période, le 1er clic fixe la fin, les suivants ajustent le début ou la fin selon la position. Survol = détail du mois.',
+    'period-status':
+      'Statuts affichés sur la timeline et la heatmap : Payé (loyer complet), En avance (trop-perçu), Partiel, Impayé, En cours (échéance pas encore dépassée). Survolez un badge ou un mois pour le détail.',
     'dash-period':
-      'Ligne du haut : mois (input natif), bouton « Période » pour ajouter une date de fin, légende colorée à droite. Timeline scrollable en dessous — en mode période, le 1er clic fixe la date « Au », puis les clics à gauche/droite ajustent le début ou la fin ; à l\'intérieur de la plage, le bord le plus proche est modifié. Glisser = sélection directe.',
+      'Même barre de période que ci-dessus (sous le menu). Le mois choisi filtre les tableaux et graphiques ci-dessous. En mode période, le détail virements et le récap mensuel suivent le mois cliqué dans la heatmap.',
     'dash-kpis':
-      'Indicateurs annuels : solde cumulé à date, taux de recouvrement, mois partiels ou impayés, retard moyen. La heatmap colore chaque mois selon son statut — en mode période, un clic ne change que le détail virements et le récap du mois.',
+      'Indicateurs de l\'année en cours : solde cumulé (avance ou dette), taux de recouvrement, nombre de mois partiels ou impayés, retard moyen de paiement.',
+    'dash-month-stats':
+      'En mode période (plage Du→Au), détail du mois sélectionné dans la heatmap : statut, montants attendus/reçus et solde pour ce mois.',
+    'dash-heatmap':
+      'Chaque case = un mois coloré selon le statut (payé, partiel, impayé…). Survol = détail ; clic = sélectionner ce mois pour le tableau et les virements (la plage reste active).',
     'dash-print':
       'Imprime le tableau de bord (KPIs, tableaux, heatmap). Les graphiques sont masqués à l\'impression car ils ne s\'exportent pas bien en papier.',
     'dash-monthly-table':
-      'Pour chaque mois : statut (payé, partiel, impayé…), loyer attendu, reçu, différence et solde cumulé. Un indicateur +X j signale un retard de paiement.',
+      'Pour chaque mois : statut (payé, partiel, impayé…), total dû (loyer + charges), reçu, différence et solde cumulé. Survolez la colonne « Total dû » pour le détail loyer/charges.',
     'dash-payments-month':
-      'Liste des virements reçus pour le mois sélectionné. Si rien n\'apparaît, vérifiez que vous avez bien saisi ou importé des virements dans l\'onglet Virements.',
+      'Virements reçus pour le mois sélectionné. Si la liste est vide, vérifiez l\'onglet Virements (import CSV ou saisie manuelle).',
     'dash-charts':
-      'Graphique empilé : part reçue vs reste dû par mois. Courbe de solde : vert = avance locataire, rouge = dette.',
+      'Graphique empilé : part reçue vs reste dû par mois. Courbe de solde cumulé : vert = avance locataire, rouge = dette. Les flèches ‹ › changent l\'année du graphique annuel.',
+    'dash-balance-chart':
+      'Courbe du solde cumulé sur toute la période du bail. Utile pour visualiser l\'évolution de la dette ou de l\'avance locataire dans le temps.',
+    'header-selection':
+      'En mode période, indique le mois « focus » cliqué dans la heatmap ou la timeline. Les tableaux de détail et virements du tableau de bord suivent ce mois.',
+    'template-mode':
+      'Aperçu du mois : rendu avec les données réelles du mois sélectionné. Édition du modèle : modifie le HTML (quittance) ou le corps/objet (mail) ; enregistrement automatique en revenant à l\'aperçu.',
+    'placeholder-keywords':
+      'Variables remplacées à l\'export ({{paiement}}, {{bailleur.name}}, {{periodeText}}…). Cliquez un mot-clé pour l\'insérer à la position du curseur dans l\'éditeur.',
+    'auth-oauth-login':
+      'Connexion sans passphrase : utilise votre compte Google ou Microsoft existant. Le compte doit correspondre à l\'e-mail enregistré sur cette instance (sauf première création de compte).',
+    'auth-email':
+      'Adresse e-mail de connexion à Loyer Manager. Elle sert d\'identifiant pour le compte local et les messages d\'erreur.',
+    'history-retention':
+      'Durée de conservation du journal (défaut 24 mois). 0 = illimité. Les entrées plus anciennes sont supprimées automatiquement lors de l\'enregistrement.',
+    'history-purge':
+      'Efface tout le journal d\'activité — irréversible. Préférez l\'export CSV avant purge pour conserver une trace (RGPD).',
+    'history-filter':
+      'Filtre la liste par type d\'événement : mail envoyé, brouillon, import CSV, export PDF/DOCX.',
+    'history-refresh':
+      'Recharge la liste depuis le serveur. Utile après un envoi mail ou import CSV.',
+    'btn-delete-account':
+      'Supprime le compte d\'accès et réinitialise toutes les données. Une sauvegarde chiffrée (mot de passe de sauvegarde) vous est proposée avant suppression.',
+    'btn-delete-data':
+      'Efface loyers, virements et modèles personnalisés. Une exportation complète vous est proposée au préalable. Le compte utilisateur est conservé.',
+    'btn-clear-smtp':
+      'Efface la configuration SMTP enregistrée (mot de passe chiffré inclus). L\'envoi passera par OAuth si connecté, sinon il faudra reconfigurer.',
+    'btn-test-smtp':
+      'Vérifie la connexion au serveur SMTP et l\'authentification avec les valeurs du formulaire (sans envoyer de mail). Mot de passe vide = mot de passe déjà enregistré.',
+    'payment-status':
+      'Manuel = saisi à la main. Importé = détecté via CSV. Vérifié = marqué comme contrôlé. Le statut n\'affecte pas les calculs.',
     'dash-yearly':
-      'Vue d\'ensemble année par année : utile pour faire le point sur une année complète.',
+      'Récapitulatif année par année : total dû (loyer + charges), reçu, différence et solde cumulé — utile pour faire le point sur une année complète.',
     'payments-list':
-      'Tous vos virements enregistrés. Vous pouvez modifier ou supprimer une ligne avec les boutons dans la colonne Actions.',
+      'Tous vos virements enregistrés. Modifiez ou supprimez une ligne via la colonne Actions. Le statut indique l\'origine (import CSV ou saisie manuelle).',
     'payments-csv':
-      'Importez un fichier CSV exporté depuis votre banque (relevé de compte), ou déposez-le n\'importe où sur la page. L\'application repère automatiquement les virements du locataire. Les doublons sont ignorés.',
+      'Importez un CSV exporté depuis votre banque (relevé de compte), ou glissez-déposez le fichier n\'importe où sur la page. L\'application repère les virements du locataire grâce aux émetteurs configurés. Les doublons sont exclus.',
     'payments-manual':
       'Ajoutez un virement un par un si vous n\'avez pas de fichier CSV, ou pour corriger une saisie.',
     'payments-clear':
-      'Attention : supprime tous les virements d\'un coup. Utilisez plutôt la suppression ligne par ligne si possible.',
+      'Supprime tous les virements d\'un coup — action irréversible. Préférez la suppression ligne par ligne lorsque c\'est possible.',
+    'settings-auto-save':
+      'Les paramètres (hors SMTP et Mon compte) sont enregistrés automatiquement toutes les 30 secondes après modification, à la sortie de l\'onglet Paramètres et avant fermeture de la page. Le bouton flottant Enregistrer force une sauvegarde immédiate.',
     'settings-lease':
-      'Indiquez la date de début du bail et le jour du mois où le loyer est normalement versé (souvent le 1er ou le 5). Ces dates servent aux calculs du tableau de bord.',
+      'Date de début du bail et jour habituel du virement (souvent le 1er, 5 ou 10). Ces valeurs servent aux calculs du tableau de bord et aux statuts « en cours » / retard.',
     'settings-bailleur':
-      'Vos coordonnées en tant que propriétaire. Elles apparaissent sur la quittance de loyer et dans les mails via les mots-clés {{bailleur.*}}.',
+      'Vos coordonnées en tant que propriétaire. Elles apparaissent sur la quittance et dans les mails via les mots-clés {{bailleur.*}}.',
     'settings-locataire':
       'Coordonnées du locataire. Elles apparaissent sur la quittance et dans les mails via les mots-clés {{locataire.*}}.',
     'settings-signature':
-      'Scan ou photo de votre signature (PNG, JPG, WebP ou GIF, max. 5 Mo). Elle sera placée en bas de la quittance (mot-clé {{signatureHtml}}). Vous pouvez restaurer la signature par défaut à tout moment.',
+      'Scan ou photo de votre signature (PNG, JPG, WebP ou GIF, max. 5 Mo). Placée en bas de la quittance (mot-clé {{signatureHtml}}). Vous pouvez restaurer la signature par défaut.',
     'settings-emitters':
-      'Pour l\'import CSV : indiquez le nom du locataire tel qu\'affiché dans l\'app, puis les mots à chercher dans le libellé bancaire (un par ligne). Exemple : Jean Dupont',
+      'Pour l\'import CSV : nom du locataire tel qu\'affiché dans l\'app, puis motifs à chercher dans le libellé bancaire (un par ligne, ex. DUPONT ou LOYER). La référence bancaire extraite évite les doublons.',
     'settings-prices':
-      'Montant du loyer et date à partir de laquelle il s\'applique. Ajoutez un palier si le loyer a changé (ex. révision annuelle).',
+      'Loyer hors charges et charges locatives par palier, avec date d\'application. Le total (loyer + charges) détermine le montant attendu chaque mois. Les quittances détaillent cette répartition (cf. service-public.fr/particuliers/vosdroits/R31936).',
     'settings-mail':
-      'Destinataires des e-mails (À, CC, CCI) et signature texte (mot-clé {{signature}}). Le corps et l\'objet du mail se modifient dans l\'onglet Mail.',
-    'settings-data':
-      'Les données (data/loyer-data.json) et les modèles (templates/) sont enregistrés via api.php. La clé API (config.php) n\'est pas un compte : c\'est un secret qui autorise le navigateur à lire/écrire ces fichiers. Exportez régulièrement une copie JSON ; import par bouton ou glisser-déposer.',
+      'Destinataires des e-mails (À, CC, CCI) et signature texte (mot-clé {{signature}}). Le corps et l\'objet se modifient dans l\'onglet Mail.',
     'settings-templates':
-      'Liste des modèles enregistrés sur le serveur. Le modèle principal est fourni par défaut en lecture seule (aperçu et export possibles ; édition interdite). Importez un fichier pour créer un nouveau modèle, ou dupliquez le principal via « + Nouveau modèle ».',
+      'Modèles enregistrés sur le serveur. Les modèles <strong>complet</strong> et <strong>court</strong> sont fournis en lecture seule (aperçu et export). Dupliquez-les via « + Nouveau modèle » ou importez un fichier pour créer une variante. Édition dans les onglets Quittance et Mail.',
+    'settings-mail-oauth':
+      'Connectez Gmail ou Outlook pour envoyer un mail avec la quittance PDF jointe, ou l\'enregistrer en brouillon dans votre messagerie. Si le compte était connecté avant une mise à jour, déconnectez puis reconnectez pour activer les brouillons. Connexion mail distincte de votre compte Loyer Manager.',
+    'settings-mail-smtp':
+      'Alternative sans OAuth : serveur SMTP (OVH, Free, Orange…). Port 587 + TLS est le cas le plus courant. Mot de passe SMTP chiffré sur le serveur. Pas de brouillon dans la boîte mail — utilisez EML + PDF. Si Gmail/Outlook OAuth est connecté, OAuth est prioritaire à l\'envoi.',
+    'settings-data':
+      'Clé d\'accès technique (legacy) : affichée uniquement si aucun compte utilisateur n\'existe encore ou si l\'administrateur l\'a configurée. Une fois connecté via login.html, la session PHP protège l\'API.',
+    'settings-account':
+      'Déconnexion, changement de passphrase (compte local), export/import du profil complet (JSON métier + OAuth mail, SMTP, historique SQLite), suppression des données ou du compte utilisateur.',
+    'auth-passphrase':
+      'Votre secret de connexion, idéalement une phrase longue et mémorable (plusieurs mots). Privilégiez la longueur plutôt que la complexité : majuscule, chiffre ou caractère spécial ne sont pas obligatoires. Minimum 8 caractères. Distinct du mot de passe de sauvegarde utilisé pour chiffrer les exports.',
+    'auth-backup-restore':
+      'Importe une sauvegarde exportée depuis Mon compte (format v2 chiffré). Saisissez le mot de passe de sauvegarde choisi à l\'export, puis créez votre compte (local ou Google/Microsoft). L\'identité OAuth prouve qui vous êtes ; le mot de passe de sauvegarde protège le fichier volé. Les tokens OAuth mail/SMTP ne sont restaurés que si le serveur utilise la même encryption_key.',
     'mail-period':
-      'Mois ou période via la barre en haut (timeline incluse sur Quittance et Mail). En plage, le mail utilise {{periodeText}} et le PDF joint contient toutes les quittances.',
+      'Mois ou période via la barre sous le menu (timeline incluse). En plage, le mail utilise {{periodeText}} et le PDF joint contient toutes les quittances de la période.',
     'mail-edit':
-      'Mots-clés : {{periodeText}}, {{moisDebutText}}, {{moisFinText}}, {{texteQuittancesJointes}}, etc. En plage, {{periodeText}} affiche « janvier 2025 → juin 2025 » ; en mois unique, le mois seul.',
+      'Mots-clés : {{periodeText}}, {{moisDebutText}}, {{moisFinText}}, {{texteQuittancesJointes}}, {{paiement}}, etc. En plage, {{periodeText}} affiche « janvier 2025 → juin 2025 ». Panneau Mots-clés à droite en mode édition.',
     'quittance-period':
-      'Mois ou période via la barre en haut (timeline incluse). En plage, l\'aperçu et les exports PDF/DOCX/HTML génèrent une quittance par mois.',
+      'Mois ou période via la barre sous le menu. En plage, l\'aperçu et les exports PDF/DOCX/HTML génèrent une quittance par mois.',
     'quittance-edit':
-      'Le modèle principal est en lecture seule (aperçu uniquement). Pour le personnaliser, dupliquez-le via « Nouveau modèle… » ou importez un fichier .html. Les autres modèles s\'éditent normalement ; l\'enregistrement est automatique en revenant à l\'aperçu. Panneau Mots-clés à droite.',
+      'Les modèles complet et court sont en lecture seule. Dupliquez-les via « Nouveau modèle… » ou importez un .html. Les modèles personnalisés s\'éditent normalement ; enregistrement automatique en revenant à l\'aperçu. Panneau Mots-clés à droite.',
     'quittance-export':
-      'PDF, DOCX ou HTML pour le mois ou la période sélectionnée. « Exporter plusieurs… » reste disponible pour une plage manuelle distincte.',
+      'PDF (envoi courant), DOCX (Word), HTML (page web) pour le mois ou la période sélectionnée. « Exporter plusieurs… » ouvre une plage manuelle distincte.',
     'batch-quittance-export':
-      'Choisissez une plage Du/Au (intersectée avec la période de bail). Le modèle actuellement sélectionné dans l\'onglet Quittance est utilisé. Au-delà de 24 mois, l\'export peut être lent.',
+      'Plage Du/Au (intersectée avec la période de bail). Le modèle sélectionné dans l\'onglet Quittance est utilisé. Au-delà de 24 mois, l\'export peut être lent.',
     'quittance-mail':
-      'EML + PDF : crée un fichier e-mail avec la quittance en pièce jointe (mise en forme conservée). mailto : ouvre votre webmail — le corps HTML est copié (collez avec Ctrl+V pour gras, italique, etc.) ; le lien mailto ne transmet que du texte brut avec sauts de ligne.',
+      'Brouillon : mail + PDF dans Gmail/Outlook (relecture avant envoi). Envoyer : envoi immédiat (OAuth ou SMTP). EML + PDF : fichier à ouvrir dans votre messagerie. mailto : ouvre le client mail sans pièce jointe automatique.',
+    'history-activity-log':
+      'Journal : mails envoyés, brouillons créés, imports CSV, exports PDF/DOCX. Filtrez par type, exportez en CSV ou purgez (RGPD). Conservation réglable (défaut 24 mois, 0 = illimité).',
+    'privacy':
+      'Données : loyers, journal d\'activité, tokens OAuth chiffrés. Pas de publicité ni de tracking. Cookie de session PHP à la connexion. Export ou purge depuis Historique et Mon compte.',
     'csv-import-modal':
-      'Cochez les virements à importer. Les lignes déjà présentes sont marquées comme doublons et ne seront pas reimportées. Validez avec « Importer la sélection ».',
+      'Cochez les virements à importer. Les doublons (même référence bancaire ou montant+date) sont grisés. « Tout sélectionner » ignore les doublons. Validez avec « Importer la sélection ».',
     'payment-form-modal':
-      'Renseignez la date et le montant reçus. L\'émetteur doit correspondre à un nom configuré dans Paramètres. Les champs libellé et référence sont optionnels en saisie manuelle.'
+      'Date et montant reçus. L\'émetteur doit correspondre à un nom configuré dans Paramètres. Libellé et référence bancaire optionnels ; la référence évite les doublons à l\'import CSV.'
   };
 
+  /** Échappe texte popover aide. */
   function escapeHtml(s) {
     return String(s || '')
       .replace(/&/g, '&amp;')
@@ -79,10 +132,12 @@
       .replace(/"/g, '&quot;');
   }
 
+  /** Retourne TEXTS[id] pour popover. */
   function getText(id) {
     return TEXTS[id] || '';
   }
 
+  /** Ferme popover ouvert et reset aria-expanded. */
   function closePopover() {
     if (openPopoverEl && openPopoverEl.parentNode) {
       openPopoverEl.parentNode.removeChild(openPopoverEl);
@@ -94,6 +149,7 @@
     openTriggerEl = null;
   }
 
+  /** Positionne popover sous le trigger (viewport aware). */
   function positionPopover(popover, trigger) {
     var rect = trigger.getBoundingClientRect();
     var margin = 8;
@@ -113,9 +169,10 @@
     });
   }
 
-  function openPopover(trigger) {
+  /** Crée et affiche popover pour .help-trigger. */
+  function openPopover(trigger, textOverride) {
     var id = trigger.getAttribute('data-help-id');
-    var text = trigger.getAttribute('data-help') || getText(id);
+    var text = textOverride || trigger.getAttribute('data-help') || getText(id);
     if (!text) return;
 
     closePopover();
@@ -139,6 +196,7 @@
     popover.querySelector('.help-popover-close').addEventListener('click', closePopover);
   }
 
+  /** Génère HTML bouton ? (usage dynamique rare). */
   function helpTriggerHtml(id, label) {
     var aria = label ? ' aria-label="' + escapeHtml(label) + '"' : '';
     return (
@@ -150,6 +208,7 @@
     );
   }
 
+  /** Marque triggers déjà bound (data-help-bound). */
   function bindHelpTriggers(root) {
     (root || document).querySelectorAll('.help-trigger:not([data-help-bound])').forEach(function (btn) {
       btn.setAttribute('data-help-bound', '1');
@@ -159,6 +218,7 @@
     });
   }
 
+  /** aria-selected sur onglets navigation. */
   function updateTabAccessibility(activePanelId) {
     document.querySelectorAll('nav.tabs [role="tab"]').forEach(function (tab) {
       var selected = tab.getAttribute('data-panel') === activePanelId;
@@ -167,6 +227,7 @@
     });
   }
 
+  /** Délégation clic ? légende statuts, Escape, clavier inline. */
   function bindEvents() {
     document.addEventListener('click', function (e) {
       var goto = e.target.closest('.help-goto');
@@ -180,6 +241,15 @@
             if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }, 80);
         }
+        return;
+      }
+
+      var statusBadge = e.target.closest('.period-legend-badge[data-status-tip]');
+      if (statusBadge) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (openTriggerEl === statusBadge) closePopover();
+        else openPopover(statusBadge, statusBadge.getAttribute('data-status-tip'));
         return;
       }
 
@@ -199,6 +269,14 @@
 
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') closePopover();
+      if (e.key === 'Enter' || e.key === ' ') {
+        var inline = e.target.closest('.help-inline-trigger');
+        if (inline) {
+          e.preventDefault();
+          if (openTriggerEl === inline) closePopover();
+          else openPopover(inline);
+        }
+      }
     });
 
     document.querySelectorAll('.help-toc a[href^="#"]').forEach(function (link) {
@@ -234,12 +312,23 @@
     }
   }
 
+  /** Bascule onglet Aide et scroll vers section. */
+  function openHelpPanel(sectionId) {
+    if (showPanelFn) showPanelFn('panel-help');
+    window.setTimeout(function () {
+      var el = sectionId ? document.getElementById(sectionId) : null;
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }, 150);
+  }
+
+  /** Init aide : bind triggers + navigation aide. */
   function init(showPanel) {
     showPanelFn = showPanel;
     bindHelpTriggers();
     bindEvents();
   }
 
+  /** Re-bind triggers après render DOM dynamique. */
   function refresh() {
     bindHelpTriggers();
   }
@@ -250,6 +339,7 @@
     refresh: refresh,
     closePopover: closePopover,
     helpTriggerHtml: helpTriggerHtml,
-    updateTabAccessibility: updateTabAccessibility
+    updateTabAccessibility: updateTabAccessibility,
+    openHelpPanel: openHelpPanel
   };
 })(window);

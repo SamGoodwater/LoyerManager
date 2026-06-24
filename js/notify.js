@@ -7,6 +7,7 @@
   var container = null;
   var confirmResolve = null;
 
+  /** Crée #notify-container pour toasts. */
   function ensureContainer() {
     if (!container) {
       container = document.createElement('div');
@@ -18,6 +19,7 @@
     return container;
   }
 
+  /** Toast info/success/error avec auto-fermeture. */
   function notify(message, type, duration) {
     var root = ensureContainer();
     var toast = document.createElement('div');
@@ -40,6 +42,7 @@
     return close;
   }
 
+  /** Échappe message toast/confirm. */
   function escapeHtml(s) {
     return String(s || '')
       .replace(/&/g, '&amp;')
@@ -47,6 +50,7 @@
       .replace(/>/g, '&gt;');
   }
 
+  /** Modale confirmation Oui/Non (Promise boolean). */
   function confirm(message, options) {
     options = options || {};
     return new Promise(function (resolve) {
@@ -83,6 +87,7 @@
     });
   }
 
+  /** Dialogue fichier JSON corrompu (backup + reset). */
   function corruptFileDialog(message, parseError) {
     return new Promise(function (resolve) {
       var overlay = document.createElement('div');
@@ -95,12 +100,12 @@
         '<p class="notify-confirm-msg">' + escapeHtml(message) + '</p>' +
         detail +
         '<ol class="corrupt-file-steps">' +
-        '<li>Téléchargez une copie du fichier corrompu (secours)</li>' +
-        '<li>Réinitialisez pour recréer un fichier vide</li>' +
+        '<li>Téléchargez une copie de secours</li>' +
+        '<li>Repartez sur une base vide</li>' +
         '</ol>' +
         '<div class="notify-confirm-actions notify-confirm-actions-stack">' +
         '<button type="button" class="btn btn-secondary" data-action="download">Télécharger le fichier corrompu</button>' +
-        '<button type="button" class="btn btn-danger" data-action="reset">Réinitialiser et recréer le fichier</button>' +
+        '<button type="button" class="btn btn-danger" data-action="reset">Repartir à zéro</button>' +
         '<button type="button" class="btn btn-secondary" data-action="cancel">Continuer sans réinitialiser</button>' +
         '</div></div>';
 
@@ -127,6 +132,7 @@
     });
   }
 
+  /** Modale saisie texte/password (Promise string|null). */
   function prompt(message, options) {
     options = options || {};
     return new Promise(function (resolve) {
@@ -136,7 +142,9 @@
         '<div class="notify-confirm" role="dialog" aria-modal="true">' +
         '<p class="notify-confirm-msg">' + escapeHtml(message) + '</p>' +
         '<div class="form-row" style="margin:0.75rem 0">' +
-        '<input type="text" class="notify-prompt-input" value="' +
+        '<input type="' +
+        escapeHtml(options.inputType || 'text') +
+        '" class="notify-prompt-input" value="' +
         escapeHtml(options.defaultValue || '') +
         '" placeholder="' +
         escapeHtml(options.placeholder || '') +

@@ -1,0 +1,17 @@
+{
+  "name": "samgoodwater/loyer-manager",
+  "description": "Loyer Manager — auto-hébergé",
+  "type": "project",
+  "require": {
+    "php": ">=7.4",
+    "google/apiclient": "^2.15",
+    "league/oauth2-google": "^4.0",
+    "thenetworg/oauth2-azure": "^2.2"
+  },
+  "config": {
+    "sort-packages": true,
+    "allow-plugins": {
+      "php-http/discovery": true
+    }
+  }
+}

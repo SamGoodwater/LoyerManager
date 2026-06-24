@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Connexion — Loyer Manager</title>
+  <link rel="icon" href="img/logo.ico" sizes="any">
+  <link rel="icon" href="img/logo.jpg" type="image/jpeg">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="login-page">
+  <main class="login-main" id="login-main">
+    <div class="login-card">
+      <div class="login-brand">
+        <img src="img/logo.jpg" alt="" class="login-logo" width="64" height="64" decoding="async">
+        <h1>Loyer Manager</h1>
+        <p id="login-subtitle" class="login-subtitle">Connectez-vous pour accéder à vos données.</p>
+      </div>
+
+      <div id="login-error" class="login-error hidden" role="alert"></div>
+
+      <form id="form-login" class="login-form" autocomplete="on">
+        <div class="form-row">
+          <div class="label-with-help">
+            <label for="login-email">Adresse e-mail</label>
+            <button type="button" class="help-trigger" data-help-id="auth-email" aria-label="Aide : e-mail de connexion" aria-expanded="false"><span aria-hidden="true">?</span></button>
+          </div>
+          <input type="email" id="login-email" name="email" required autocomplete="username">
+        </div>
+        <div class="form-row">
+          <div class="label-with-help">
+            <label for="login-password">Passphrase <span class="label-secondary">(mot de passe)</span></label>
+            <button type="button" class="help-trigger" data-help-id="auth-passphrase" aria-label="Qu'est-ce qu'une passphrase ?" aria-expanded="false"><span aria-hidden="true">?</span></button>
+          </div>
+          <input type="password" id="login-password" name="password" required minlength="8" autocomplete="current-password">
+        </div>
+        <p id="login-setup-hint" class="field-hint hidden">Minimum 8 caractères — une phrase de plusieurs mots est recommandée, sans règles de complexité. Ce compte protège l'accès à l'application.</p>
+        <button type="submit" id="btn-login-submit" class="btn btn-primary login-submit">Se connecter</button>
+      </form>
+
+      <div id="login-backup-block" class="login-backup hidden">
+        <p class="login-oauth-sep"><span>ou</span></p>
+        <p class="field-hint login-backup-intro">
+          Restaurez une sauvegarde chiffrée exportée depuis Mon compte
+          (<span class="help-inline-trigger help-trigger" data-help-id="auth-backup-restore" role="button" tabindex="0" aria-label="Aide restauration sauvegarde">?</span>).
+        </p>
+        <div id="login-backup-pending" class="login-backup-pending hidden" role="status"></div>
+        <div id="login-backup-form">
+          <div class="form-row">
+            <label for="login-backup-file">Fichier de sauvegarde (.json)</label>
+            <input type="file" id="login-backup-file" accept=".json,application/json">
+          </div>
+          <div class="form-row">
+            <label for="login-backup-password">Mot de passe de sauvegarde</label>
+            <input type="password" id="login-backup-password" autocomplete="off" minlength="8" placeholder="Mot de passe choisi à l'export">
+          </div>
+          <button type="button" id="btn-login-backup-prepare" class="btn btn-secondary login-backup-btn">Préparer la restauration</button>
+        </div>
+        <p id="login-backup-next-hint" class="field-hint hidden">Créez ensuite votre compte ci-dessus ou via Google / Microsoft — les données seront importées automatiquement.</p>
+      </div>
+
+      <div id="login-oauth-block" class="login-oauth">
+        <p class="login-oauth-sep"><span>ou</span></p>
+        <p class="field-hint login-oauth-hint">Connexion sans passphrase via votre compte Google ou Microsoft (voir <span class="help-inline-trigger help-trigger" data-help-id="auth-oauth-login" role="button" tabindex="0" aria-label="Aide connexion OAuth">?</span>).</p>
+        <div class="login-oauth-buttons">
+          <button type="button" id="btn-login-google" class="btn btn-secondary login-oauth-btn" data-provider="google">Continuer avec Google</button>
+          <button type="button" id="btn-login-microsoft" class="btn btn-secondary login-oauth-btn" data-provider="microsoft">Continuer avec Microsoft</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/version.js"></script>
+  <script src="js/notify.js"></script>
+  <script src="js/help.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>

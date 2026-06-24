@@ -17,6 +17,7 @@
 
   var instances = {};
 
+  /** Définit set toolbar labels. */
   function setToolbarLabels(host) {
     var labels = {
       '.ql-bold': 'Gras',
@@ -41,38 +42,233 @@
     });
   }
 
-  function applyQuittanceLayout(root) {
+  /** Paragraphe Quill vide (espacement manuel). */
+  function isEmptyParagraph(el) {
+    if (!el || el.tagName !== 'P') return false;
+    var html = String(el.innerHTML || '')
+      .replace(/<br\s*\/?>/gi, '')
+      .replace(/&nbsp;/gi, '')
+      .trim();
+    return !html;
+  }
+
+  /** Supprime les paragraphes vides (export Word uniquement). */
+  function removeEmptySpacerParagraphs(root) {
     if (!root) return;
+    root.querySelectorAll('p').forEach(function (p) {
+      if (isEmptyParagraph(p) && p.parentNode) p.parentNode.removeChild(p);
+    });
+  }
+
+  /** Espacement vertical du corps de quittance (aperçu + PDF). */
+  function applyQuittanceBodySpacing(root) {
+    if (!root) return;
+
+    root.querySelectorAll('.quittance-header').forEach(function (header) {
+      header.style.marginBottom = '1.5rem';
+    });
+
+    root.querySelectorAll('h2, .quittance-title').forEach(function (h) {
+      if (h.closest('.quittance-party')) return;
+      h.style.margin = '1.25rem 0 0.75rem';
+    });
+
+    root.querySelectorAll('h4').forEach(function (h) {
+      if (h.closest('.quittance-party')) return;
+      h.style.margin = '1rem 0 0.5rem';
+    });
+
+    root.querySelectorAll('p').forEach(function (p) {
+      if (p.closest('.quittance-party') || p.closest('.quittance-footer')) return;
+      p.style.margin = '0.65rem 0';
+      p.style.lineHeight = '1.5';
+    });
+
+    root.querySelectorAll('.quittance-legal').forEach(function (p) {
+      p.style.marginTop = '1rem';
+    });
+
+    root.querySelectorAll('.quittance-breakdown, .quittance-solde').forEach(function (p) {
+      p.style.margin = '0.65rem 0';
+    });
+
+    root.querySelectorAll('.quittance-payments').forEach(function (block) {
+      block.style.margin = '0.75rem 0';
+    });
+
+    root.querySelectorAll('.ql-align-right').forEach(function (el) {
+      if (el.closest('.quittance-party')) return;
+      el.style.marginTop = '1.25rem';
+    });
+  }
+
+  /** Libellé h3 BAILLEUR / LOCATAIRE normalisé. */
+  function headerLabel(el) {
+    return String(el && el.textContent ? el.textContent : '')
+      .toUpperCase()
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /** Compacte marges dans une cellule d'en-tête. */
+  function tightenPartyCell(td) {
+    if (!td) return;
+    td.querySelectorAll('h3').forEach(function (h) {
+      h.style.margin = '0 0 0.35rem';
+      h.style.fontSize = '0.85rem';
+      h.style.letterSpacing = '0.05em';
+    });
+    td.querySelectorAll('p').forEach(function (p) {
+      p.style.margin = '0 0 0.15rem';
+    });
+  }
+
+  /** Styles communs table en-tête (compatible Word). */
+  function styleHeaderTable(table, compactForDocx) {
+    table.className = 'quittance-header';
+    table.setAttribute('width', '100%');
+    table.style.width = '100%';
+    table.style.borderCollapse = 'collapse';
+    table.style.border = 'none';
+    table.style.marginBottom = compactForDocx ? '1rem' : '1.5rem';
+  }
+
+  /** Convertit div flex en table 2 colonnes. */
+  function convertHeaderToTable(headerEl, compactForDocx) {
+    if (!headerEl || headerEl.tagName === 'TABLE') return;
+
+    var bailleur = headerEl.querySelector('.quittance-party-bailleur') || headerEl.children[0];
+    var locataire = headerEl.querySelector('.quittance-party-locataire') || headerEl.children[1];
+    if (!bailleur || !locataire || !headerEl.parentNode) return;
+
+    var table = document.createElement('table');
+    styleHeaderTable(table, compactForDocx);
+    var tr = document.createElement('tr');
+
+    var tdLeft = document.createElement('td');
+    tdLeft.className = 'quittance-party quittance-party-bailleur';
+    tdLeft.style.cssText = 'width:50%;vertical-align:top;text-align:left;border:none;padding:0;';
+    while (bailleur.firstChild) tdLeft.appendChild(bailleur.firstChild);
+
+    var tdRight = document.createElement('td');
+    tdRight.className = 'quittance-party quittance-party-locataire';
+    tdRight.style.cssText = 'width:50%;vertical-align:top;text-align:right;border:none;padding:0;';
+    while (locataire.firstChild) tdRight.appendChild(locataire.firstChild);
+
+    tr.appendChild(tdLeft);
+    tr.appendChild(tdRight);
+    table.appendChild(tr);
+    headerEl.parentNode.replaceChild(table, headerEl);
+    tightenPartyCell(tdLeft);
+    tightenPartyCell(tdRight);
+  }
+
+  /** Reconstruit l'en-tête Quill plat (h3 BAILLEUR puis h3 LOCATAIRE). */
+  function normalizeFlatHeader(container, compactForDocx) {
+    if (!container || container.querySelector('.quittance-header')) return;
+
+    var children = Array.prototype.slice.call(container.children);
+    var bailleurIdx = -1;
+    var locataireIdx = -1;
+    var i;
+
+    for (i = 0; i < children.length; i++) {
+      if (children[i].tagName !== 'H3') continue;
+      var label = headerLabel(children[i]);
+      if (label.indexOf('BAILLEUR') !== -1) bailleurIdx = i;
+      if (label.indexOf('LOCATAIRE') !== -1) locataireIdx = i;
+    }
+    if (bailleurIdx === -1 || locataireIdx === -1 || locataireIdx <= bailleurIdx) return;
+
+    var bailleurNodes = [];
+    var locataireNodes = [];
+    for (i = bailleurIdx; i < locataireIdx; i++) {
+      if (!compactForDocx || !isEmptyParagraph(children[i])) bailleurNodes.push(children[i]);
+    }
+    for (i = locataireIdx; i < children.length; i++) {
+      if (children[i].tagName === 'H1' || children[i].tagName === 'H2') break;
+      if (!compactForDocx || !isEmptyParagraph(children[i])) locataireNodes.push(children[i]);
+    }
+    if (!bailleurNodes.length || !locataireNodes.length) return;
+
+    var marker = document.createComment('quittance-header');
+    container.insertBefore(marker, bailleurNodes[0]);
+
+    var table = document.createElement('table');
+    styleHeaderTable(table, compactForDocx);
+    var tr = document.createElement('tr');
+
+    var tdLeft = document.createElement('td');
+    tdLeft.className = 'quittance-party quittance-party-bailleur';
+    tdLeft.style.cssText = 'width:50%;vertical-align:top;text-align:left;border:none;padding:0;';
+    bailleurNodes.forEach(function (node) {
+      tdLeft.appendChild(node);
+    });
+
+    var tdRight = document.createElement('td');
+    tdRight.className = 'quittance-party quittance-party-locataire';
+    tdRight.style.cssText = 'width:50%;vertical-align:top;text-align:right;border:none;padding:0;';
+    locataireNodes.forEach(function (node) {
+      tdRight.appendChild(node);
+    });
+
+    tr.appendChild(tdLeft);
+    tr.appendChild(tdRight);
+    table.appendChild(tr);
+    container.insertBefore(table, marker);
+    container.removeChild(marker);
+    tightenPartyCell(tdLeft);
+    tightenPartyCell(tdRight);
+  }
+
+  /** Normalise en-tête quittance (table ; compactage optionnel pour Word). */
+  function normalizeQuittanceDocument(root, compactForDocx) {
+    if (!root) return;
+    if (compactForDocx) removeEmptySpacerParagraphs(root);
+
+    root.querySelectorAll('.quittance-header').forEach(function (header) {
+      convertHeaderToTable(header, compactForDocx);
+    });
+
+    root.querySelectorAll('.quittance-doc').forEach(function (doc) {
+      if (!doc.querySelector('.quittance-header')) normalizeFlatHeader(doc, compactForDocx);
+    });
+    if (!root.querySelector('.quittance-header')) normalizeFlatHeader(root, compactForDocx);
+
+    root.querySelectorAll('.ql-align-right').forEach(function (el) {
+      el.style.textAlign = 'right';
+    });
+  }
+
+  /** Prépare HTML string pour export Word (compact). */
+  function prepareHtmlForExport(html) {
+    var host = document.createElement('div');
+    host.innerHTML = html || '';
+    applyQuittanceLayout(host, { compactForDocx: true });
+    return host.innerHTML;
+  }
+
+  /** apply quittance layout. */
+  function applyQuittanceLayout(root, options) {
+    if (!root) return;
+    options = options || {};
+    var compactForDocx = !!options.compactForDocx;
+
+    normalizeQuittanceDocument(root, compactForDocx);
 
     var calc = global.LoyerCalc || {};
     var sigW = calc.SIGNATURE_IMG_WIDTH || 250;
 
     root.querySelectorAll('.quittance-header').forEach(function (header) {
-      header.style.display = 'flex';
-      header.style.flexDirection = 'row';
-      header.style.justifyContent = 'space-between';
-      header.style.alignItems = 'flex-start';
-      header.style.gap = '2rem';
-      header.style.width = '100%';
-      header.style.marginBottom = '1.5rem';
-
-      var bailleur = header.querySelector('.quittance-party-bailleur') || header.children[0];
-      var locataire = header.querySelector('.quittance-party-locataire') || header.children[1];
-
-      if (bailleur) {
-        bailleur.style.flex = '1 1 45%';
-        bailleur.style.minWidth = '180px';
-        bailleur.style.textAlign = 'left';
+      if (header.tagName === 'TABLE') {
+        styleHeaderTable(header, compactForDocx);
+        return;
       }
-      if (locataire) {
-        locataire.style.flex = '1 1 45%';
-        locataire.style.minWidth = '180px';
-        locataire.style.textAlign = 'right';
-      }
+      convertHeaderToTable(header, compactForDocx);
     });
 
     root.querySelectorAll('.quittance-footer').forEach(function (footerEl) {
-      footerEl.style.marginTop = '2rem';
+      footerEl.style.marginTop = compactForDocx ? '1.5rem' : '2rem';
       footerEl.style.textAlign = 'right';
     });
 
@@ -106,8 +302,11 @@
       img.setAttribute('width', String(sigW));
       img.removeAttribute('height');
     });
+
+    if (!compactForDocx) applyQuittanceBodySpacing(root);
   }
 
+  /** Crée create editor. */
   function createEditor(options) {
     options = options || {};
     var id = options.id;
@@ -124,15 +323,17 @@
     var el = document.getElementById(containerId);
     if (!el) return null;
 
+    var toolbarModules = options.toolbar === false ? false : (options.toolbar || DEFAULT_TOOLBAR);
     var quill = new Quill('#' + containerId, {
       theme: 'snow',
       modules: {
-        toolbar: options.toolbar || DEFAULT_TOOLBAR
+        toolbar: toolbarModules
       },
       placeholder: options.placeholder || 'Contenu…'
     });
 
-    setToolbarLabels(el);
+    if (options.readOnly) quill.enable(false);
+    if (toolbarModules !== false) setToolbarLabels(el);
 
     var editor = {
       id: id,
@@ -166,16 +367,20 @@
     return editor;
   }
 
+  /** Retourne instance Quill associée à un conteneur. */
   function getEditor(id) {
     return instances[id] || null;
   }
 
+  /** Initialise init. */
   function init() {
     createEditor({
       id: 'quittance-preview',
       containerId: 'quittance-editor',
       layout: 'quittance',
-      placeholder: 'Contenu de la quittance…'
+      placeholder: 'Contenu de la quittance…',
+      toolbar: false,
+      readOnly: true
     });
     createEditor({
       id: 'template-quittance',
@@ -190,7 +395,9 @@
     createEditor({
       id: 'mail-preview',
       containerId: 'mail-preview-editor',
-      placeholder: 'Aperçu du mail…'
+      placeholder: 'Aperçu du mail…',
+      toolbar: false,
+      readOnly: true
     });
     return instances['quittance-preview'];
   }
@@ -200,6 +407,7 @@
     get: getEditor,
     init: init,
     applyQuittanceLayout: applyQuittanceLayout,
+    prepareHtmlForExport: prepareHtmlForExport,
     setHtml: function (html) {
       var ed = getEditor('quittance-preview');
       if (ed) ed.setHtml(html);

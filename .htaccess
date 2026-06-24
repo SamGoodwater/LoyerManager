@@ -1,10 +1,15 @@
 Options -Indexes
 
-# Bloquer l'accès HTTP direct aux données et modèles (Apache)
+# Page d'erreur personnalisée (Apache)
+ErrorDocument 404 /404.html
+
+# Bloquer l'accès HTTP direct aux données, modèles et code serveur (Apache)
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteRule ^data/ - [F,L]
   RewriteRule ^templates/ - [F,L]
+  RewriteRule ^php/ - [F,L]
+  RewriteRule ^vendor/ - [F,L]
 </IfModule>
 
 # Bloquer l'accès direct à la configuration

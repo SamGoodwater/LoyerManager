@@ -1,14 +1,11 @@
 # Exemple — HTTP Basic Auth (Apache 2.4)
 #
-# Deux méthodes (choisissez une seule) :
+# Couche optionnelle devant tout le site (en plus de login.html).
+# Deux méthodes :
 #
-# A) Panneau d'hébergement (recommandé, sans terminal)
-#    Outil « Confidentialité / Protection du répertoire » — le panneau
-#    génère automatiquement .htaccess et .htpasswd.
+# A) Panneau d'hébergement — « Protection du répertoire »
 #
-# B) Manuel — ajoutez les lignes Auth* ci-dessous en TÊTE du .htaccess
-#    du dossier à protéger (même niveau que index.html).
-#
+# B) Manuel — ajoutez en TÊTE du .htaccess à la racine du projet :
 # Générer .htpasswd (si vous avez accès shell) :
 #   htpasswd -c /chemin/HORS/web/loyer.htpasswd mon_utilisateur
 #

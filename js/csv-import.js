@@ -4,6 +4,7 @@
 (function (global) {
   'use strict';
 
+  /** Détecte encodage ISO-8859-1 vs UTF-8 sur buffer CSV. */
   function decodeCsvBuffer(buffer) {
     var iso = '';
     var utf8 = '';
@@ -33,6 +34,7 @@
     return utf8 || iso;
   }
 
+  /** normalize text. */
   function normalizeText(str) {
     return String(str || '')
       .toUpperCase()
@@ -42,6 +44,7 @@
       .trim();
   }
 
+  /** Découpe une ligne CSV en respectant guillemets et séparateur. */
   function parseCsvLine(line, sep) {
     var parts = [];
     var cur = '';
@@ -63,12 +66,14 @@
     return parts;
   }
 
+  /** Infère ; ou , comme séparateur CSV. */
   function detectSeparator(headerLine) {
     if (headerLine.indexOf(';') !== -1) return ';';
     if (headerLine.indexOf('\t') !== -1) return '\t';
     return ',';
   }
 
+  /** Parse montant bancaire FR (virgule décimale). */
   function parseFrenchAmount(str) {
     if (str == null || str === '') return null;
     var cleaned = String(str).replace(/\s/g, '').replace(/\u00a0/g, '').replace(',', '.');
@@ -76,6 +81,7 @@
     return isNaN(n) ? null : Math.round(n * 100) / 100;
   }
 
+  /** Parse date relevé (JJ/MM/AAAA et variantes). */
   function parseBankDate(str) {
     var m = String(str || '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if (!m) return null;
@@ -88,6 +94,7 @@
     return year + '-' + mm + '-' + dd;
   }
 
+  /** extract bank ref. */
   function extractBankRef(label) {
     var text = String(label || '').trim();
     var mSepa = text.match(/(\d{5}-\d{2}-\d{10,})\s*$/);
@@ -99,6 +106,7 @@
     return '';
   }
 
+  /** Repère colonnes date, montant, libellé, référence (banques FR). */
   function findColumnIndexes(header) {
     var idxDate = -1;
     var idxValueDate = -1;
@@ -131,6 +139,7 @@
     };
   }
 
+  /** Profils émetteurs depuis settings pour filtrage import. */
   function getEmitterProfiles(settings) {
     var profiles = [];
     if (settings.emitterProfiles && settings.emitterProfiles.length) {
@@ -166,6 +175,7 @@
     return profiles;
   }
 
+  /** match emitter profile. */
   function matchEmitterProfile(label, profiles) {
     var normLabel = normalizeText(label);
     for (var i = 0; i < profiles.length; i++) {
@@ -180,6 +190,7 @@
     return null;
   }
 
+  /** Parse lignes CSV (séparateur ; ou ,). */
   function parseCsvRows(text) {
     var lines = text.split(/\r?\n/).filter(function (line) {
       return line.trim().length > 0;
@@ -230,7 +241,9 @@
     return { rows: rows, error: null };
   }
 
+  /** Doublon si même ref bancaire ou montant+date existants. */
   function findDuplicateReason(candidate, existingPayments, selectedKeys) {
+    // 1) Même référence bancaire = doublon certain (relevés FR)
     if (candidate.bankRef) {
       var byRef = existingPayments.find(function (p) {
         return p.bankRef && p.bankRef === candidate.bankRef;
@@ -243,6 +256,7 @@
       }
     }
 
+    // 2) Même date + montant : doublon sauf si références bancaires distinctes
     var byDateAmount = existingPayments.find(function (p) {
       return p.date === candidate.date && Math.abs(p.amount - candidate.amount) < 0.005;
     });
@@ -264,6 +278,7 @@
     return { duplicate: false, reason: '' };
   }
 
+  /** Structure données pour renderCsvImportTable. */
   function buildImportPreview(csvText, settings, existingPayments) {
     var parsed = parseCsvRows(csvText);
     if (parsed.error) return { error: parsed.error, items: [] };
@@ -314,6 +329,7 @@
     }};
   }
 
+  /** items to payments. */
   function itemsToPayments(items) {
     return items
       .filter(function (item) {

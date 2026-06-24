@@ -4,15 +4,17 @@
 (function (global) {
   'use strict';
 
+  /** resolve template id. */
   function resolveTemplateId(data, templateId) {
     return (
       templateId ||
       (global.LoyerTemplates
         ? global.LoyerTemplates.resolveDefaultId('quittance', data.settings)
-        : 'principal')
+        : 'complet')
     );
   }
 
+  /** Construit build filled html. */
   function buildFilledHtml(data, year, month, templateId) {
     var id = resolveTemplateId(data, templateId);
     return global.LoyerTemplates.loadTemplate('quittance', id).then(function (template) {
@@ -22,6 +24,7 @@
     });
   }
 
+  /** Construit build batch html. */
   function buildBatchHtml(data, fromYear, fromMonth, toYear, toMonth, templateId) {
     var months = global.LoyerCalc.listMonthsInRange(fromYear, fromMonth, toYear, toMonth, data);
     if (!months.length) {
@@ -54,10 +57,12 @@
     });
   }
 
+  /** Nom fichier export groupé selon plage et format. */
   function getBatchFilename(fromKey, toKey) {
     return 'Quittances_' + fromKey + '_' + toKey;
   }
 
+  /** Exporte export batch. */
   function exportBatch(data, fromYear, fromMonth, toYear, toMonth, templateId, format) {
     return buildBatchHtml(data, fromYear, fromMonth, toYear, toMonth, templateId).then(function (result) {
       var filename = getBatchFilename(result.fromKey, result.toKey);
@@ -74,12 +79,14 @@
     });
   }
 
+  /** Génère PDF multi-pages pour une plage de mois. */
   function getPeriodPdfBlob(data, fromYear, fromMonth, toYear, toMonth, templateId) {
     return buildBatchHtml(data, fromYear, fromMonth, toYear, toMonth, templateId).then(function (result) {
       return global.LoyerExport.getPdfBlobFromHtml(result.html);
     });
   }
 
+  /** Rafraîchit le rendu DOM de render. */
   function render(data, year, month, templateId) {
     return buildFilledHtml(data, year, month, templateId).then(function (html) {
       global.LoyerEditor.setHtml(html);
@@ -92,14 +99,17 @@
     });
   }
 
+  /** HTML quittance rendu pour un mois. */
   function getRenderedHtml() {
     return global.LoyerEditor.getHtml();
   }
 
+  /** Nom fichier export quittance unitaire. */
   function getFilename(year, month) {
     return 'Quittance_' + year + '-' + String(month).padStart(2, '0');
   }
 
+  /** Rafraîchit le rendu DOM de render batch preview. */
   function renderBatchPreview(data, fromYear, fromMonth, toYear, toMonth, templateId) {
     return buildBatchHtml(data, fromYear, fromMonth, toYear, toMonth, templateId).then(function (result) {
       global.LoyerEditor.setHtml(result.html);

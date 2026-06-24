@@ -21,13 +21,30 @@ templates/**/*.bak
 # Exports JSON téléchargés depuis l'app
 *-export.json
 
-# Configuration serveur (clé API)
+# Configuration serveur (clé API, OAuth, chiffrement)
 config.php
+
+# Base SQLite locale (tokens OAuth + historique)
+data/loyer.db
+data/loyer.db-*
+data/*.db
+
+# Sauvegarde config locale (scripts/demo-init.sh)
+config.php.bak.*
+
+# Outils internes / brouillons locaux
+_analysis/
+js/test-write.txt
+data/demo-reset.log
 
 # Processus dev (php -S manuel)
 deploy/.php-server.pid
 deploy/.php-server.log
 deploy/.env.local
+
+# Composer local (vendor/ est versionné)
+composer.phar
+composer-setup.php
 
 # OS / éditeur
 .DS_Store

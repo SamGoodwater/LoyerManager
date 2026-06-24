@@ -1,0 +1,56 @@
+/* Espacement quittance (aperçu + PDF) — complète styles.css */
+.quill-editor-host .ql-editor table.quittance-header {
+  width: 100%;
+  border-collapse: collapse;
+  border: none;
+  margin-bottom: 1.5rem;
+}
+
+.quill-editor-host .ql-editor table.quittance-header td {
+  border: none;
+  padding: 0;
+  vertical-align: top;
+}
+
+.quill-editor-host .ql-editor .quittance-party-bailleur {
+  text-align: left;
+}
+
+.quill-editor-host .ql-editor .quittance-party-locataire {
+  text-align: right;
+}
+
+.quill-editor-host .ql-editor > h2,
+.quill-editor-host .ql-editor .quittance-doc > h2,
+.quill-editor-host .ql-editor .quittance-title {
+  margin: 1.25rem 0 0.75rem;
+}
+
+.quill-editor-host .ql-editor > h4,
+.quill-editor-host .ql-editor .quittance-doc h4,
+.quill-editor-host .ql-editor .quittance-payments h4 {
+  margin: 1rem 0 0.5rem;
+}
+
+.quill-editor-host .ql-editor > p,
+.quill-editor-host .ql-editor .quittance-doc > p {
+  margin: 0.65rem 0;
+  line-height: 1.5;
+}
+
+.quill-editor-host .ql-editor .quittance-party p {
+  margin: 0 0 0.25rem;
+}
+
+.quill-editor-host .ql-editor .quittance-legal {
+  margin-top: 1rem;
+}
+
+.quill-editor-host .ql-editor .quittance-payments {
+  margin: 0.75rem 0;
+}
+
+.quill-editor-host .ql-editor > p.ql-align-right,
+.quill-editor-host .ql-editor .quittance-doc > p.ql-align-right {
+  margin-top: 1.25rem;
+}

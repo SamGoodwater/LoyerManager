@@ -11,15 +11,18 @@
     'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'
   ];
 
+  /** generate id. */
   function generateId() {
     return 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
   }
 
+  /** Parse une date ISO ou FR en objet Date. */
   function parseDate(str) {
     var parts = str.split('-');
     return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
   }
 
+  /** Formate format date iso. */
   function formatDateISO(d) {
     var y = d.getFullYear();
     var m = String(d.getMonth() + 1).padStart(2, '0');
@@ -27,34 +30,48 @@
     return y + '-' + m + '-' + day;
   }
 
+  /** start of month. */
   function startOfMonth(year, month) {
     return new Date(year, month - 1, 1);
   }
 
+  /** end of month. */
   function endOfMonth(year, month) {
     return new Date(year, month, 0);
   }
 
+  /** month key. */
   function monthKey(year, month) {
     return year + '-' + String(month).padStart(2, '0');
   }
 
-  function getRentAmount(priceHistory, date) {
-    if (!priceHistory || !priceHistory.length) return 0;
+  /** Montant loyer + charges applicable à une date (paliers priceHistory). */
+  function getRentBreakdown(priceHistory, date) {
+    if (!priceHistory || !priceHistory.length) {
+      return { loyer: 0, charges: 0, total: 0 };
+    }
     var sorted = priceHistory.slice().sort(function (a, b) {
       return parseDate(a.from) - parseDate(b.from);
     });
-    var amount = sorted[0].amount;
+    var loyer = Number(sorted[0].amount) || 0;
+    var charges = sorted[0].charges != null ? Number(sorted[0].charges) || 0 : 0;
     for (var i = 0; i < sorted.length; i++) {
       if (parseDate(sorted[i].from) <= date) {
-        amount = sorted[i].amount;
+        loyer = Number(sorted[i].amount) || 0;
+        charges = sorted[i].charges != null ? Number(sorted[i].charges) || 0 : 0;
       } else {
         break;
       }
     }
-    return amount;
+    return { loyer: loyer, charges: charges, total: loyer + charges };
   }
 
+  /** Montant total dû (loyer + charges) à une date — alias rétrocompat. */
+  function getRentAmount(priceHistory, date) {
+    return getRentBreakdown(priceHistory, date).total;
+  }
+
+  /** iterate months. */
   function iterateMonths(fromDate, toDate, callback) {
     var current = new Date(fromDate.getFullYear(), fromDate.getMonth(), 1);
     var end = new Date(toDate.getFullYear(), toDate.getMonth(), 1);
@@ -64,6 +81,7 @@
     }
   }
 
+  /** sum payments in month. */
   function sumPaymentsInMonth(payments, year, month) {
     var start = startOfMonth(year, month);
     var next = new Date(year, month, 1);
@@ -77,6 +95,7 @@
     return total;
   }
 
+  /** filter payments in month. */
   function filterPaymentsInMonth(payments, year, month) {
     var start = startOfMonth(year, month);
     var next = new Date(year, month, 1);
@@ -90,6 +109,7 @@
       });
   }
 
+  /** Calcule une ligne par mois : attendu, reçu, solde cumulé, statut. */
   function computeMonthlyRows(data, upToDate) {
     var settings = data.settings;
     var leaseStart = parseDate(settings.leaseStart);
@@ -101,7 +121,8 @@
     iterateMonths(leaseStart, end, function (year, month) {
       var monthStart = startOfMonth(year, month);
       if (monthStart > end) return;
-      var attendu = getRentAmount(settings.priceHistory, monthStart);
+      var breakdown = getRentBreakdown(settings.priceHistory, monthStart);
+      var attendu = breakdown.total;
       var recu = sumPaymentsInMonth(data.payments, year, month);
       var difference = recu - attendu;
       soldeCumule += difference;
@@ -110,6 +131,8 @@
         month: month,
         key: monthKey(year, month),
         monthStart: formatDateISO(monthStart),
+        loyerAttendu: breakdown.loyer,
+        chargesAttendu: breakdown.charges,
         attendu: attendu,
         recu: recu,
         difference: difference,
@@ -120,6 +143,7 @@
     return rows;
   }
 
+  /** Agrège les lignes mensuelles par année civile. */
   function computeYearlySummary(monthlyRows) {
     var byYear = {};
     monthlyRows.forEach(function (row) {
@@ -146,6 +170,7 @@
       });
   }
 
+  /** Liste des années présentes dans les lignes mensuelles. */
   function getAvailableYears(monthlyRows) {
     var years = {};
     monthlyRows.forEach(function (r) {
@@ -158,6 +183,7 @@
       });
   }
 
+  /** Détail d'un mois + virements associés. */
   function getMonthDetail(data, year, month) {
     var monthlyRows = computeMonthlyRows(data);
     var row = monthlyRows.find(function (r) {
@@ -173,14 +199,17 @@
     };
   }
 
+  /** Formate format month long. */
   function formatMonthLong(year, month) {
     return MONTH_NAMES[month - 1] + ' ' + year;
   }
 
+  /** Formate format month short. */
   function formatMonthShort(year, month) {
     return String(month).padStart(2, '0') + '/' + year;
   }
 
+  /** Formate format currency. */
   function formatCurrency(amount) {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
@@ -188,6 +217,7 @@
     }).format(amount);
   }
 
+  /** Formate format date long. */
   function formatDateLong(dateStr) {
     var d = parseDate(dateStr);
     return d.toLocaleDateString('fr-FR', {
@@ -197,6 +227,7 @@
     });
   }
 
+  /** Texte période quittance (du/au selon jour échéance). */
   function getQuittancePeriod(year, month, rentDueDay) {
     var start = startOfMonth(year, month);
     var day = Math.min(rentDueDay || 1, endOfMonth(year, month).getDate());
@@ -210,6 +241,7 @@
     };
   }
 
+  /** Construit build signature html. */
   function buildSignatureHtml(bailleur) {
     var name = (bailleur && bailleur.name) ? bailleur.name : '';
     var img = (bailleur && bailleur.signatureImage) ? bailleur.signatureImage : '';
@@ -243,6 +275,7 @@
     return parts.join('');
   }
 
+  /** Échappe escape html. */
   function escapeHtml(str) {
     return String(str || '')
       .replace(/&/g, '&amp;')
@@ -251,16 +284,19 @@
       .replace(/"/g, '&quot;');
   }
 
+  /** Date d'échéance théorique pour un mois donné. */
   function getRentDueDate(year, month, rentDueDay) {
     var day = Math.min(rentDueDay || 1, endOfMonth(year, month).getDate());
     return new Date(year, month - 1, day);
   }
 
+  /** True si le mois correspond au mois calendaire courant. */
   function isCurrentMonth(year, month, today) {
     today = today || new Date();
     return year === today.getFullYear() && month === today.getMonth() + 1;
   }
 
+  /** True si le mois est strictement antérieur au mois courant. */
   function isMonthPast(year, month, today) {
     today = today || new Date();
     var monthStart = startOfMonth(year, month);
@@ -268,14 +304,17 @@
     return monthStart < currentStart;
   }
 
+  /** Statut métier : payé, partiel, impayé, en cours, avance. */
   function getMonthStatus(row, options) {
     options = options || {};
     var today = options.today || new Date();
     if (!row || !row.attendu) return 'hors_periode';
+    // Reçu >= attendu : payé ou trop-perçu (avance locataire)
     if (row.recu >= row.attendu) {
       return row.recu > row.attendu ? 'avance' : 'paye';
     }
     if (row.recu > 0) return 'partiel';
+    // Mois en cours : « impayé » seulement après le jour d'échéance théorique
     if (isCurrentMonth(row.year, row.month, today)) {
       var rentDueDay = options.rentDueDay != null ? options.rentDueDay : 1;
       var due = getRentDueDate(row.year, row.month, rentDueDay);
@@ -294,15 +333,18 @@
     hors_periode: '—'
   };
 
+  /** Libellé français du statut mois (Payé, Impayé…). */
   function getMonthStatusLabel(status) {
     return MONTH_STATUS_LABELS[status] || status;
   }
 
+  /** Nombre de jours calendaires entre deux dates. */
   function daysBetween(fromDate, toDate) {
     var ms = toDate.getTime() - fromDate.getTime();
     return Math.max(0, Math.floor(ms / (24 * 60 * 60 * 1000)));
   }
 
+  /** Jours de retard vs jour théorique du virement. */
   function getPaymentDelayDays(data, year, month, today) {
     today = today || new Date();
     var settings = data.settings || {};
@@ -326,6 +368,7 @@
     return null;
   }
 
+  /** list months in range. */
   function listMonthsInRange(fromYear, fromMonth, toYear, toMonth, data, upToDate) {
     var rows = computeMonthlyRows(data, upToDate);
     var fromKey = monthKey(fromYear, fromMonth);
@@ -345,6 +388,7 @@
     });
   }
 
+  /** KPIs année en cours pour le tableau de bord. */
   function computeDashboardKpis(data, year, today) {
     today = today || new Date();
     var rows = computeMonthlyRows(data, today);
@@ -386,6 +430,7 @@
     };
   }
 
+  /** KPIs dashboard sur un sous-ensemble de lignes mensuelles. */
   function computeKpisForRows(data, filterRows, today) {
     today = today || new Date();
     var allRows = computeMonthlyRows(data, today);
@@ -426,11 +471,30 @@
     };
   }
 
+  /** Texte « loyer X + charges Y = total Z » pour affichage. */
+  function formatRentBreakdownText(breakdown) {
+    breakdown = breakdown || { loyer: 0, charges: 0, total: 0 };
+    if (!breakdown.charges) {
+      return 'loyer ' + formatCurrency(breakdown.loyer);
+    }
+    return (
+      'loyer ' +
+      formatCurrency(breakdown.loyer) +
+      ' + charges ' +
+      formatCurrency(breakdown.charges) +
+      ' = ' +
+      formatCurrency(breakdown.total)
+    );
+  }
+
+  /** Construit build quittance data. */
   function buildQuittanceData(data, year, month) {
     var settings = data.settings;
     var detail = getMonthDetail(data, year, month);
     var row = detail.row;
     var period = getQuittancePeriod(year, month, settings.rentDueDay);
+    var monthStart = startOfMonth(year, month);
+    var breakdown = getRentBreakdown(settings.priceHistory, monthStart);
     var resteDu = row ? Math.max(0, row.attendu - row.recu) : 0;
     var texteSolde = '';
     if (resteDu > 0) {
@@ -455,6 +519,11 @@
       moisText: formatMonthLong(year, month),
       mois: MONTH_NAMES[month - 1],
       annee: String(year),
+      loyer: formatCurrency(breakdown.loyer),
+      charges: formatCurrency(breakdown.charges),
+      totalAttendu: formatCurrency(breakdown.total),
+      montantTotal: formatCurrency(breakdown.total),
+      texteMontants: formatRentBreakdownText(breakdown),
       paiement: formatCurrency(detail.totalRecu),
       paiementNum: detail.totalRecu,
       attendu: row ? formatCurrency(row.attendu) : formatCurrency(0),
@@ -480,6 +549,8 @@
     formatCurrency: formatCurrency,
     formatDateLong: formatDateLong,
     getRentAmount: getRentAmount,
+    getRentBreakdown: getRentBreakdown,
+    formatRentBreakdownText: formatRentBreakdownText,
     computeMonthlyRows: computeMonthlyRows,
     computeYearlySummary: computeYearlySummary,
     getAvailableYears: getAvailableYears,

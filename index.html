@@ -9,6 +9,8 @@
   <link rel="apple-touch-icon" href="img/logo.jpg">
   <link rel="stylesheet" href="lib/quill.snow.css">
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/styles-quittance.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
   <script src="lib/quill.min.js"></script>
   <script src="lib/chart.umd.min.js"></script>
   <script src="lib/html2pdf.bundle.min.js"></script>
@@ -16,39 +18,43 @@
 </head>
 <body>
   <a href="#main-content" class="skip-link">Aller au contenu principal</a>
+  <div id="demo-banner" class="demo-banner hidden" role="status" aria-live="polite"></div>
   <header class="app-header">
-    <div class="app-header-brand">
-      <a href="#main-content" class="app-brand" id="app-brand-home" aria-label="Loyer Manager — tableau de bord">
-        <span class="app-logo-wrap" aria-hidden="true">
-          <picture>
-            <source srcset="img/logo.webp" type="image/webp">
-            <img src="img/logo.jpg" alt="Loyer Manager" class="app-logo" width="40" height="40" decoding="async">
-          </picture>
-        </span>
-        <span class="app-brand-text">
-          <span class="app-brand-title">Loyer Manager</span>
-          <span class="app-brand-tagline">Gestion des loyers</span>
-        </span>
-      </a>
-      <div class="app-header-meta">
-        <div id="header-selection" class="header-selection hidden" aria-live="polite">
-          <span class="header-selection-kicker">Sélection</span>
-          <strong id="header-selection-text">—</strong>
+    <a href="#main-content" class="app-brand" id="app-brand-home" aria-label="Loyer Manager — tableau de bord">
+      <span class="app-logo-wrap" aria-hidden="true">
+        <picture>
+          <source srcset="img/logo.webp" type="image/webp">
+          <img src="img/logo.jpg" alt="Loyer Manager" class="app-logo" width="40" height="40" decoding="async">
+        </picture>
+      </span>
+      <span class="app-brand-text">
+        <span class="app-brand-title">Loyer Manager</span>
+        <span class="app-brand-tagline">Gestion des loyers · <span id="app-version-label">v1.0.0</span></span>
+      </span>
+    </a>
+    <div class="app-header-nav">
+      <nav class="tabs" role="tablist" aria-label="Sections de l'application">
+        <button type="button" role="tab" id="tab-dashboard" data-panel="panel-dashboard" class="active" aria-selected="true" aria-controls="panel-dashboard"><i class="fa-solid fa-chart-line tab-icon" aria-hidden="true"></i>Tableau de bord</button>
+        <button type="button" role="tab" id="tab-payments" data-panel="panel-payments" aria-selected="false" aria-controls="panel-payments"><i class="fa-solid fa-money-bill-transfer tab-icon" aria-hidden="true"></i>Virements</button>
+        <button type="button" role="tab" id="tab-settings" data-panel="panel-settings" aria-selected="false" aria-controls="panel-settings"><i class="fa-solid fa-gear tab-icon" aria-hidden="true"></i>Paramètres</button>
+        <button type="button" role="tab" id="tab-quittance" data-panel="panel-quittance" aria-selected="false" aria-controls="panel-quittance"><i class="fa-solid fa-file-invoice tab-icon" aria-hidden="true"></i>Quittance</button>
+        <button type="button" role="tab" id="tab-mail" data-panel="panel-mail" aria-selected="false" aria-controls="panel-mail"><i class="fa-solid fa-envelope tab-icon" aria-hidden="true"></i>Mail</button>
+        <button type="button" role="tab" id="tab-history" data-panel="panel-history" aria-selected="false" aria-controls="panel-history"><i class="fa-solid fa-clock-rotate-left tab-icon" aria-hidden="true"></i>Historique</button>
+        <button type="button" role="tab" id="tab-help" data-panel="panel-help" aria-selected="false" aria-controls="panel-help"><i class="fa-solid fa-circle-question tab-icon" aria-hidden="true"></i>Aide</button>
+      </nav>
+      <div class="app-header-actions">
+        <div id="header-selection" class="header-selection hidden" aria-live="polite" title="Mois focus en mode période">
+          <span class="header-selection-meta">
+            <span class="header-selection-kicker">Sélection</span>
+            <strong id="header-selection-text">—</strong>
+          </span>
+          <button type="button" class="help-trigger help-trigger-inline" data-help-id="header-selection" aria-label="Aide : sélection période" aria-expanded="false"><span aria-hidden="true">?</span></button>
         </div>
-        <button type="button" id="save-status-badge" class="save-status-badge save-status-needs-setup hidden" title="État de la sauvegarde">
-          Sauvegarde
+        <button type="button" id="btn-header-logout" class="header-icon-btn hidden" title="Se déconnecter" aria-label="Se déconnecter">
+          <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
         </button>
-        <button type="button" class="help-trigger" data-help-id="save-badge" aria-label="Aide : indicateur de sauvegarde" aria-expanded="false"><span aria-hidden="true">?</span></button>
       </div>
     </div>
-    <nav class="tabs" role="tablist" aria-label="Sections de l'application">
-      <button type="button" role="tab" id="tab-dashboard" data-panel="panel-dashboard" class="active" aria-selected="true" aria-controls="panel-dashboard">Tableau de bord</button>
-      <button type="button" role="tab" id="tab-payments" data-panel="panel-payments" aria-selected="false" aria-controls="panel-payments">Virements</button>
-      <button type="button" role="tab" id="tab-settings" data-panel="panel-settings" aria-selected="false" aria-controls="panel-settings">Paramètres</button>
-      <button type="button" role="tab" id="tab-quittance" data-panel="panel-quittance" aria-selected="false" aria-controls="panel-quittance">Quittance</button>
-      <button type="button" role="tab" id="tab-mail" data-panel="panel-mail" aria-selected="false" aria-controls="panel-mail">Mail</button>
-      <button type="button" role="tab" id="tab-help" data-panel="panel-help" aria-selected="false" aria-controls="panel-help">Aide</button>
-    </nav>
   </header>
 
   <div id="period-bar" class="period-bar no-print hidden" aria-label="Sélection de période">
@@ -63,10 +69,18 @@
           <button type="button" class="help-trigger" data-help-id="dash-period" aria-label="Aide : période" aria-expanded="false"><span aria-hidden="true">?</span></button>
         </h2>
         <p class="field-hint">Utilisez la barre de période ci-dessus. La sélection du mois est partagée avec Quittance et Mail.</p>
+        <div class="heading-with-help dash-kpis-heading">
+          <span class="subsection-title">Indicateurs de l'année</span>
+          <button type="button" class="help-trigger" data-help-id="dash-kpis" aria-label="Aide : indicateurs" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        </div>
         <div id="dash-kpis" class="stats-row dash-kpis"></div>
+        <div class="heading-with-help dash-month-stats-heading hidden" id="dash-month-stats-heading">
+          <span class="subsection-title">Détail du mois sélectionné</span>
+          <button type="button" class="help-trigger" data-help-id="dash-month-stats" aria-label="Aide : stats du mois" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        </div>
         <div id="month-stats" class="stats-row"></div>
         <div class="btn-group" style="margin-top:0.5rem">
-          <button type="button" id="btn-print-report" class="btn btn-secondary">Imprimer le rapport</button>
+          <button type="button" id="btn-print-report" class="btn btn-secondary"><i class="fa-solid fa-print" aria-hidden="true"></i>Imprimer le rapport</button>
           <button type="button" class="help-trigger" data-help-id="dash-print" aria-label="Aide : impression rapport" aria-expanded="false"><span aria-hidden="true">?</span></button>
         </div>
       </div>
@@ -82,7 +96,7 @@
               <tr>
                 <th>Mois</th>
                 <th>Statut</th>
-                <th class="num">Attendu</th>
+                <th class="num">Total dû</th>
                 <th class="num">Reçu</th>
                 <th class="num">Différence</th>
                 <th class="num">Solde cumulé</th>
@@ -120,7 +134,7 @@
       <div class="dashboard-viz-grid no-print">
         <div class="card dashboard-heatmap-card">
           <h2 class="heading-with-help">Heatmap — Statuts par mois
-            <button type="button" class="help-trigger" data-help-id="dash-kpis" aria-label="Aide : heatmap" aria-expanded="false"><span aria-hidden="true">?</span></button>
+            <button type="button" class="help-trigger" data-help-id="dash-heatmap" aria-label="Aide : heatmap" aria-expanded="false"><span aria-hidden="true">?</span></button>
           </h2>
           <p class="field-hint table-hint">Survolez un mois pour le statut. Clic = détail virements (la période reste active en mode plage).</p>
           <div id="dashboard-heatmap" class="dashboard-heatmap"></div>
@@ -140,8 +154,8 @@
               <button type="button" class="help-trigger" data-help-id="dash-charts" aria-label="Aide : graphique annuel" aria-expanded="false"><span aria-hidden="true">?</span></button>
             </h2>
             <div class="btn-group">
-              <button type="button" id="btn-chart-year-prev" class="btn btn-secondary btn-sm" aria-label="Année précédente">‹</button>
-              <button type="button" id="btn-chart-year-next" class="btn btn-secondary btn-sm" aria-label="Année suivante">›</button>
+              <button type="button" id="btn-chart-year-prev" class="btn btn-secondary btn-sm" aria-label="Année précédente"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
+              <button type="button" id="btn-chart-year-next" class="btn btn-secondary btn-sm" aria-label="Année suivante"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
             </div>
           </div>
           <div class="chart-wrap chart-wrap--compact"><canvas id="chart-yearly-bar"></canvas></div>
@@ -154,7 +168,7 @@
             <thead>
               <tr>
                 <th>Année</th>
-                <th class="num">Attendu</th>
+                <th class="num">Total dû</th>
                 <th class="num">Reçu</th>
                 <th class="num">Différence</th>
                 <th class="num">Solde cumulé</th>
@@ -166,7 +180,9 @@
       </div>
 
       <div class="card no-print dashboard-balance-card">
-        <h2>Graphique — <span id="dash-chart-balance-label">Solde cumulé</span></h2>
+        <h2 class="heading-with-help">Graphique — <span id="dash-chart-balance-label">Solde cumulé</span>
+          <button type="button" class="help-trigger" data-help-id="dash-balance-chart" aria-label="Aide : solde cumulé" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        </h2>
         <p class="field-hint" id="dash-chart-balance-hint">Évolution du solde sur la période affichée.</p>
         <div class="chart-wrap"><canvas id="chart-balance"></canvas></div>
       </div>
@@ -181,13 +197,14 @@
           </h2>
           <div class="btn-group">
             <label class="btn btn-secondary" style="cursor:pointer;margin:0" title="Importer un relevé bancaire au format CSV">
-              Importer CSV
+              <i class="fa-solid fa-file-csv" aria-hidden="true"></i>Importer CSV
               <input type="file" id="import-csv" accept=".csv,text/csv" class="hidden" aria-describedby="hint-import-csv">
             </label>
             <button type="button" class="help-trigger" data-help-id="payments-csv" aria-label="Aide : import CSV" aria-expanded="false"><span aria-hidden="true">?</span></button>
-            <button type="button" id="btn-clear-payments" class="btn btn-danger" title="Supprimer tous les virements">Supprimer tous les virements</button>
+          <button type="button" id="btn-clear-payments" class="btn btn-danger" title="Supprimer tous les virements — irréversible"><i class="fa-solid fa-trash" aria-hidden="true"></i>Supprimer tous les virements</button>
+          <button type="button" class="help-trigger" data-help-id="payments-clear" aria-label="Aide : supprimer tous les virements" aria-expanded="false"><span aria-hidden="true">?</span></button>
             <button type="button" class="help-trigger" data-help-id="payments-clear" aria-label="Aide : supprimer tous les virements" aria-expanded="false"><span aria-hidden="true">?</span></button>
-            <button type="button" id="btn-add-payment" class="btn">+ Ajouter un virement</button>
+            <button type="button" id="btn-add-payment" class="btn"><i class="fa-solid fa-plus" aria-hidden="true"></i>Ajouter un virement</button>
             <button type="button" class="help-trigger" data-help-id="payments-manual" aria-label="Aide : ajout manuel" aria-expanded="false"><span aria-hidden="true">?</span></button>
           </div>
         </div>
@@ -215,7 +232,10 @@
 
     <!-- Paramètres -->
     <section id="panel-settings" class="panel" role="tabpanel" aria-labelledby="tab-settings">
-      <p class="field-hint card-intro no-print">Remplissez ces informations une première fois, puis cliquez sur le bouton bleu <strong>Enregistrer</strong> en bas à droite de l'écran. Vos choix sont mémorisés automatiquement.</p>
+      <div class="settings-intro-row no-print">
+        <p class="field-hint card-intro">Renseignez ces informations une première fois. Vos paramètres sont <strong>sauvegardés automatiquement</strong> toutes les 30 secondes lorsque vous les modifiez. Le bouton <strong>Enregistrer</strong> en bas à droite reste disponible pour enregistrer immédiatement.</p>
+        <button type="button" class="help-trigger" data-help-id="settings-auto-save" aria-label="Aide : sauvegarde automatique" aria-expanded="false"><span aria-hidden="true">?</span></button>
+      </div>
       <div class="card">
         <h2 class="heading-with-help">Location
           <button type="button" class="help-trigger" data-help-id="settings-lease" aria-label="Aide : location" aria-expanded="false"><span aria-hidden="true">?</span></button>
@@ -280,7 +300,7 @@
         <h2 class="heading-with-help">Historique des loyers
           <button type="button" class="help-trigger" data-help-id="settings-prices" aria-label="Aide : historique des loyers" aria-expanded="false"><span aria-hidden="true">?</span></button>
         </h2>
-        <p class="field-hint">Indiquez le montant du loyer et la date à partir de laquelle il s'applique.</p>
+        <p class="field-hint">Indiquez le loyer hors charges, les charges locatives et la date d'application de chaque palier. Le total mensuel (loyer + charges) sert au suivi et à la quittance.</p>
         <div id="prices-list"></div>
         <button type="button" id="btn-add-price" class="btn btn-secondary">+ Ajouter un palier</button>
       </div>
@@ -289,7 +309,7 @@
         <h2 class="heading-with-help">Modèles quittance et mail
           <button type="button" class="help-trigger" data-help-id="settings-templates" aria-label="Aide : modèles" aria-expanded="false"><span aria-hidden="true">?</span></button>
         </h2>
-        <p class="field-hint card-intro">Liste et modèle par défaut. Le modèle principal est en lecture seule. Importez un fichier pour créer un modèle, ou dupliquez-le via « + Nouveau modèle ». Édition dans les onglets <strong>Quittance</strong> et <strong>Mail</strong>.</p>
+        <p class="field-hint card-intro">Liste et modèle par défaut. Les modèles <strong>complet</strong> et <strong>court</strong> sont en lecture seule. Importez un fichier pour créer un modèle, ou dupliquez-les via « + Nouveau modèle ». Édition dans les onglets <strong>Quittance</strong> et <strong>Mail</strong>.</p>
 
         <div class="template-registry-block" data-template-type="quittance">
           <h3 class="subsection-title">Modèles quittance</h3>
@@ -339,28 +359,120 @@
         </div>
       </div>
 
-      <div class="card" id="settings-data-section">
+      <div class="card" id="settings-mail-oauth" data-demo-hide>
+        <h2 class="heading-with-help">Envoi mail (Gmail / Outlook)
+          <button type="button" class="help-trigger" data-help-id="settings-mail-oauth" aria-label="Aide : envoi mail OAuth" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        </h2>
+        <p class="subsection-title">Connectez Gmail ou Outlook pour envoyer les quittances ou les enregistrer en brouillon dans votre boîte mail.</p>
+        <div id="oauth-status-panel" class="oauth-status-panel" aria-live="polite"></div>
+      </div>
+
+      <div class="card" id="settings-mail-smtp" data-demo-hide>
+        <h2 class="heading-with-help">Envoi mail (SMTP)
+          <button type="button" class="help-trigger" data-help-id="settings-mail-smtp" aria-label="Aide : SMTP" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        </h2>
+        <p class="subsection-title">Alternative sans OAuth : renseignez votre serveur SMTP (OVH, Free, Orange, etc.). Le mot de passe est chiffré côté serveur.</p>
+        <div id="smtp-status-line" class="field-hint" aria-live="polite"></div>
+        <div class="form-row">
+          <label for="set-smtp-host">Serveur SMTP</label>
+          <input type="text" id="set-smtp-host" placeholder="smtp.example.com" autocomplete="off">
+        </div>
+        <div class="form-row form-row-inline">
+          <div>
+            <label for="set-smtp-port">Port</label>
+            <input type="number" id="set-smtp-port" min="1" max="65535" value="587">
+          </div>
+          <div>
+            <label for="set-smtp-encryption">Chiffrement</label>
+            <select id="set-smtp-encryption">
+              <option value="tls">STARTTLS (587)</option>
+              <option value="ssl">SSL (465)</option>
+              <option value="none">Aucun</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <label for="set-smtp-username">Identifiant SMTP</label>
+          <input type="text" id="set-smtp-username" autocomplete="off">
+        </div>
+        <div class="form-row">
+          <label for="set-smtp-password">Mot de passe SMTP</label>
+          <input type="password" id="set-smtp-password" autocomplete="new-password" placeholder="Laisser vide pour conserver l'existant">
+        </div>
+        <div class="form-row">
+          <label for="set-smtp-from-email">Adresse expéditeur</label>
+          <input type="email" id="set-smtp-from-email" autocomplete="off">
+        </div>
+        <div class="form-row">
+          <label for="set-smtp-from-name">Nom expéditeur (optionnel)</label>
+          <input type="text" id="set-smtp-from-name" autocomplete="off">
+        </div>
+        <div class="btn-group">
+          <button type="button" id="btn-test-smtp" class="btn btn-secondary">Tester la connexion</button>
+          <button type="button" id="btn-save-smtp" class="btn">Enregistrer SMTP</button>
+          <button type="button" id="btn-clear-smtp" class="btn btn-secondary" title="Effacer la configuration SMTP enregistrée">Supprimer la config SMTP</button>
+          <button type="button" class="help-trigger" data-help-id="btn-clear-smtp" aria-label="Aide : supprimer SMTP" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        </div>
+      </div>
+
+      <div class="card hidden" id="settings-data-section">
         <h2 class="heading-with-help">Données
-          <button type="button" class="help-trigger" data-help-id="settings-data" aria-label="Aide : fichier de données" aria-expanded="false"><span aria-hidden="true">?</span></button>
+          <button type="button" class="help-trigger" data-help-id="settings-data" aria-label="Aide : données" aria-expanded="false"><span aria-hidden="true">?</span></button>
         </h2>
         <p id="data-file-status" class="data-file-status"></p>
         <div id="server-api-key-block" class="form-row hidden">
-          <label for="set-server-api-key">Clé API serveur</label>
-          <p class="field-hint">Requis si <code>api_key</code> est défini dans <code>config.php</code>. Stockée dans le navigateur (session).</p>
+          <label for="set-server-api-key">Clé d'accès serveur</label>
+          <p class="field-hint">Demandez cette clé à l'administrateur de votre installation si l'application vous la réclame.</p>
           <div class="btn-group" style="align-items:flex-end">
-            <input type="password" id="set-server-api-key" class="flex-grow" autocomplete="off" placeholder="Collez la clé API">
-            <button type="button" id="btn-save-api-key" class="btn">Connecter</button>
+            <input type="password" id="set-server-api-key" class="flex-grow" autocomplete="off" placeholder="Collez la clé ici">
+            <button type="button" id="btn-save-api-key" class="btn">Valider</button>
           </div>
         </div>
-        <p id="settings-data-intro" class="subsection-title">Les données et modèles sont enregistrés sur le serveur via <strong>api.php</strong>. Exportez ou importez une copie JSON — ou déposez un fichier <strong>.json</strong> / <strong>.csv</strong> n'importe où sur la page.</p>
-        <div class="btn-group">
-          <button type="button" id="btn-export-json" class="btn btn-secondary">Copie de secours (export)</button>
-          <label class="btn btn-secondary" style="cursor:pointer">
-            Importer JSON
-            <input type="file" id="import-json" accept=".json,application/json" class="hidden">
+        <p id="settings-data-intro" class="subsection-title hidden"></p>
+      </div>
+
+      <div class="card" id="settings-account" data-demo-hide>
+        <h2 class="heading-with-help">Mon compte
+          <button type="button" class="help-trigger" data-help-id="settings-account" aria-label="Aide : compte" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        </h2>
+        <p id="account-status-line" class="subsection-title">—</p>
+        <div id="account-change-passphrase" class="account-passphrase-form hidden">
+          <h3 class="subsection-title">Changer la passphrase</h3>
+          <form id="form-change-passphrase" autocomplete="off">
+            <div class="form-row">
+              <div class="label-with-help">
+                <label for="account-current-passphrase">Passphrase actuelle <span class="label-secondary">(mot de passe)</span></label>
+                <button type="button" class="help-trigger" data-help-id="auth-passphrase" aria-label="Qu'est-ce qu'une passphrase ?" aria-expanded="false"><span aria-hidden="true">?</span></button>
+              </div>
+              <input type="password" id="account-current-passphrase" autocomplete="current-password" required minlength="8">
+            </div>
+            <div class="form-row">
+              <div class="label-with-help">
+                <label for="account-new-passphrase">Nouvelle passphrase <span class="label-secondary">(mot de passe)</span></label>
+                <button type="button" class="help-trigger" data-help-id="auth-passphrase" aria-label="Qu'est-ce qu'une passphrase ?" aria-expanded="false"><span aria-hidden="true">?</span></button>
+              </div>
+              <input type="password" id="account-new-passphrase" autocomplete="new-password" required minlength="8">
+            </div>
+            <div class="form-row">
+              <label for="account-confirm-passphrase">Confirmer la nouvelle passphrase</label>
+              <input type="password" id="account-confirm-passphrase" autocomplete="new-password" required minlength="8">
+            </div>
+            <p class="field-hint">Minimum 8 caractères. Privilégiez une phrase longue et mémorable plutôt que des caractères spéciaux obligatoires.</p>
+            <button type="submit" class="btn btn-secondary">Modifier la passphrase</button>
+          </form>
+        </div>
+        <p class="field-hint card-intro">Exportez (fichier chiffré avec mot de passe de sauvegarde), importez ou supprimez l'ensemble de vos loyers et paramètres. La déconnexion ferme votre session sans effacer vos données.</p>
+        <div class="account-actions btn-group" style="flex-wrap:wrap">
+          <button type="button" id="btn-logout" class="btn btn-secondary"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>Se déconnecter</button>
+          <button type="button" id="btn-export-profile" class="btn btn-secondary"><i class="fa-solid fa-download" aria-hidden="true"></i>Exporter mon profil</button>
+          <label class="btn btn-secondary" style="cursor:pointer;margin:0">
+            Importer un profil
+            <input type="file" id="import-profile" accept=".json,application/json" class="hidden">
           </label>
-          <button type="button" id="btn-load-seed" class="btn btn-secondary">Recharger les données par défaut</button>
-          <button type="button" id="btn-reset-data" class="btn btn-danger">Réinitialiser</button>
+          <button type="button" id="btn-delete-data" class="btn btn-danger" title="Supprime loyers, virements et paramètres métier (JSON)">Supprimer mes données</button>
+          <button type="button" class="help-trigger" data-help-id="btn-delete-data" aria-label="Aide : supprimer mes données" aria-expanded="false"><span aria-hidden="true">?</span></button>
+          <button type="button" id="btn-delete-account" class="btn btn-danger" title="Supprime le compte d'accès (passphrase requise si compte local)">Supprimer mon compte</button>
+          <button type="button" class="help-trigger" data-help-id="btn-delete-account" aria-label="Aide : supprimer mon compte" aria-expanded="false"><span aria-hidden="true">?</span></button>
         </div>
       </div>
     </section>
@@ -379,11 +491,12 @@
             <select id="sel-quittance-template" aria-label="Modèle quittance"></select>
           </div>
           <div class="template-mode-toggle" role="group" aria-label="Mode quittance">
-            <button type="button" id="btn-quittance-tab-preview" class="btn btn-secondary template-mode-btn active" data-mode="preview">Aperçu du mois</button>
-            <button type="button" id="btn-quittance-tab-edit" class="btn btn-secondary template-mode-btn" data-mode="edit">Édition du modèle</button>
+            <button type="button" id="btn-quittance-tab-preview" class="btn btn-secondary template-mode-btn active" data-mode="preview" title="Aperçu avec les données du mois sélectionné">Aperçu du mois</button>
+            <button type="button" id="btn-quittance-tab-edit" class="btn btn-secondary template-mode-btn" data-mode="edit" title="Modifier le HTML du modèle">Édition du modèle</button>
+            <button type="button" class="help-trigger" data-help-id="template-mode" aria-label="Aide : mode quittance" aria-expanded="false"><span aria-hidden="true">?</span></button>
           </div>
         </div>
-        <p id="quittance-template-readonly-hint" class="field-hint hidden">Le modèle principal est en lecture seule. Utilisez <strong>Nouveau modèle…</strong> ou <strong>Importer modèle</strong> pour créer une variante.</p>
+        <p id="quittance-template-readonly-hint" class="field-hint hidden">Les modèles complet et court sont en lecture seule. Utilisez <strong>Nouveau modèle…</strong> ou <strong>Importer modèle</strong> pour créer une variante.</p>
         <div class="btn-group" style="flex-wrap:wrap">
           <button type="button" id="btn-refresh-quittance" class="btn btn-secondary" title="Recalculer l'aperçu à partir du modèle">Régénérer</button>
           <button type="button" id="btn-quittance-new" class="btn btn-secondary">Nouveau modèle…</button>
@@ -394,10 +507,10 @@
           </label>
           <button type="button" id="btn-quittance-set-default" class="btn btn-secondary">Utiliser par défaut</button>
           <button type="button" class="help-trigger" data-help-id="quittance-edit" aria-label="Aide : édition quittance" aria-expanded="false"><span aria-hidden="true">?</span></button>
-          <button type="button" id="btn-export-pdf" class="btn" title="Télécharger un fichier PDF">PDF</button>
-          <button type="button" id="btn-export-docx" class="btn" title="Télécharger un fichier Word">DOCX</button>
-          <button type="button" id="btn-export-html" class="btn btn-secondary" title="Télécharger une page web">HTML</button>
-          <button type="button" id="btn-export-batch" class="btn btn-secondary" title="Exporter plusieurs quittances sur une plage de dates">Exporter plusieurs…</button>
+          <button type="button" id="btn-export-pdf" class="btn" title="Télécharger un fichier PDF"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i>PDF</button>
+          <button type="button" id="btn-export-docx" class="btn" title="Télécharger un fichier Word"><i class="fa-solid fa-file-word" aria-hidden="true"></i>DOCX</button>
+          <button type="button" id="btn-export-html" class="btn btn-secondary" title="Télécharger une page web"><i class="fa-solid fa-file-code" aria-hidden="true"></i>HTML</button>
+          <button type="button" id="btn-export-batch" class="btn btn-secondary" title="Exporter plusieurs quittances sur une plage de dates"><i class="fa-solid fa-copy" aria-hidden="true"></i>Exporter plusieurs…</button>
           <button type="button" class="help-trigger" data-help-id="quittance-export" aria-label="Aide : export quittance" aria-expanded="false"><span aria-hidden="true">?</span></button>
         </div>
       </div>
@@ -412,7 +525,9 @@
             </div>
           </div>
           <aside class="template-placeholder-sidebar" aria-label="Mots-clés quittance">
-            <h4 class="placeholder-sidebar-title">Mots-clés</h4>
+            <h4 class="placeholder-sidebar-title heading-with-help">Mots-clés
+              <button type="button" class="help-trigger" data-help-id="placeholder-keywords" aria-label="Aide : mots-clés quittance" aria-expanded="false"><span aria-hidden="true">?</span></button>
+            </h4>
             <p class="placeholder-sidebar-hint">Cliquez pour insérer à la position du curseur.</p>
             <ul id="quittance-placeholder-list" class="placeholder-sidebar-list"></ul>
           </aside>
@@ -434,11 +549,12 @@
             <select id="sel-mail-template" aria-label="Modèle mail"></select>
           </div>
           <div class="template-mode-toggle" role="group" aria-label="Mode mail">
-            <button type="button" id="btn-mail-tab-preview" class="btn btn-secondary template-mode-btn active" data-mode="preview">Aperçu du mois</button>
-            <button type="button" id="btn-mail-tab-edit" class="btn btn-secondary template-mode-btn" data-mode="edit">Édition du modèle</button>
+            <button type="button" id="btn-mail-tab-preview" class="btn btn-secondary template-mode-btn active" data-mode="preview" title="Aperçu avec les données du mois sélectionné">Aperçu du mois</button>
+            <button type="button" id="btn-mail-tab-edit" class="btn btn-secondary template-mode-btn" data-mode="edit" title="Modifier le corps et l'objet du modèle">Édition du modèle</button>
+            <button type="button" class="help-trigger" data-help-id="template-mode" aria-label="Aide : mode mail" aria-expanded="false"><span aria-hidden="true">?</span></button>
           </div>
         </div>
-        <p id="mail-template-readonly-hint" class="field-hint hidden">Le modèle principal est en lecture seule. Utilisez <strong>Nouveau modèle…</strong> ou <strong>Importer modèle</strong> pour créer une variante.</p>
+        <p id="mail-template-readonly-hint" class="field-hint hidden">Les modèles complet et court sont en lecture seule. Utilisez <strong>Nouveau modèle…</strong> ou <strong>Importer modèle</strong> pour créer une variante.</p>
         <div class="btn-group" style="flex-wrap:wrap">
           <button type="button" id="btn-mail-new" class="btn btn-secondary">Nouveau modèle…</button>
           <button type="button" id="btn-mail-export-template" class="btn btn-secondary">Exporter modèle</button>
@@ -448,10 +564,19 @@
           </label>
           <button type="button" id="btn-mail-set-default" class="btn btn-secondary">Utiliser par défaut</button>
           <button type="button" class="help-trigger" data-help-id="mail-edit" aria-label="Aide : édition mail" aria-expanded="false"><span aria-hidden="true">?</span></button>
-          <button type="button" id="btn-mail-eml" class="btn" title="Créer un e-mail avec PDF joint">EML + PDF</button>
-          <button type="button" id="btn-mail-nav" class="btn btn-secondary" title="Ouvrir votre messagerie web">mailto</button>
           <button type="button" class="help-trigger" data-help-id="quittance-mail" aria-label="Aide : envoi par mail" aria-expanded="false"><span aria-hidden="true">?</span></button>
+          <button type="button" id="btn-mail-draft" class="btn btn-secondary" title="Enregistrer dans les brouillons Gmail ou Outlook (connexion requise)"><i class="fa-solid fa-file-pen" aria-hidden="true"></i>Brouillon</button>
+          <button type="button" id="btn-mail-send" class="btn" title="Envoyer immédiatement (Gmail, Outlook ou SMTP configuré)"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i>Envoyer</button>
+          <details class="mail-other-menu">
+            <summary class="btn btn-secondary">Autres</summary>
+            <div class="mail-other-menu-panel">
+              <button type="button" id="btn-mail-eml" class="btn btn-secondary" title="Créer un e-mail avec PDF joint">EML + PDF</button>
+              <button type="button" id="btn-mail-nav" class="btn btn-secondary" title="Ouvrir votre messagerie web">mailto</button>
+            </div>
+          </details>
         </div>
+        <p id="mail-send-hint" class="field-hint hidden"></p>
+        <p id="mail-draft-hint" class="field-hint hidden"></p>
       </div>
       <div id="mail-tab-preview-wrap">
         <div class="form-row">
@@ -475,11 +600,51 @@
             </div>
           </div>
           <aside class="template-placeholder-sidebar" aria-label="Mots-clés mail">
-            <h4 class="placeholder-sidebar-title">Mots-clés</h4>
+            <h4 class="placeholder-sidebar-title heading-with-help">Mots-clés
+              <button type="button" class="help-trigger" data-help-id="placeholder-keywords" aria-label="Aide : mots-clés mail" aria-expanded="false"><span aria-hidden="true">?</span></button>
+            </h4>
             <p class="placeholder-sidebar-hint">Cliquez pour insérer à la position du curseur.</p>
             <ul id="mail-placeholder-list" class="placeholder-sidebar-list"></ul>
           </aside>
         </div>
+      </div>
+    </section>
+
+    <!-- Historique d'activité -->
+    <section id="panel-history" class="panel" role="tabpanel" aria-labelledby="tab-history">
+      <div class="card" id="history-activity-log">
+        <h2 class="heading-with-help">Journal d'activité
+          <button type="button" class="help-trigger" data-help-id="history-activity-log" aria-label="Aide : historique" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        </h2>
+        <p class="subsection-title card-intro">Envois mail, brouillons, imports CSV, exports PDF/DOCX et connexions OAuth. Export CSV et purge pour la conformité RGPD.</p>
+        <div class="activity-log-toolbar btn-group" style="flex-wrap:wrap;margin-bottom:0.75rem">
+          <label for="activity-log-type-filter">Type</label>
+          <select id="activity-log-type-filter" aria-label="Filtrer par type" title="Filtrer le journal par type d'événement">
+            <option value="">Tous</option>
+            <option value="mail_sent">Mails envoyés</option>
+            <option value="mail_draft">Brouillons mail</option>
+            <option value="csv_import">Imports CSV</option>
+            <option value="export_pdf">Exports PDF</option>
+            <option value="export_docx">Exports DOCX</option>
+          </select>
+          <button type="button" id="btn-activity-log-refresh" class="btn btn-secondary" title="Recharger la liste depuis le serveur"><i class="fa-solid fa-rotate-right" aria-hidden="true"></i>Actualiser</button>
+          <button type="button" class="help-trigger" data-help-id="history-refresh" aria-label="Aide : actualiser" aria-expanded="false"><span aria-hidden="true">?</span></button>
+          <button type="button" id="btn-activity-log-export-csv" class="btn btn-secondary" title="Télécharger le journal en CSV"><i class="fa-solid fa-file-csv" aria-hidden="true"></i>Exporter CSV</button>
+          <button type="button" id="btn-activity-log-purge" class="btn btn-danger" title="Effacer tout le journal — irréversible"><i class="fa-solid fa-broom" aria-hidden="true"></i>Purger tout</button>
+          <button type="button" class="help-trigger" data-help-id="history-purge" aria-label="Aide : purger le journal" aria-expanded="false"><span aria-hidden="true">?</span></button>
+          <button type="button" class="help-trigger" data-help-id="history-filter" aria-label="Aide : filtre type" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        </div>
+        <div class="form-row" style="max-width:320px">
+          <div class="label-with-help">
+            <label for="set-history-retention-months">Conservation (mois, 0 = illimitée)</label>
+            <button type="button" class="help-trigger" data-help-id="history-retention" aria-label="Aide : conservation historique" aria-expanded="false"><span aria-hidden="true">?</span></button>
+          </div>
+          <div class="btn-group" style="align-items:flex-end">
+            <input type="number" id="set-history-retention-months" min="0" max="120" value="24" class="flex-grow">
+            <button type="button" id="btn-save-history-retention" class="btn btn-secondary">Enregistrer</button>
+          </div>
+        </div>
+        <div id="activity-log-body" class="activity-log-body"></div>
       </div>
     </section>
 
@@ -499,10 +664,12 @@
             <li><a href="#help-step4">4. Consulter les données</a></li>
             <li><a href="#help-step5">5. Quittance et export</a></li>
             <li><a href="#help-step6">6. Mail et envoi</a></li>
+            <li><a href="#help-step7">7. Historique</a></li>
+            <li><a href="#help-privacy">Confidentialité (RGPD)</a></li>
             <li><a href="#help-deploy">Installation sur un serveur</a></li>
             <li><a href="#help-troubleshoot">Dépannage</a></li>
           </ol>
-          <p class="field-hint" style="margin-top:1rem">Partout dans l'application, le bouton <strong>?</strong> affiche une explication courte.</p>
+          <p class="field-hint" style="margin-top:1rem">Partout dans l'application, le bouton <strong>?</strong> ouvre une explication courte. La barre de période (sous le menu) en propose une également ; cliquez un badge coloré pour le détail d'un statut.</p>
         </nav>
 
         <div class="help-content">
@@ -514,43 +681,30 @@
                 <p class="field-hint" style="margin:0.35rem 0 0">Loyer Manager — sur votre serveur, sans cloud.</p>
               </div>
             </div>
-            <p style="margin-top:1rem">Loyer Manager vous aide à suivre les loyers, enregistrer les virements et produire des quittances. L'application tourne sur <strong>votre serveur</strong> : aucun compte cloud, vos données restent sur le disque.</p>
+            <p style="margin-top:1rem">Loyer Manager vous aide à suivre les loyers, enregistrer les virements et produire des quittances. Vos données restent sur <strong>votre serveur</strong> — pas de cloud tiers.</p>
             <div class="help-callout">
-              <strong>Accès :</strong> ouvrez l'application via son URL (<code>http://…/</code>) — pas en double-cliquant sur le fichier.<br>
-              <strong>Import rapide :</strong> glissez-déposez un fichier <code>.json</code> (données) ou <code>.csv</code> (relevé bancaire) n'importe où sur la page.
+              <strong>Accès :</strong> connectez-vous avec votre compte, puis renseignez vos paramètres.<br>
+              <strong>Import rapide :</strong> glissez-déposez un fichier <strong>.json</strong> (profil) ou <strong>.csv</strong> (relevé bancaire) n'importe où sur la page.
             </div>
-            <h3>Organisation des fichiers (serveur)</h3>
-            <pre class="help-folder-tree">LoyerManager/
-├── index.html
-├── api.php
-├── data/
-│   └── loyer-data.json     ← paramètres, virements, registre modèles
-└── templates/
-    ├── quittances/
-    │   └── principal.html
-    └── mails/
-        ├── principal.html
-        └── principal-subject.txt</pre>
-            <p class="field-hint">Les fichiers <code>*.example.*</code> servent de référence. L'application crée vos fichiers personnalisés via api.php si besoin.</p>
           </article>
 
           <article id="help-step1" class="card help-article" tabindex="-1">
             <h2><span class="help-step-badge">Étape 1</span> Premiers pas</h2>
-            <p>Ouvrez l'application via l'URL de votre serveur. Au premier lancement, le badge affiche <strong>Enregistré</strong> en vert : vos données sont lues et écrites automatiquement via <strong>api.php</strong>.</p>
+            <p>Connectez-vous, puis ouvrez <strong>Paramètres</strong> pour renseigner bailleur, locataire et montant du loyer.</p>
             <ol>
-              <li>Vérifiez que nginx et PHP fonctionnent (<code>curl http://localhost/api.php?action=status</code>).</li>
-              <li>Ouvrez <strong>Paramètres</strong> et renseignez bailleur, locataire et montant du loyer.</li>
-              <li>Cliquez sur le bouton bleu <strong>Enregistrer</strong> en bas à droite.</li>
+              <li>Créez votre compte (passphrase) ou connectez-vous avec Google ou Microsoft à la première visite.</li>
+              <li>Remplissez les sections <strong>Paramètres</strong> (bailleur, locataire, loyer).</li>
+              <li>Cliquez sur <strong>Enregistrer</strong> en bas à droite pour enregistrer tout de suite (sinon, sauvegarde automatique sous 30 s).</li>
             </ol>
             <div class="help-actions">
-              <button type="button" class="btn btn-secondary help-goto" data-panel="panel-settings" data-help-anchor="settings-data-section">Aller aux paramètres Données</button>
+              <button type="button" class="btn btn-secondary help-goto" data-panel="panel-settings">Ouvrir Paramètres</button>
               <button type="button" class="btn btn-secondary help-goto" data-panel="panel-settings" data-help-anchor="settings-templates-section">Aller aux Modèles</button>
             </div>
           </article>
 
           <article id="help-step2" class="card help-article" tabindex="-1">
             <h2><span class="help-step-badge">Étape 2</span> Paramétrer l'application</h2>
-            <p>Rendez-vous dans l'onglet <strong>Paramètres</strong> et remplissez les sections dans l'ordre ci-dessous. Cliquez sur le bouton bleu <strong>Enregistrer</strong> en bas à droite quand vous avez terminé.</p>
+            <p>Dans l'onglet <strong>Paramètres</strong>, remplissez les sections ci-dessous. Vos modifications sont enregistrées automatiquement ; utilisez <strong>Enregistrer</strong> en bas à droite pour forcer la sauvegarde.</p>
             <h3>2.1 — Location</h3>
             <ul>
               <li><strong>Début de location</strong> : date de prise d'effet du bail.</li>
@@ -561,14 +715,19 @@
             <h3>2.3 — Signature</h3>
             <p>Importez une photo ou un scan de votre signature (PNG/JPG, max. 5 Mo). Elle sera placée en bas de la quittance.</p>
             <h3>2.4 — Historique des loyers</h3>
-            <p>Indiquez le montant actuel du loyer et la date à partir de laquelle il s'applique. Si le loyer a changé dans le passé, ajoutez un palier pour chaque période.</p>
+            <p>Pour chaque palier, renseignez le <strong>loyer hors charges</strong>, les <strong>charges locatives</strong> et la date d'application. Le total mensuel alimente le tableau de bord et les quittances, avec le détail loyer + charges (conformément aux obligations du bailleur — voir <a href="https://www.service-public.gouv.fr/particuliers/vosdroits/R31936" rel="noopener noreferrer">Service Public — quittance de loyer</a>).</p>
             <h3>2.5 — Émetteurs (pour l'import bancaire)</h3>
             <p>Si vous importez un relevé CSV, configurez le nom du locataire et les mots à repérer dans le libellé bancaire (ex. <em>Jean Dupont</em>).</p>
             <h3>2.6 — Modèles quittance et mail</h3>
-            <p>Dans <strong>Paramètres → Modèles</strong>, gérez vos modèles. Le <strong>modèle principal</strong> (<code>principal</code>) est toujours présent, en <strong>lecture seule</strong> : aperçu et export uniquement. Pour le personnaliser, utilisez <strong>+ Nouveau modèle</strong> ou <strong>Importer modèle</strong> (crée un nouveau modèle, ne remplace jamais le principal). L'édition du contenu se fait dans les onglets <strong>Quittance</strong> et <strong>Mail</strong> (mode « Édition du modèle »). Le panneau <strong>Mots-clés</strong> propose les mêmes variables pour quittance et mail (<code>{{paiement}}</code>, <code>{{bailleur.name}}</code>, etc.).</p>
-            <h3>2.7 — Destinataires mail (optionnel)</h3>
+            <p>Dans <strong>Paramètres → Modèles</strong>, gérez vos modèles. Deux modèles de base sont toujours présents : <strong>complet</strong> (détaillé, défaut) et <strong>court</strong> (simplifié). Ils sont en <strong>lecture seule</strong> : aperçu et export uniquement. Pour personnaliser, utilisez <strong>+ Nouveau modèle</strong> ou <strong>Importer modèle</strong> (crée un nouveau modèle, ne remplace jamais les modèles de base). L'édition du contenu se fait dans les onglets <strong>Quittance</strong> et <strong>Mail</strong> (mode « Édition du modèle »). Le panneau <strong>Mots-clés</strong> propose les mêmes variables pour quittance et mail (<code>{{paiement}}</code>, <code>{{bailleur.name}}</code>, etc.).</p>
+            <h3>2.7 — Destinataires mail</h3>
             <p>Indiquez les adresses e-mail (À, CC, CCI) et la signature texte (<code>{{signature}}</code>).</p>
+            <h3>2.8 — Envoi mail (Gmail / Outlook)</h3>
+            <p>Connectez votre compte pour <strong>envoyer</strong> directement ou enregistrer un <strong>brouillon</strong> (relecture dans votre messagerie avant envoi). Reconnectez le compte si le bouton Brouillon reste inactif après une mise à jour.</p>
+            <h3>2.9 — Envoi mail (SMTP)</h3>
+            <p>Alternative sans OAuth pour l'envoi direct uniquement. Les brouillons dans la boîte mail passent par le menu <strong>Autres → EML + PDF</strong>.</p>
             <div class="help-actions">
+              <button type="button" class="btn btn-secondary help-goto" data-panel="panel-settings" data-help-anchor="settings-mail-oauth">Ouvrir Envoi mail</button>
               <button type="button" class="btn btn-secondary help-goto" data-panel="panel-settings" data-help-anchor="settings-templates-section">Ouvrir Modèles</button>
             </div>
           </article>
@@ -602,7 +761,7 @@
             <h2><span class="help-step-badge">Étape 4</span> Consulter les données</h2>
             <p>L'onglet <strong>Tableau de bord</strong> centralise la vue d'ensemble.</p>
             <ul>
-              <li>Utilisez la <strong>barre de période</strong> sous le menu : sélecteur de mois, timeline colorée, ou « Afficher une période » pour une plage.</li>
+              <li>Utilisez la <strong>barre de période</strong> sous le menu : mois, bouton « Période » pour une plage Du→Au, timeline colorée.</li>
               <li>Les <strong>indicateurs</strong> résument le solde à date, le recouvrement et les mois problématiques.</li>
               <li>Le tableau « Détail par mois » affiche un <strong>statut</strong> (payé, partiel, impayé…) et un éventuel retard (+X j).</li>
               <li>La <strong>heatmap</strong> colore chaque mois — cliquez une cellule pour la sélectionner.</li>
@@ -619,7 +778,7 @@
             <ol>
               <li>Choisissez le mois dans l'onglet <strong>Quittance</strong> (ou Tableau de bord / Mail — même sélecteur).</li>
               <li>L'aperçu se remplit automatiquement à partir du modèle choisi.</li>
-              <li>Pour modifier le modèle : basculez en <strong>Édition du modèle</strong> (modèles personnalisés uniquement — le principal est en lecture seule).</li>
+              <li>Pour modifier le modèle : basculez en <strong>Édition du modèle</strong> (modèles personnalisés uniquement — complet et court sont en lecture seule).</li>
               <li>Exportez :
                 <ul>
                   <li><strong>PDF</strong> — le plus courant pour envoyer ou imprimer ;</li>
@@ -640,58 +799,86 @@
           <article id="help-step6" class="card help-article" tabindex="-1">
             <h2><span class="help-step-badge">Étape 6</span> Mail et envoi</h2>
             <ol>
-              <li>Choisissez le mois dans l'onglet <strong>Mail</strong> (sélecteur partagé avec Tableau de bord et Quittance).</li>
-              <li>Objet et corps s'affichent pour le modèle sélectionné.</li>
-              <li>Pour personnaliser le modèle : <strong>Nouveau modèle…</strong> ou <strong>Importer modèle</strong> (.json), puis mode <strong>Édition du modèle</strong>.</li>
-              <li>Utilisez le panneau <strong>Mots-clés</strong> (identique à la quittance) pour insérer <code>{{paiement}}</code>, adresses, etc.</li>
-              <li>Envoyez via <strong>EML + PDF</strong> (fichier .eml avec quittance jointe) ou <strong>mailto</strong> (attachez le PDF manuellement).</li>
+              <li>Configurez les destinataires dans <strong>Paramètres → Destinataires et signature mail</strong>.</li>
+              <li>Connectez Gmail/Outlook (<strong>Paramètres → Envoi mail</strong>) ou renseignez le SMTP pour l'envoi direct.</li>
+              <li>Choisissez le mois dans l'onglet <strong>Mail</strong> (barre de période partagée).</li>
+              <li>Personnalisez le modèle si besoin : <strong>Nouveau modèle…</strong>, <strong>Importer modèle</strong>, mode <strong>Édition du modèle</strong>.</li>
+              <li><strong>Brouillon</strong> — mail + PDF dans Gmail/Outlook (OAuth). <strong>Envoyer</strong> — envoi immédiat. <strong>Autres</strong> — EML + PDF ou mailto.</li>
             </ol>
             <div class="help-callout">
-              Les destinataires (À, CC, CCI) se configurent dans <strong>Paramètres → Destinataires et signature mail</strong>.
+              Avec le SMTP seul, seul l'envoi direct est possible ; utilisez <strong>EML + PDF</strong> pour préparer un brouillon local.
             </div>
             <div class="help-actions">
               <button type="button" class="btn btn-secondary help-goto" data-panel="panel-mail">Ouvrir Mail</button>
+              <button type="button" class="btn btn-secondary help-goto" data-panel="panel-settings" data-help-anchor="settings-mail-oauth">Configurer l'envoi</button>
             </div>
           </article>
 
-          <article id="help-deploy" class="card help-article" tabindex="-1">
-            <h2>Installation sur un serveur (recommandé)</h2>
-            <p>Hébergez l'application sur un serveur web avec <strong>PHP</strong>. Vos données restent sur le disque du serveur (<code>data/</code>, <code>templates/</code>).</p>
-            <h3>Étapes</h3>
-            <ol>
-              <li>Clonez ou uploadez le projet sur le serveur.</li>
-              <li>Copiez <code>config.example.php</code> en <code>config.php</code> (optionnel : <code>api_key</code> en production).</li>
-              <li>Vérifiez que PHP peut écrire dans <code>data/</code> et <code>templates/</code> (droits 755 ou 775 dans le panneau hébergeur).</li>
-              <li>Ouvrez l'application via son URL (<code>https://votre-domaine.fr/</code>) — pas en double-cliquant sur le fichier.</li>
-            </ol>
-            <p class="field-hint">Le badge affiche <strong>Enregistré</strong> lorsque <code>api.php</code> répond correctement.</p>
-            <h3>Test en local</h3>
-            <p>Dans le dossier du projet : <code>php -S localhost:8080</code> puis ouvrez <code>http://localhost:8080/</code>. Aucun script ni dossier <code>deploy/</code> n'est nécessaire.</p>
-            <h3>Jeu de démonstration</h3>
-            <p><code>cp docs/demo/loyer-data.demo.json data/loyer-data.json</code> — voir <code>docs/demo/README.md</code>.</p>
-            <h3>HTTPS et mot de passe</h3>
-            <p>Sur une URL publique, activez <strong>HTTPS</strong> et un <strong>mot de passe devant le site</strong> (outil « protection de répertoire » de votre hébergeur, ou configuration nginx/Apache). Complétez avec une <strong>clé API</strong> dans <code>config.php</code>. Guide complet : <code>docs/SECURITE.md</code> et <code>docs/HEBERGEMENT-MUTUALISE.md</code> (mutualisé sans terminal).</p>
-            <div class="help-callout">
-              <strong>Sécurité :</strong> trois couches recommandées — HTTPS, mot de passe site, clé API. Pas de comptes ni base de données. Exportez régulièrement une copie via Paramètres → Données.
+          <article id="help-step7" class="card help-article" tabindex="-1">
+            <h2><span class="help-step-badge">Étape 7</span> Historique</h2>
+            <p>L'onglet <strong>Historique</strong> retrace les actions importantes : mails envoyés, brouillons créés, imports CSV, exports PDF/DOCX.</p>
+            <ul>
+              <li>Filtrez par type pour retrouver une action.</li>
+              <li><strong>Exporter CSV</strong> — archive pour vos dossiers ou la conformité RGPD.</li>
+              <li><strong>Purger tout</strong> — efface le journal (irréversible).</li>
+              <li>Ajustez la <strong>conservation</strong> (défaut 24 mois ; 0 = illimitée).</li>
+            </ul>
+            <div class="help-actions">
+              <button type="button" class="btn btn-secondary help-goto" data-panel="panel-history">Ouvrir Historique</button>
             </div>
+          </article>
+
+          <article id="help-privacy" class="card help-article" tabindex="-1">
+            <h2>Confidentialité (RGPD)</h2>
+            <p>Loyer Manager est auto-hébergé : <strong>vous</strong> êtes responsable du traitement des données sur votre instance.</p>
+            <h3>Données stockées</h3>
+            <ul>
+              <li>Vos loyers, virements et paramètres (exportables depuis <strong>Mon compte</strong>).</li>
+              <li>Le journal d'activité (onglet <strong>Historique</strong>).</li>
+              <li>Vos modèles de quittance et de mail.</li>
+            </ul>
+            <h3>Cookies et stockage navigateur</h3>
+            <ul>
+              <li>Session de connexion — uniquement pendant que vous utilisez l'application.</li>
+              <li>Mémorisation de votre choix sur le bandeau de confidentialité (pas de publicité).</li>
+            </ul>
+            <h3>Vos droits</h3>
+            <p>Export du profil (Paramètres → Mon compte), export CSV et purge depuis l'onglet <strong>Historique</strong>. Déconnexion du compte mail dans Paramètres → Envoi mail. Conservation par défaut : 24 mois (modifiable dans Historique).</p>
+          </article>
+
+          <article id="help-deploy" class="card help-article" tabindex="-1">
+            <h2>Installation sur un serveur</h2>
+            <p>Loyer Manager s'installe sur un hébergement web avec PHP. Vos données restent sur votre serveur.</p>
+            <h3>Première utilisation</h3>
+            <ol>
+              <li>Ouvrez l'application via son adresse web.</li>
+              <li>Créez votre compte (passphrase) ou connectez-vous avec Google ou Microsoft.</li>
+              <li>Changez la passphrase dans Paramètres → Mon compte (compte local).</li>
+              <li>Renseignez vos paramètres dans l'onglet dédié.</li>
+            </ol>
+            <p class="field-hint">En production, activez HTTPS et protégez l'accès au site (mot de passe hébergeur recommandé).</p>
           </article>
 
           <article id="help-troubleshoot" class="card help-article" tabindex="-1">
             <h2>Dépannage</h2>
             <h3>Les modèles ne s'enregistrent pas</h3>
-            <p>Vérifiez nginx/php-fpm ou Apache, les droits d'écriture sur <code>templates/</code>, et que le badge affiche <strong>Enregistré</strong>. Test : <code>curl https://votre-site/api.php?action=status</code>.</p>
-            <h3>Impossible de modifier le modèle principal</h3>
-            <p>C'est normal : le modèle <strong>principal</strong> est en lecture seule. Dupliquez-le ou importez un fichier pour créer une variante personnalisée.</p>
-            <h3>Le badge indique « Serveur indisponible »</h3>
-            <p>Ouvrez l'app via <code>http://</code> (pas <code>file://</code>). Vérifiez nginx, php8.4-fpm et les droits sur <code>data/</code>.</p>
-            <h3>Le fichier JSON est corrompu</h3>
-            <p>Au démarrage, l'application vous propose de télécharger une copie du fichier endommagé, puis de le recréer vide.</p>
+            <p>Vérifiez votre connexion et réessayez. Contactez l'administrateur du serveur si le problème persiste.</p>
+            <h3>Impossible de modifier un modèle de base</h3>
+            <p>C'est normal : les modèles <strong>complet</strong> et <strong>court</strong> sont en lecture seule. Dupliquez-les ou importez un fichier pour créer une variante personnalisée.</p>
+            <h3>Je ne peux plus me connecter</h3>
+            <p>Vérifiez votre passphrase ou reconnectez-vous avec Google ou Microsoft. En cas d'oubli sur un compte local, l'administrateur peut supprimer le compte côté serveur pour permettre une nouvelle inscription.</p>
+            <h3>Mes données semblent endommagées</h3>
+            <p>Au démarrage, l'application peut vous proposer de télécharger une copie de secours puis de repartir sur une base vide.</p>
             <h3>L'import CSV ne trouve aucun virement</h3>
             <p>Vérifiez les « Émetteurs » dans Paramètres : les mots-clés doivent correspondre au libellé affiché par votre banque.</p>
             <h3>Les chiffres du tableau de bord semblent incorrects</h3>
             <p>Vérifiez la date de début de location, l'historique des loyers et que tous les virements ont bien été saisis.</p>
-            <h3>Faire une copie de secours</h3>
-            <p>Paramètres → Données → <strong>Copie de secours (export)</strong> télécharge votre fichier JSON.</p>
+            <h3>Le bouton Brouillon est grisé</h3>
+            <p>Les brouillons dans la boîte mail nécessitent Gmail ou Outlook (OAuth). Avec le SMTP seul, utilisez <strong>Autres → EML + PDF</strong>. Si OAuth est connecté mais le bouton reste inactif, déconnectez puis reconnectez le compte mail.</p>
+            <h3>L'envoi mail échoue</h3>
+            <p>Vérifiez les destinataires dans Paramètres, la connexion Gmail/Outlook ou la configuration SMTP. Consultez l'onglet Historique pour le détail de l'erreur.</p>
+            <h3>Exporter mon profil</h3>
+            <p>Paramètres → Mon compte → <strong>Exporter mon profil</strong> télécharge une sauvegarde chiffrée (loyers + paramètres serveur : OAuth mail, SMTP, historique). Choisissez un <strong>mot de passe de sauvegarde</strong> à l'export ; il sera requis pour importer. À l'initiation (<code>login.html</code>), vous pouvez préparer une restauration avant de créer votre compte (local, Google ou Microsoft).</p>
           </article>
         </div>
       </div>
@@ -801,8 +988,11 @@
             <select id="pay-emitter" required></select>
           </div>
           <div class="form-row">
-            <label for="pay-status">Statut</label>
-            <select id="pay-status">
+            <div class="label-with-help">
+              <label for="pay-status">Statut</label>
+              <button type="button" class="help-trigger" data-help-id="payment-status" aria-label="Aide : statut virement" aria-expanded="false"><span aria-hidden="true">?</span></button>
+            </div>
+            <select id="pay-status" title="Origine ou contrôle du virement — n'affecte pas les calculs">
               <option value="manuel">Manuel</option>
               <option value="importé">Importé</option>
               <option value="vérifié">Vérifié</option>
@@ -830,7 +1020,7 @@
   </div>
 
   <button type="button" id="btn-save-settings" class="fab-save" title="Enregistrer les paramètres" aria-label="Enregistrer les paramètres">
-    Enregistrer
+    <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>Enregistrer
   </button>
 
   <footer class="app-footer no-print" id="app-footer">
@@ -858,10 +1048,16 @@
     </div>
   </div>
 
+  <div id="gdpr-consent-banner" class="gdpr-consent-banner hidden" role="dialog" aria-labelledby="gdpr-consent-title" aria-live="polite">
+    <div class="gdpr-consent-inner">
+      <p id="gdpr-consent-title"><strong>Données personnelles</strong> — Loyer Manager stocke vos loyers sur votre serveur et tient un journal d'activité. Aucun cookie publicitaire. <a href="#" id="gdpr-privacy-link">En savoir plus</a> <button type="button" class="help-trigger help-trigger-inline" data-help-id="privacy" aria-label="Aide : confidentialité" aria-expanded="false"><span aria-hidden="true">?</span></button></p>
+      <button type="button" id="btn-gdpr-accept" class="btn">J'ai compris</button>
+    </div>
+  </div>
+
+  <script src="js/version.js"></script>
   <script src="js/site-meta.js"></script>
   <script src="js/default-signature.js"></script>
-  <script src="js/template-defaults.js"></script>
-  <script src="js/seed-data.js"></script>
   <script src="js/calculations.js"></script>
   <script src="js/csv-import.js"></script>
   <script src="js/server-api.js"></script>
@@ -876,7 +1072,21 @@
   <script src="js/quittance.js"></script>
   <script src="js/export.js"></script>
   <script src="js/mail.js"></script>
+  <script src="js/mail-oauth.js"></script>
+  <script src="js/activity-log.js"></script>
+  <script src="js/consent.js"></script>
+  <script src="js/demo-ui.js"></script>
+  <script src="js/auth.js"></script>
   <script src="js/help.js"></script>
+  <script src="js/app/core.js"></script>
+  <script src="js/app/period.js"></script>
+  <script src="js/ui/dashboard.js"></script>
+  <script src="js/ui/payments.js"></script>
+  <script src="js/ui/settings.js"></script>
+  <script src="js/ui/templates-ui.js"></script>
+  <script src="js/ui/quittance-panel.js"></script>
+  <script src="js/ui/mail-panel.js"></script>
+  <script src="js/app/shell.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

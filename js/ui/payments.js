@@ -382,6 +382,27 @@
   App.handleDroppedImportFiles = handleDroppedImportFiles;
   App.bindFileDropImport = bindFileDropImport;
 
+  /** Télécharge le relevé CSV fictif (mode démo uniquement). */
+  function downloadDemoCsvSample() {
+    fetch('demo/releve-bancaire.demo.csv')
+      .then(function (res) {
+        if (!res.ok) throw new Error('not found');
+        return res.text();
+      })
+      .then(function (text) {
+        var blob = new Blob([text], { type: 'text/csv;charset=utf-8' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'releve-bancaire.demo.csv';
+        a.click();
+        URL.revokeObjectURL(a.href);
+        LoyerNotify.success('Relevé de démonstration téléchargé — importez-le via « Importer CSV ».');
+      })
+      .catch(function () {
+        LoyerNotify.error('Impossible de télécharger le relevé bancaire de démonstration.');
+      });
+  }
+
   /** Boutons ajout, suppression globale, modale, import CSV. */
   function bindPaymentsEvents() {
     App.$('#form-payment').addEventListener('submit', function (e) {
@@ -419,23 +440,6 @@
       App.openPaymentModal(null);
     });
 
-    App.$('#btn-clear-payments').addEventListener('click', function () {
-      if (!App.state.data.payments.length) {
-        LoyerNotify.info('Aucun virement à supprimer.');
-        return;
-      }
-      LoyerNotify.confirm('Supprimer tous les virements enregistrés ?', {
-        confirmLabel: 'Tout supprimer',
-        danger: true
-      }).then(function (ok) {
-        if (!ok) return;
-        App.state.data.payments = [];
-        App.persist();
-        App.renderAll();
-        LoyerNotify.success('Tous les virements ont été supprimés.');
-      });
-    });
-
     App.$$('[data-modal-close]').forEach(function (el) {
       el.addEventListener('click', closePaymentModal);
     });
@@ -453,6 +457,10 @@
     App.$('#import-csv').addEventListener('change', function (e) {
       var file = e.target.files[0];
       if (file) App.readCsvFile(file);
+    });
+
+    App.bindIf('#btn-demo-csv-download', function (el) {
+      el.addEventListener('click', downloadDemoCsvSample);
     });
 
     App.$('#csv-import-table').addEventListener('change', function (e) {

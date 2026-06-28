@@ -22,6 +22,7 @@ LoyerManager/
 ├── data/loyer-data.json      # gitignored — métier JSON
 ├── data/loyer.db             # gitignored — compte, OAuth mail, historique
 ├── builtin-templates/        # Modèles complet/court versionnés (bootstrap PHP)
+├── demo/                     # Jeu golden démo (reset demo_mode) — à déployer en prod
 └── templates/quittances|mails/
 ```
 
@@ -40,7 +41,6 @@ Pas de File System Access API.
 - Registre JSON : `settings.templates`
 - Fichiers : `templates/quittances/{id}.html`, `templates/mails/{id}.html` + `{id}-subject.txt`
 - **`complet`** et **`court`** : modèles de base, lecture seule (403 API si modification/suppression)
-- Legacy **`principal`** : migré automatiquement vers `complet`
 - Import : **crée** un nouveau modèle (ne remplace jamais les modèles de base)
 - Embarqués versionnés : `builtin-templates/` (copiés au bootstrap PHP)
 
@@ -64,7 +64,7 @@ Pas de File System Access API.
 php -S localhost:8080   # dev
 ```
 
-Production : [`deploy/README.md`](../deploy/README.md) ou [`docs/HEBERGEMENT-MUTUALISE.md`](HEBERGEMENT-MUTUALISE.md)
+Production : [`docs/HEBERGEMENT-MUTUALISE.md`](HEBERGEMENT-MUTUALISE.md)
 
 ## Priorités arbitrage
 

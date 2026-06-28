@@ -3,7 +3,7 @@ data/loyer-data.json
 data/signature.jpg
 loyer-data.json
 **/loyer-data.json
-!docs/demo/loyer-data.demo.json
+!demo/loyer-data.demo.json
 
 # Copies / tests locaux dans data/
 data/loyer-data*.json
@@ -36,11 +36,6 @@ config.php.bak.*
 _analysis/
 js/test-write.txt
 data/demo-reset.log
-
-# Processus dev (php -S manuel)
-deploy/.php-server.pid
-deploy/.php-server.log
-deploy/.env.local
 
 # Composer local (vendor/ est versionné)
 composer.phar

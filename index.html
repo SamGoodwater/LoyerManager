@@ -201,14 +201,18 @@
               <input type="file" id="import-csv" accept=".csv,text/csv" class="hidden" aria-describedby="hint-import-csv">
             </label>
             <button type="button" class="help-trigger" data-help-id="payments-csv" aria-label="Aide : import CSV" aria-expanded="false"><span aria-hidden="true">?</span></button>
-          <button type="button" id="btn-clear-payments" class="btn btn-danger" title="Supprimer tous les virements — irréversible"><i class="fa-solid fa-trash" aria-hidden="true"></i>Supprimer tous les virements</button>
-          <button type="button" class="help-trigger" data-help-id="payments-clear" aria-label="Aide : supprimer tous les virements" aria-expanded="false"><span aria-hidden="true">?</span></button>
-            <button type="button" class="help-trigger" data-help-id="payments-clear" aria-label="Aide : supprimer tous les virements" aria-expanded="false"><span aria-hidden="true">?</span></button>
             <button type="button" id="btn-add-payment" class="btn"><i class="fa-solid fa-plus" aria-hidden="true"></i>Ajouter un virement</button>
             <button type="button" class="help-trigger" data-help-id="payments-manual" aria-label="Aide : ajout manuel" aria-expanded="false"><span aria-hidden="true">?</span></button>
           </div>
         </div>
         <p id="hint-import-csv" class="field-hint card-intro">Deux façons d'ajouter des virements : <strong>Importer CSV</strong>, glisser-déposer un <strong>.csv</strong> sur la page, ou <strong>+ Ajouter un virement</strong> (saisie une par une).</p>
+        <div id="demo-csv-sample" class="demo-csv-sample" data-demo-only>
+          <p class="demo-csv-sample-text">Essayez l'import multiple : téléchargez un relevé bancaire fictif, puis utilisez <strong>Importer CSV</strong> (ou glissez-déposez le fichier). Le fichier contient une dizaine de virements locataire <strong>absents des données initiales</strong>, ainsi que des lignes déjà présentes (doublons ignorés) et du bruit bancaire (salaire, assurance…).</p>
+          <div class="demo-csv-sample-actions">
+            <button type="button" id="btn-demo-csv-download" class="btn btn-secondary" title="Télécharge releve-bancaire.demo.csv — relevé fictif à importer via « Importer CSV » : ~13 nouveaux virements locataire, plus doublons et bruit bancaire pour tester la sélection multiple."><i class="fa-solid fa-download" aria-hidden="true"></i>Télécharger le relevé bancaire de démo (CSV)</button>
+            <button type="button" class="help-trigger" data-help-id="payments-demo-csv" aria-label="Aide : relevé CSV de démonstration" aria-expanded="false"><span aria-hidden="true">?</span></button>
+          </div>
+        </div>
         <p class="table-scroll-hint">← Faites glisser le tableau horizontalement pour voir toutes les colonnes →</p>
         <div class="payments-table-scroll">
           <table class="data-table data-table-payments" id="payments-table">
@@ -412,6 +416,20 @@
           <button type="button" id="btn-save-smtp" class="btn">Enregistrer SMTP</button>
           <button type="button" id="btn-clear-smtp" class="btn btn-secondary" title="Effacer la configuration SMTP enregistrée">Supprimer la config SMTP</button>
           <button type="button" class="help-trigger" data-help-id="btn-clear-smtp" aria-label="Aide : supprimer SMTP" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        </div>
+      </div>
+
+      <div class="card" id="settings-backup-json">
+        <h2 class="heading-with-help">Sauvegarde JSON
+          <button type="button" class="help-trigger" data-help-id="settings-backup-json" aria-label="Aide : sauvegarde JSON" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        </h2>
+        <p class="field-hint card-intro">Exportez ou importez vos <strong>paramètres et virements</strong> (<code>loyer-data.json</code>). Vous pouvez aussi déposer un fichier <strong>.json</strong> sur la page. Pour une sauvegarde complète chiffrée (OAuth mail, SMTP, historique), voir <strong>Mon compte</strong>.</p>
+        <div class="btn-group" style="flex-wrap:wrap">
+          <button type="button" id="btn-export-json" class="btn btn-secondary"><i class="fa-solid fa-download" aria-hidden="true"></i>Exporter les données (JSON)</button>
+          <label class="btn btn-secondary" style="cursor:pointer;margin:0">
+            <i class="fa-solid fa-upload" aria-hidden="true"></i>Importer des données (JSON)
+            <input type="file" id="import-settings-json" accept=".json,application/json" class="hidden">
+          </label>
         </div>
       </div>
 
@@ -878,7 +896,7 @@
             <h3>L'envoi mail échoue</h3>
             <p>Vérifiez les destinataires dans Paramètres, la connexion Gmail/Outlook ou la configuration SMTP. Consultez l'onglet Historique pour le détail de l'erreur.</p>
             <h3>Exporter mon profil</h3>
-            <p>Paramètres → Mon compte → <strong>Exporter mon profil</strong> télécharge une sauvegarde chiffrée (loyers + paramètres serveur : OAuth mail, SMTP, historique). Choisissez un <strong>mot de passe de sauvegarde</strong> à l'export ; il sera requis pour importer. À l'initiation (<code>login.html</code>), vous pouvez préparer une restauration avant de créer votre compte (local, Google ou Microsoft).</p>
+            <p>Dans <strong>Paramètres → Sauvegarde JSON</strong>, exportez ou importez votre fichier <code>loyer-data.json</code> (paramètres + virements). Pour une sauvegarde complète chiffrée, utilisez <strong>Mon compte</strong>.</p>
           </article>
         </div>
       </div>

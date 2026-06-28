@@ -52,6 +52,19 @@
     App.setEditorReadOnly('quittance-preview', true);
   }
 
+  /** True si l'aperçu quittance contient du texte visible. */
+  function quittancePreviewHasContent() {
+    var el = App.getQuittanceExportEl();
+    if (!el) return false;
+    return !!String(el.textContent || '').replace(/\s|&nbsp;/g, '');
+  }
+
+  /** Rejette si l'aperçu quittance est vide (évite export PDF/DOCX vides). */
+  function assertQuittancePreviewHasContent() {
+    if (quittancePreviewHasContent()) return;
+    throw new Error('Aperçu quittance vide — vérifiez le modèle et la connexion au serveur.');
+  }
+
   /** Injecte HTML quittance remplacé dans le conteneur aperçu. */
   function renderQuittancePreview() {
     var id = App.state.quittanceUi.selectedId || LoyerTemplateManager.getDefaultId(App.state.data.settings, 'quittance');
@@ -73,17 +86,21 @@
         id
       )
         .then(lockQuittancePreviewEditor)
+        .then(assertQuittancePreviewHasContent)
         .catch(function (err) {
           console.error(err);
-          LoyerNotify.error('Impossible de générer les quittances.');
+          LoyerNotify.error(err.message || 'Impossible de générer les quittances.');
+          throw err;
         });
     }
     if (hint) hint.classList.add('hidden');
     return LoyerQuittance.render(App.state.data, App.state.selectedYear, App.state.selectedMonth, id)
       .then(lockQuittancePreviewEditor)
+      .then(assertQuittancePreviewHasContent)
       .catch(function (err) {
         console.error(err);
-        LoyerNotify.error('Impossible de générer la quittance.');
+        LoyerNotify.error(err.message || 'Impossible de générer la quittance.');
+        throw err;
       });
   }
 
@@ -130,6 +147,7 @@
     var ctx = App.getExportPeriodContext();
     var id = App.state.quittanceUi.selectedId || LoyerTemplateManager.getDefaultId(App.state.data.settings, 'quittance');
     return App.renderQuittancePreview().then(function () {
+      App.assertQuittancePreviewHasContent();
       var fn = App.getQuittanceExportFilename(ctx);
       var chain;
       if (format === 'pdf') {
@@ -144,7 +162,14 @@
             'pdf'
           );
         } else {
-          chain = LoyerExport.exportPdf(App.getQuittanceExportEl(), fn);
+          chain = LoyerQuittance.buildFilledHtml(
+            App.state.data,
+            App.state.selectedYear,
+            App.state.selectedMonth,
+            id
+          ).then(function (html) {
+            return LoyerExport.exportPdfFromHtml(html, fn);
+          });
         }
       } else if (ctx.isRange) {
         chain = LoyerQuittance.exportBatch(
@@ -170,6 +195,7 @@
   }
 
   App.applyQuittanceTabMode = applyQuittanceTabMode;
+  App.assertQuittancePreviewHasContent = assertQuittancePreviewHasContent;
   App.renderQuittancePreview = renderQuittancePreview;
   App.renderQuittance = renderQuittance;
   App.getQuittanceExportEl = getQuittanceExportEl;

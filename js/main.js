@@ -69,6 +69,12 @@
     if (global.LoyerAuth && global.LoyerAuth.updateHeaderAuthUi) {
       global.LoyerAuth.updateHeaderAuthUi();
     }
+    if (global.LoyerAuth && global.LoyerAuth.getCachedStatus) {
+      var authStatus = global.LoyerAuth.getCachedStatus();
+      if (authStatus && authStatus.demo && global.LoyerDemoUi && global.LoyerDemoUi.applyDemoUi) {
+        global.LoyerDemoUi.applyDemoUi(authStatus);
+      }
+    }
     App.renderAll();
     App.initTemplatesUi();
     App.showPanel('panel-dashboard');

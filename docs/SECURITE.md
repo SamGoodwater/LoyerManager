@@ -74,9 +74,9 @@ Activez un certificat SSL sur votre hébergeur (Let's Encrypt, AutoSSL, etc.). S
 
 Outil **Confidentialité / Protection du répertoire** (cPanel, Plesk, DirectAdmin…) sur le dossier de l'application.
 
-### VPS / Debian (Apache)
+### VPS avec accès Apache
 
-[`deploy/scripts/install-apache.sh`](../deploy/scripts/install-apache.sh) · [`deploy/apache/basic-auth.example`](../deploy/apache/basic-auth.example)
+Configurez un mot de passe HTTP Basic Auth dans le VirtualHost Apache ou nginx, ou utilisez le panneau hébergeur si disponible.
 
 Préférez un **sous-domaine dédié** (`loyer.example.com`) plutôt qu'un sous-dossier d'un CMS.
 
@@ -152,4 +152,3 @@ Sur **nginx** ou **IIS**, reproduisez ces règles manuellement (le `.htaccess` n
 
 - [Hébergement mutualisé](HEBERGEMENT-MUTUALISE.md)
 - [Envoi mail OAuth et SMTP](OAUTH-MAIL.md)
-- [Déploiement Apache](../deploy/README.md)

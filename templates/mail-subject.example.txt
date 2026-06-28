@@ -1,1 +1,0 @@
-Envoi de la quittance de loyer - {{mois}} {{annee}}

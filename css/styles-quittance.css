@@ -1,15 +1,50 @@
-/* Espacement quittance (aperçu + PDF) — complète styles.css */
+/* Quittance — mise en page compacte (aperçu, PDF, Word) */
+.quill-editor-host .ql-editor .quittance-doc {
+  font-size: 11pt;
+  line-height: 1.35;
+  color: #111;
+}
+
 .quill-editor-host .ql-editor table.quittance-header {
   width: 100%;
   border-collapse: collapse;
   border: none;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.65rem;
 }
 
 .quill-editor-host .ql-editor table.quittance-header td {
   border: none;
   padding: 0;
   vertical-align: top;
+}
+
+.quill-editor-host .ql-editor .quittance-party .quittance-party-label,
+.quill-editor-host .ql-editor .quittance-party h3 {
+  margin: 0 0 0.08rem !important;
+  padding: 0 !important;
+  font-size: 0.72rem;
+  line-height: 1.1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #5c6b7a;
+  font-weight: 600;
+}
+
+.quill-editor-host .ql-editor .quittance-party .quittance-party-lines {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.15 !important;
+}
+
+.quill-editor-host .ql-editor .quittance-party .quittance-party-lines br {
+  line-height: 1.15;
+}
+
+/* Legacy : plusieurs <p> par bloc */
+.quill-editor-host .ql-editor .quittance-party p:not(.quittance-party-label):not(.quittance-party-lines) {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.15 !important;
 }
 
 .quill-editor-host .ql-editor .quittance-party-bailleur {
@@ -23,34 +58,116 @@
 .quill-editor-host .ql-editor > h2,
 .quill-editor-host .ql-editor .quittance-doc > h2,
 .quill-editor-host .ql-editor .quittance-title {
-  margin: 1.25rem 0 0.75rem;
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0.35rem 0 0.45rem;
 }
 
 .quill-editor-host .ql-editor > h4,
 .quill-editor-host .ql-editor .quittance-doc h4,
-.quill-editor-host .ql-editor .quittance-payments h4 {
-  margin: 1rem 0 0.5rem;
+.quill-editor-host .ql-editor .quittance-payments h4,
+.quill-editor-host .ql-editor .quittance-subtitle,
+.quill-editor-host .ql-editor h4.quittance-subtitle {
+  margin: 0.4rem 0 0.2rem;
+  font-size: 0.92rem;
+  font-weight: 600;
 }
 
 .quill-editor-host .ql-editor > p,
 .quill-editor-host .ql-editor .quittance-doc > p {
-  margin: 0.65rem 0;
-  line-height: 1.5;
+  margin: 0.15rem 0;
+  line-height: 1.35;
 }
 
-.quill-editor-host .ql-editor .quittance-party p {
-  margin: 0 0 0.25rem;
+.quill-editor-host .ql-editor .quittance-body {
+  text-align: justify;
 }
 
-.quill-editor-host .ql-editor .quittance-legal {
-  margin-top: 1rem;
+.quill-editor-host .ql-editor table.quittance-amounts {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.3rem 0 0.4rem;
+  font-size: 0.92rem;
+}
+
+.quill-editor-host .ql-editor table.quittance-amounts td {
+  border: none;
+  vertical-align: top;
+  padding: 0.18rem 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.quill-editor-host .ql-editor table.quittance-amounts tr:last-child td {
+  border-bottom: none;
 }
 
 .quill-editor-host .ql-editor .quittance-payments {
-  margin: 0.75rem 0;
+  margin: 0.25rem 0;
+}
+
+.quill-editor-host .ql-editor .quittance-list {
+  white-space: pre-wrap;
+  margin: 0;
+  padding: 0.3rem 0.45rem;
+  font-size: 0.88rem;
+  line-height: 1.35;
+  background: #f8fafc;
+  border-radius: 3px;
+}
+
+.quill-editor-host .ql-editor .quittance-meta {
+  margin: 0.2rem 0;
+  color: #64748b;
+  font-size: 0.88rem;
+}
+
+.quill-editor-host .ql-editor .quittance-solde {
+  margin: 0.15rem 0;
+}
+
+.quill-editor-host .ql-editor .quittance-legal {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.3;
+  color: #475569;
+}
+
+.quill-editor-host .ql-editor table.quittance-amounts td:last-child {
+  text-align: right;
+}
+
+.quill-editor-host .ql-editor .quittance-footer {
+  margin-top: 0.65rem;
+  text-align: right;
+}
+
+.quill-editor-host .ql-editor .quittance-footer p {
+  margin: 0;
+}
+
+.quill-editor-host .ql-editor .quittance-signature-img,
+.quill-editor-host .ql-editor .quittance-footer img {
+  max-width: 180px;
+  width: 180px;
+  height: auto;
+  display: block;
+  margin: 0.35rem 0 0 auto;
 }
 
 .quill-editor-host .ql-editor > p.ql-align-right,
 .quill-editor-host .ql-editor .quittance-doc > p.ql-align-right {
-  margin-top: 1.25rem;
+  margin-top: 0.35rem;
+}
+
+/* Capture PDF : pas de cadre ni min-height écran */
+.quill-editor-host.is-pdf-export,
+.quill-editor-host.is-pdf-export .ql-editor {
+  padding: 0 !important;
+  min-height: 0 !important;
+  background: #fff;
+}
+
+.quill-editor-host.is-pdf-export .ql-editor .quittance-doc {
+  font-size: 10.5pt;
 }

@@ -679,6 +679,96 @@
     return importProfileFile(file);
   }
 
+  /** Résumé lisible d'un jeu de données importable. */
+  function describeLoyerDataImport(data) {
+    var s = data.settings || {};
+    var bailleur = (s.bailleur && s.bailleur.name) || '—';
+    var locataire = (s.locataire && s.locataire.name) || '—';
+    var payments = Array.isArray(data.payments) ? data.payments.length : 0;
+    var tiers = s.priceHistory && s.priceHistory.length ? s.priceHistory.length : 0;
+    return {
+      bailleur: bailleur,
+      locataire: locataire,
+      payments: payments,
+      priceTiers: tiers,
+      leaseStart: s.leaseStart || '—',
+    };
+  }
+
+  /** Valide un objet JSON candidat (loyer-data ou export profil v1 métier). */
+  function parseLoyerDataImportCandidate(parsed) {
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return { ok: false, error: 'Structure JSON invalide.' };
+    }
+    if (isSealedProfileExport(parsed)) {
+      return {
+        ok: false,
+        error:
+          'Sauvegarde chiffrée — utilisez Paramètres → Mon compte → Importer un profil (mot de passe de sauvegarde requis).',
+      };
+    }
+    var loyerData = null;
+    if (isFullProfileExport(parsed) && parsed.loyerData && isLegacyLoyerData(parsed.loyerData)) {
+      loyerData = parsed.loyerData;
+    } else if (isLegacyLoyerData(parsed)) {
+      loyerData = parsed;
+    } else {
+      return {
+        ok: false,
+        error: 'Format non reconnu. Attendu : loyer-data.json (paramètres + virements).',
+      };
+    }
+    var data = normalizeData(loyerData);
+    return {
+      ok: true,
+      data: data,
+      summary: describeLoyerDataImport(data),
+    };
+  }
+
+  /** Lit un fichier JSON, valide le format loyer-data sans l'appliquer. */
+  function previewLoyerDataImport(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        try {
+          var parsed = JSON.parse(reader.result);
+          var preview = parseLoyerDataImportCandidate(parsed);
+          if (!preview.ok) {
+            reject(new Error(preview.error));
+            return;
+          }
+          resolve(preview);
+        } catch (e) {
+          reject(new Error('Fichier JSON invalide'));
+        }
+      };
+      reader.onerror = function () {
+        reject(new Error('Impossible de lire le fichier'));
+      };
+      reader.readAsText(file);
+    });
+  }
+
+  /** Enregistre des données loyer-data validées sur le serveur. */
+  function importLoyerData(data) {
+    if (!serverMode) {
+      return Promise.reject(new Error('Connexion au serveur impossible.'));
+    }
+    var chain = Promise.resolve(data);
+    if (global.LoyerTemplateManager) {
+      chain = global.LoyerTemplateManager.syncRegistryFromDisk(data.settings).then(function (result) {
+        if (result.changed) {
+          data.settings = result.settings;
+        }
+        return data;
+      });
+    }
+    return chain.then(function (normalized) {
+      return saveNow(normalized);
+    });
+  }
+
   /** migrate mail body from data. */
   function migrateMailBodyFromData(data) {
     var mail = pendingMailMigration;
@@ -753,6 +843,8 @@
     exportJson: exportJson,
     exportProfile: exportProfile,
     importProfileFile: importProfileFile,
+    previewLoyerDataImport: previewLoyerDataImport,
+    importLoyerData: importLoyerData,
     importJson: importJson,
     onSaveStatusChange: onSaveStatusChange,
     getSaveStatus: getSaveStatus,

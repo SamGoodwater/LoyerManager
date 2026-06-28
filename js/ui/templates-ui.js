@@ -80,12 +80,22 @@
   /** Active/désactive édition Quill ; masque la barre d'outils en lecture seule. */
   function setEditorReadOnly(editorId, readOnly) {
     var ed = LoyerEditor.get(editorId);
-    if (!ed || !ed.quill) return;
-    ed.quill.enable(!readOnly);
-    var host = ed.quill.container.closest('.quill-editor-host') || ed.quill.container.parentElement;
-    if (host) host.classList.toggle('is-readonly', !!readOnly);
-    var card = ed.quill.container.closest('.template-editor-card');
-    if (card) card.classList.toggle('is-readonly', !!readOnly);
+    if (!ed) return;
+    if (ed.quill) {
+      ed.quill.enable(!readOnly);
+      var host = ed.quill.container.closest('.quill-editor-host') || ed.quill.container.parentElement;
+      if (host) host.classList.toggle('is-readonly', !!readOnly);
+      var card = ed.quill.container.closest('.template-editor-card');
+      if (card) card.classList.toggle('is-readonly', !!readOnly);
+      return;
+    }
+    if (ed.root) {
+      ed.root.contentEditable = readOnly ? 'false' : 'true';
+      var plainHost = ed.root.closest('.quill-editor-host') || ed.root.parentElement;
+      if (plainHost) plainHost.classList.toggle('is-readonly', !!readOnly);
+      var plainCard = ed.root.closest('.template-editor-card');
+      if (plainCard) plainCard.classList.toggle('is-readonly', !!readOnly);
+    }
   }
 
   /** Copie input objet mail vers state template. */
@@ -836,6 +846,10 @@
     var qTplEd = LoyerEditor.get('template-quittance');
     if (qTplEd && qTplEd.quill) {
       qTplEd.quill.on('text-change', function () {
+        if (App.state.quittanceUi.mode === 'edit') App.markQuittanceDirty();
+      });
+    } else if (qTplEd && qTplEd.root) {
+      qTplEd.root.addEventListener('input', function () {
         if (App.state.quittanceUi.mode === 'edit') App.markQuittanceDirty();
       });
     }

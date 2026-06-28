@@ -65,10 +65,10 @@
       'Tous vos virements enregistrés. Modifiez ou supprimez une ligne via la colonne Actions. Le statut indique l\'origine (import CSV ou saisie manuelle).',
     'payments-csv':
       'Importez un CSV exporté depuis votre banque (relevé de compte), ou glissez-déposez le fichier n\'importe où sur la page. L\'application repère les virements du locataire grâce aux émetteurs configurés. Les doublons sont exclus.',
+    'payments-demo-csv':
+      'En mode démonstration uniquement : téléchargez le relevé bancaire fictif, puis importez-le comme un export banque. Environ une dizaine de virements locataire seront proposés à l\'insertion (mai 2026 et mois suivants absents des données initiales). Les lignes déjà enregistrées apparaissent comme doublons ; salaire, assurance et autres opérations sont ignorées.',
     'payments-manual':
       'Ajoutez un virement un par un si vous n\'avez pas de fichier CSV, ou pour corriger une saisie.',
-    'payments-clear':
-      'Supprime tous les virements d\'un coup — action irréversible. Préférez la suppression ligne par ligne lorsque c\'est possible.',
     'settings-auto-save':
       'Les paramètres (hors SMTP et Mon compte) sont enregistrés automatiquement toutes les 30 secondes après modification, à la sortie de l\'onglet Paramètres et avant fermeture de la page. Le bouton flottant Enregistrer force une sauvegarde immédiate.',
     'settings-lease':
@@ -93,6 +93,8 @@
       'Alternative sans OAuth : serveur SMTP (OVH, Free, Orange…). Port 587 + TLS est le cas le plus courant. Mot de passe SMTP chiffré sur le serveur. Pas de brouillon dans la boîte mail — utilisez EML + PDF. Si Gmail/Outlook OAuth est connecté, OAuth est prioritaire à l\'envoi.',
     'settings-data':
       'Clé d\'accès technique (legacy) : affichée uniquement si aucun compte utilisateur n\'existe encore ou si l\'administrateur l\'a configurée. Une fois connecté via login.html, la session PHP protège l\'API.',
+    'settings-backup-json':
+      'Exporte ou importe le fichier <code>loyer-data.json</code> (paramètres, virements, registre des modèles). L\'import vérifie le format puis affiche un résumé avant remplacement. Les sauvegardes chiffrées (export profil v2) passent par <strong>Mon compte</strong>. Glisser-déposer un <code>.json</code> sur la page fonctionne aussi.',
     'settings-account':
       'Déconnexion, changement de passphrase (compte local), export/import du profil complet (JSON métier + OAuth mail, SMTP, historique SQLite), suppression des données ou du compte utilisateur.',
     'auth-passphrase':

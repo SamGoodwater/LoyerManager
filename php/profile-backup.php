@@ -434,7 +434,7 @@ function loyerProfileWriteLoyerData(array $ctx, array $loyerData): void
     }
 }
 
-/** Supprime les modèles personnalisés (conserve complet, court, principal). */
+/** Supprime les modèles personnalisés (conserve complet et court). */
 function loyerProfileDeleteCustomTemplates(string $quittancesDir, string $mailsDir): void
 {
     $protected = loyerProtectedTemplateIds();

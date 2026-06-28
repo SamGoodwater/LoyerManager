@@ -7,18 +7,23 @@
   var SYSTEM_ID = '_system';
   var SYSTEM_LABEL = 'Modèle par défaut (système)';
   /** @deprecated Ancien id — migré vers complet */
-  var LEGACY_ID = 'principal';
   var COMPLET_ID = 'complet';
   var COURT_ID = 'court';
   var DEFAULT_PROTECTED_ID = COMPLET_ID;
+  /** Ancien id registre — migré vers complet au chargement. */
+  var DEPRECATED_TEMPLATE_ID = 'principal';
 
   var PROTECTED_NAMES = {
     complet: 'Modèle complet',
-    court: 'Modèle court',
-    principal: 'Modèle complet'
+    court: 'Modèle court'
   };
 
-  var PROTECTED_IDS = [COMPLET_ID, COURT_ID, LEGACY_ID];
+  var PROTECTED_IDS = [COMPLET_ID, COURT_ID];
+
+  /** Normalise un id modèle (principal → complet). */
+  function normalizeTemplateId(id) {
+    return id === DEPRECATED_TEMPLATE_ID ? COMPLET_ID : id;
+  }
 
   /** Normalise chaîne en identifiant fichier. */
   function slugify(name) {
@@ -40,26 +45,23 @@
     return id === SYSTEM_ID;
   }
 
-  /** True si modèle de base (complet, court ou legacy principal) — lecture seule, non supprimable. */
+  /** True si modèle de base (complet, court) — lecture seule, non supprimable. */
   function isProtectedId(id) {
-    return PROTECTED_IDS.indexOf(id) !== -1;
+    return PROTECTED_IDS.indexOf(normalizeTemplateId(id)) !== -1;
   }
 
   /** Libellé affiché d'un modèle protégé. */
   function getProtectedName(id) {
-    if (id === LEGACY_ID) {
-      return PROTECTED_NAMES[COMPLET_ID];
-    }
-    return PROTECTED_NAMES[id] || id;
+    return PROTECTED_NAMES[normalizeTemplateId(id)] || id;
   }
 
-  /** Renomme l'entrée legacy principal → complet dans une liste registre. */
-  function migratePrincipalInList(list) {
+  /** Fusionne les entrées legacy principal → complet dans le registre. */
+  function normalizeRegistryList(list) {
     var seenComplet = false;
     var out = [];
     list.forEach(function (entry) {
       if (!entry || !entry.id) return;
-      var id = entry.id === LEGACY_ID ? COMPLET_ID : entry.id;
+      var id = normalizeTemplateId(entry.id);
       if (id === COMPLET_ID) {
         if (seenComplet) return;
         seenComplet = true;
@@ -75,13 +77,13 @@
     return out;
   }
 
-  /** Garantit modèles complet + court dans le registre ; migre principal. */
+  /** Garantit modèles complet + court dans le registre. */
   function ensureProtectedInRegistry(settings) {
     if (!settings || !settings.templates) return;
     var t = settings.templates;
 
-    t.quittances = migratePrincipalInList(t.quittances || []);
-    t.mails = migratePrincipalInList(t.mails || []);
+    t.quittances = normalizeRegistryList(t.quittances || []);
+    t.mails = normalizeRegistryList(t.mails || []);
 
     function hasId(list, id) {
       for (var i = 0; i < list.length; i++) {
@@ -103,10 +105,10 @@
       t.mails.unshift({ id: COURT_ID, name: PROTECTED_NAMES[COURT_ID] });
     }
 
-    if (!t.defaultQuittanceId || t.defaultQuittanceId === LEGACY_ID || t.defaultQuittanceId === SYSTEM_ID) {
+    if (!t.defaultQuittanceId || t.defaultQuittanceId === DEPRECATED_TEMPLATE_ID || t.defaultQuittanceId === SYSTEM_ID) {
       t.defaultQuittanceId = COMPLET_ID;
     }
-    if (!t.defaultMailId || t.defaultMailId === LEGACY_ID || t.defaultMailId === SYSTEM_ID) {
+    if (!t.defaultMailId || t.defaultMailId === DEPRECATED_TEMPLATE_ID || t.defaultMailId === SYSTEM_ID) {
       t.defaultMailId = COMPLET_ID;
     }
   }
@@ -200,7 +202,7 @@
           ids[e.id] = true;
         });
         diskItems.forEach(function (d) {
-          if (!d.id || ids[d.id]) return;
+          if (!d.id || d.id === DEPRECATED_TEMPLATE_ID || ids[d.id]) return;
           list.push({ id: d.id, name: 'Modèle (' + d.id + ')' });
           ids[d.id] = true;
           changed = true;
@@ -238,6 +240,7 @@
     if (isSystemId(id)) {
       id = COMPLET_ID;
     }
+    id = normalizeTemplateId(id);
     return global.LoyerServerApi.readTemplateFile(type, id, part).then(function (text) {
       if (!text || !String(text).trim()) {
         return Promise.reject(new Error('Modèle introuvable sur le serveur.'));
@@ -361,7 +364,6 @@
   global.LoyerTemplateManager = {
     SYSTEM_ID: SYSTEM_ID,
     SYSTEM_LABEL: SYSTEM_LABEL,
-    LEGACY_ID: LEGACY_ID,
     COMPLET_ID: COMPLET_ID,
     COURT_ID: COURT_ID,
     DEFAULT_PROTECTED_ID: DEFAULT_PROTECTED_ID,

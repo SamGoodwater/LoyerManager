@@ -24,7 +24,7 @@ Guide pour installer Loyer Manager sur un hébergement web classique (Apache, PH
 
 ### Option B — Client FTP
 
-Uploadez tout le contenu : `js/`, `css/`, `lib/`, `php/`, `index.html`, `login.html`, `api.php`, etc.
+Uploadez tout le contenu : `js/`, `css/`, `lib/`, `php/`, `demo/` (obligatoire si `demo_mode`), `index.html`, `login.html`, `api.php`, etc.
 
 ---
 
@@ -78,7 +78,9 @@ Les paramètres sont **sauvegardés automatiquement** ; le bouton **Enregistrer*
 
 ### Jeu de démonstration
 
-Uploadez `docs/demo/loyer-data.demo.json` vers `data/loyer-data.json`, puis rechargez la page. Voir [`demo/README.md`](demo/README.md).
+**Instance avec `demo_mode`** : incluez le dossier **`demo/`** dans l'upload (reset automatique depuis `demo/loyer-data.demo.json`).
+
+**Test manuel sans `demo_mode`** : copiez `demo/loyer-data.demo.json` vers `data/loyer-data.json`, puis rechargez la page. Voir [`docs/demo/README.md`](demo/README.md).
 
 ---
 
@@ -130,10 +132,10 @@ Uploadez `docs/demo/loyer-data.demo.json` vers `data/loyer-data.json`, puis rech
 
 ## Différence avec un VPS (Debian)
 
-| | Mutualisé | VPS / Debian |
+| | Mutualisé | VPS avec SSH |
 |---|-----------|--------------|
-| Installation | FTP / panneau | [`deploy/scripts/install-apache.sh`](../deploy/scripts/install-apache.sh) |
-| Mot de passe site | Panneau hébergeur | Apache Basic Auth |
-| Mise à jour | Remplacer les fichiers | `git pull` |
+| Installation | FTP / panneau | FTP ou `git pull` |
+| Mot de passe site | Panneau hébergeur | Apache Basic Auth ou panneau |
+| Mise à jour | Remplacer les fichiers | Idem |
 
 Même application, même [`SECURITE.md`](SECURITE.md).

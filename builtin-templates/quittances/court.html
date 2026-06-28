@@ -1,8 +1,9 @@
 <div class="quittance-doc quittance-doc-court">
   <p><strong>{{bailleur.name}}</strong> (bailleur) · <strong>{{locataire.name}}</strong> (locataire)</p>
-  <h2>Quittance — {{moisText}}</h2>
-  <p>Reçu de <strong>{{locataire.name}}</strong> la somme de <strong>{{paiement}}</strong> pour la période du {{date}} au {{datePlusUnMois}} (loyer {{loyer}} + charges {{charges}} = {{totalAttendu}}).</p>
-  <p>{{texteSolde}}</p>
-  <p class="quittance-legal" style="font-size:0.9em">Quittance délivrée conformément aux obligations du bailleur (<a href="https://www.service-public.gouv.fr/particuliers/vosdroits/R31936" rel="noopener noreferrer">service-public.fr</a>).</p>
+  <h2>{{titreDocument}}</h2>
+  <p>Logement : {{adresseLogement}}. Période : {{date}} → {{datePlusUnMois}}.</p>
+  <p>Reçu : <strong>{{paiement}}</strong> (loyer {{loyer}} + charges {{charges}} = {{totalAttendu}}).</p>
+  <p>{{texteDatePaiement}} {{texteSolde}}</p>
+  <p class="quittance-legal" style="font-size:0.9em">{{mentionLegale}}</p>
   <p class="ql-align-right">Fait le {{dateDuJour}} à {{lieu}}. {{signatureHtml}}</p>
 </div>

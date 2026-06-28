@@ -25,6 +25,10 @@
     document.querySelectorAll('[data-demo-hide]').forEach(function (el) {
       el.classList.add('hidden');
     });
+    document.querySelectorAll('[data-demo-only]').forEach(function (el) {
+      el.classList.remove('hidden');
+      el.removeAttribute('hidden');
+    });
     ['btn-mail-send', 'btn-mail-draft'].forEach(function (id) {
       var btn = document.getElementById(id);
       if (btn) {

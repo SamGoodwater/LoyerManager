@@ -60,46 +60,9 @@
     });
   }
 
-  /** Espacement vertical du corps de quittance (aperçu + PDF). */
+  /** Espacement vertical du corps de quittance — géré par styles-quittance.css. */
   function applyQuittanceBodySpacing(root) {
-    if (!root) return;
-
-    root.querySelectorAll('.quittance-header').forEach(function (header) {
-      header.style.marginBottom = '1.5rem';
-    });
-
-    root.querySelectorAll('h2, .quittance-title').forEach(function (h) {
-      if (h.closest('.quittance-party')) return;
-      h.style.margin = '1.25rem 0 0.75rem';
-    });
-
-    root.querySelectorAll('h4').forEach(function (h) {
-      if (h.closest('.quittance-party')) return;
-      h.style.margin = '1rem 0 0.5rem';
-    });
-
-    root.querySelectorAll('p').forEach(function (p) {
-      if (p.closest('.quittance-party') || p.closest('.quittance-footer')) return;
-      p.style.margin = '0.65rem 0';
-      p.style.lineHeight = '1.5';
-    });
-
-    root.querySelectorAll('.quittance-legal').forEach(function (p) {
-      p.style.marginTop = '1rem';
-    });
-
-    root.querySelectorAll('.quittance-breakdown, .quittance-solde').forEach(function (p) {
-      p.style.margin = '0.65rem 0';
-    });
-
-    root.querySelectorAll('.quittance-payments').forEach(function (block) {
-      block.style.margin = '0.75rem 0';
-    });
-
-    root.querySelectorAll('.ql-align-right').forEach(function (el) {
-      if (el.closest('.quittance-party')) return;
-      el.style.marginTop = '1.25rem';
-    });
+    /* Conservé pour compatibilité ; ne plus injecter de marges inline. */
   }
 
   /** Libellé h3 BAILLEUR / LOCATAIRE normalisé. */
@@ -113,13 +76,23 @@
   /** Compacte marges dans une cellule d'en-tête. */
   function tightenPartyCell(td) {
     if (!td) return;
-    td.querySelectorAll('h3').forEach(function (h) {
-      h.style.margin = '0 0 0.35rem';
-      h.style.fontSize = '0.85rem';
-      h.style.letterSpacing = '0.05em';
+    td.querySelectorAll('.quittance-party-label, h3').forEach(function (label) {
+      label.style.margin = '0 0 0.08rem';
+      label.style.padding = '0';
+      label.style.fontSize = '0.72rem';
+      label.style.lineHeight = '1.1';
+      label.style.letterSpacing = '0.06em';
+      label.style.textTransform = 'uppercase';
     });
-    td.querySelectorAll('p').forEach(function (p) {
-      p.style.margin = '0 0 0.15rem';
+    td.querySelectorAll('.quittance-party-lines').forEach(function (block) {
+      block.style.margin = '0';
+      block.style.padding = '0';
+      block.style.lineHeight = '1.15';
+    });
+    td.querySelectorAll('p:not(.quittance-party-label):not(.quittance-party-lines)').forEach(function (p) {
+      p.style.margin = '0';
+      p.style.padding = '0';
+      p.style.lineHeight = '1.15';
     });
   }
 
@@ -130,7 +103,7 @@
     table.style.width = '100%';
     table.style.borderCollapse = 'collapse';
     table.style.border = 'none';
-    table.style.marginBottom = compactForDocx ? '1rem' : '1.5rem';
+    table.style.marginBottom = '0.65rem';
   }
 
   /** Convertit div flex en table 2 colonnes. */
@@ -257,18 +230,19 @@
     normalizeQuittanceDocument(root, compactForDocx);
 
     var calc = global.LoyerCalc || {};
-    var sigW = calc.SIGNATURE_IMG_WIDTH || 250;
+    var sigW = compactForDocx ? 180 : (calc.SIGNATURE_IMG_WIDTH || 180);
 
     root.querySelectorAll('.quittance-header').forEach(function (header) {
       if (header.tagName === 'TABLE') {
         styleHeaderTable(header, compactForDocx);
+        header.querySelectorAll('.quittance-party').forEach(tightenPartyCell);
         return;
       }
       convertHeaderToTable(header, compactForDocx);
     });
 
     root.querySelectorAll('.quittance-footer').forEach(function (footerEl) {
-      footerEl.style.marginTop = compactForDocx ? '1.5rem' : '2rem';
+      footerEl.style.marginTop = '0.65rem';
       footerEl.style.textAlign = 'right';
     });
 
@@ -306,6 +280,230 @@
     if (!compactForDocx) applyQuittanceBodySpacing(root);
   }
 
+  /** Affiche ou masque le placeholder Quill selon le HTML injecté. */
+  function syncEditorBlankState(quill, html) {
+    if (!quill || !quill.root) return;
+    var hasContent = !!(html && String(html).replace(/<[^>]+>/g, '').replace(/\s|&nbsp;/g, ''));
+    quill.root.classList.toggle('ql-blank', !hasContent);
+  }
+
+  /** Placeholder pour surface HTML sans Quill. */
+  function syncPlainBlankState(surface, html, placeholder) {
+    if (!surface) return;
+    var hasContent = !!(html && String(html).replace(/<[^>]+>/g, '').replace(/\s|&nbsp;/g, ''));
+    surface.classList.toggle('ql-blank', !hasContent);
+    if (placeholder) surface.dataset.placeholder = placeholder;
+  }
+
+  /** Exécute une commande de mise en forme sur une surface contenteditable. */
+  function execHtmlCommand(surface, command, value) {
+    if (!surface) return;
+    surface.focus();
+    try {
+      document.execCommand(command, false, value == null ? null : value);
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  /** Mémorise la sélection dans une surface contenteditable (barre d'outils). */
+  function bindPlainHtmlSelection(surface) {
+    var savedRange = null;
+
+    function save() {
+      var sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+      var range = sel.getRangeAt(0);
+      if (!surface.contains(range.commonAncestorContainer)) return;
+      savedRange = range.cloneRange();
+    }
+
+    function restore() {
+      if (!savedRange) return;
+      var sel = window.getSelection();
+      if (!sel) return;
+      sel.removeAllRanges();
+      sel.addRange(savedRange);
+    }
+
+    ['keyup', 'mouseup', 'focus'].forEach(function (evt) {
+      surface.addEventListener(evt, save);
+    });
+
+    return {
+      focus: function () {
+        surface.focus();
+        restore();
+      }
+    };
+  }
+
+  /** Handlers Quill → execCommand pour éditeur HTML pur (même barre que le mail). */
+  function createPlainHtmlToolbarHandlers(surface, selection) {
+    function focusSurface() {
+      selection.focus();
+    }
+
+    function headerTag(value) {
+      if (value === false || value === 'false' || value == null) return 'p';
+      if (value === 1 || value === '1') return 'h1';
+      if (value === 2 || value === '2') return 'h2';
+      if (value === 3 || value === '3') return 'h3';
+      return 'p';
+    }
+
+    return {
+      bold: function () {
+        focusSurface();
+        execHtmlCommand(surface, 'bold');
+      },
+      italic: function () {
+        focusSurface();
+        execHtmlCommand(surface, 'italic');
+      },
+      underline: function () {
+        focusSurface();
+        execHtmlCommand(surface, 'underline');
+      },
+      strike: function () {
+        focusSurface();
+        execHtmlCommand(surface, 'strikeThrough');
+      },
+      header: function (value) {
+        focusSurface();
+        execHtmlCommand(surface, 'formatBlock', headerTag(value));
+      },
+      list: function (value) {
+        focusSurface();
+        execHtmlCommand(surface, value === 'ordered' ? 'insertOrderedList' : 'insertUnorderedList');
+      },
+      indent: function (value) {
+        focusSurface();
+        execHtmlCommand(surface, value === '+1' ? 'indent' : 'outdent');
+      },
+      align: function (value) {
+        focusSurface();
+        var map = {
+          '': 'justifyLeft',
+          left: 'justifyLeft',
+          center: 'justifyCenter',
+          right: 'justifyRight',
+          justify: 'justifyFull'
+        };
+        execHtmlCommand(surface, map[value] || 'justifyLeft');
+      },
+      color: function (value) {
+        focusSurface();
+        execHtmlCommand(surface, 'foreColor', value);
+      },
+      background: function (value) {
+        focusSurface();
+        execHtmlCommand(surface, 'hiliteColor', value);
+      },
+      blockquote: function () {
+        focusSurface();
+        execHtmlCommand(surface, 'formatBlock', 'blockquote');
+      },
+      link: function (value) {
+        focusSurface();
+        if (value) {
+          execHtmlCommand(surface, 'createLink', value);
+          return;
+        }
+        var sel = window.getSelection();
+        var preview = sel && sel.toString ? sel.toString() : '';
+        var url = global.prompt('URL du lien', preview ? '' : 'https://');
+        if (url) execHtmlCommand(surface, 'createLink', url);
+      },
+      clean: function () {
+        focusSurface();
+        execHtmlCommand(surface, 'removeFormat');
+      }
+    };
+  }
+
+  /** Barre Quill Snow identique au mail, branchée sur une surface HTML pure. */
+  function mountPlainHtmlQuillToolbar(host, surface, toolbarConfig) {
+    if (typeof Quill === 'undefined') return null;
+
+    var ghostHost = document.createElement('div');
+    ghostHost.className = 'plain-html-toolbar-ghost';
+    ghostHost.setAttribute('aria-hidden', 'true');
+    host.appendChild(ghostHost);
+
+    var selection = bindPlainHtmlSelection(surface);
+    var ghostQuill = new Quill(ghostHost, {
+      theme: 'snow',
+      modules: {
+        toolbar: {
+          container: toolbarConfig,
+          handlers: createPlainHtmlToolbarHandlers(surface, selection)
+        }
+      }
+    });
+
+    return ghostQuill;
+  }
+
+  /** Éditeur HTML pur (sans Quill) — tables/div quittance non supportées par Quill. */
+  function createPlainHtmlEditor(options) {
+    var id = options.id;
+    var containerId = options.containerId || id;
+    var host = document.getElementById(containerId);
+    if (!host) return null;
+
+    host.classList.add('is-plain-html');
+    host.innerHTML = '';
+    var surface = document.createElement('div');
+    surface.className = 'ql-editor quittance-html-root';
+
+    var toolbarConfig = options.toolbar === false ? false : (options.toolbar || DEFAULT_TOOLBAR);
+    if (toolbarConfig !== false && !options.readOnly) {
+      mountPlainHtmlQuillToolbar(host, surface, toolbarConfig);
+      setToolbarLabels(host);
+    }
+    host.appendChild(surface);
+
+    if (options.readOnly) {
+      surface.contentEditable = 'false';
+    } else if (options.contentEditable !== false) {
+      surface.contentEditable = 'true';
+    }
+
+    var editor = {
+      id: id,
+      quill: null,
+      root: surface,
+      layout: options.layout || null,
+      setHtml: function (html) {
+        surface.innerHTML = html || '';
+        if (editor.layout === 'quittance') applyQuittanceLayout(surface);
+        syncPlainBlankState(surface, html, options.placeholder);
+      },
+      getHtml: function () {
+        return surface.innerHTML;
+      },
+      getExportElement: function () {
+        return surface;
+      },
+      focus: function () {
+        surface.focus();
+      },
+      insertText: function (text) {
+        editor.focus();
+        if (document.queryCommandSupported && document.queryCommandSupported('insertText')) {
+          document.execCommand('insertText', false, text);
+          return;
+        }
+        surface.innerHTML += text;
+      }
+    };
+
+    syncPlainBlankState(surface, '', options.placeholder);
+    instances[id] = editor;
+    return editor;
+  }
+
   /** Crée create editor. */
   function createEditor(options) {
     options = options || {};
@@ -313,6 +511,10 @@
     if (!id) throw new Error('LoyerEditor.create : id requis');
 
     if (instances[id]) return instances[id];
+
+    if (options.plainHtml) {
+      return createPlainHtmlEditor(options);
+    }
 
     if (typeof Quill === 'undefined') {
       console.warn('Quill non chargé — éditeur limité.');
@@ -343,7 +545,7 @@
         if (!quill) return;
         quill.setContents([], 'silent');
         quill.clipboard.dangerouslyPasteHTML(0, html || '', 'silent');
-        if (editor.layout === 'quittance') applyQuittanceLayout(quill.root);
+        syncEditorBlankState(quill, html);
       },
       getHtml: function () {
         return quill ? quill.root.innerHTML : '';
@@ -378,13 +580,16 @@
       id: 'quittance-preview',
       containerId: 'quittance-editor',
       layout: 'quittance',
+      plainHtml: true,
       placeholder: 'Contenu de la quittance…',
-      toolbar: false,
       readOnly: true
     });
     createEditor({
       id: 'template-quittance',
       containerId: 'template-quittance-editor',
+      layout: 'quittance',
+      plainHtml: true,
+      contentEditable: true,
       placeholder: 'Modèle quittance avec mots-clés {{…}}'
     });
     createEditor({

@@ -1066,6 +1066,31 @@ table.data-table tr.row-clickable.row-selected:hover td {
   overflow: hidden;
 }
 
+.quill-editor-host.is-plain-html {
+  border: none;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1rem;
+}
+
+.quill-editor-host.is-plain-html .ql-editor {
+  padding: 1rem;
+  min-height: 0;
+  line-height: 1.35;
+}
+
+.quill-editor-host .plain-html-toolbar-ghost {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#quittance-preview-wrap .quill-editor-host.is-plain-html .ql-editor {
+  min-height: 280px;
+}
+
 .quill-editor-host .ql-toolbar.ql-snow {
   border: none;
   border-bottom: 1px solid var(--border);
@@ -1097,19 +1122,39 @@ table.data-table tr.row-clickable.row-selected:hover td {
   font-style: normal;
 }
 
-.quill-editor-host .ql-editor .quittance-header {
+.quill-editor-host .ql-editor div.quittance-header {
   display: flex !important;
   flex-direction: row !important;
   justify-content: space-between !important;
   align-items: flex-start !important;
-  gap: 2rem !important;
+  gap: 1rem !important;
   width: 100% !important;
-  margin-bottom: 1.5rem !important;
+  margin-bottom: 0.65rem !important;
 }
 
-.quill-editor-host .ql-editor .quittance-party {
+.quill-editor-host .ql-editor table.quittance-header {
+  display: table !important;
+  width: 100% !important;
+  border-collapse: collapse !important;
+  border: none !important;
+  margin-bottom: 0.65rem !important;
+}
+
+.quill-editor-host .ql-editor table.quittance-header td {
+  border: none !important;
+  padding: 0 !important;
+  vertical-align: top !important;
+}
+
+.quill-editor-host .ql-editor div.quittance-header .quittance-party {
   flex: 1 1 45% !important;
   min-width: 180px !important;
+}
+
+.quill-editor-host .ql-editor table.quittance-header .quittance-party {
+  flex: none !important;
+  min-width: 0 !important;
+  width: 50% !important;
 }
 
 .quill-editor-host .ql-editor .quittance-party-bailleur {
@@ -1121,29 +1166,55 @@ table.data-table tr.row-clickable.row-selected:hover td {
   text-align: right !important;
 }
 
+.quill-editor-host .ql-editor .quittance-party-bailleur {
+  text-align: left;
+}
+
+.quill-editor-host .ql-editor .quittance-party-locataire {
+  text-align: right;
+}
+
+.quill-editor-host .ql-editor .quittance-footer {
+  margin-top: 0.65rem;
+  text-align: right;
+}
+
+.quill-editor-host .ql-editor .quittance-party .quittance-party-label,
 .quill-editor-host .ql-editor .quittance-party h3 {
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   letter-spacing: 0.06em;
-  margin: 0 0 0.4rem;
+  text-transform: uppercase;
+  margin: 0 0 0.08rem !important;
+  padding: 0 !important;
+  line-height: 1.1;
   color: var(--muted);
+}
+
+.quill-editor-host .ql-editor .quittance-party .quittance-party-lines,
+.quill-editor-host .ql-editor .quittance-party p:not(.quittance-party-label) {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.15 !important;
 }
 
 .quill-editor-host .ql-editor .quittance-title {
   text-align: center;
-  margin: 1.25rem 0;
+  margin: 0.35rem 0 0.45rem;
 }
 
 .quill-editor-host .ql-editor .quittance-list {
   white-space: pre-wrap;
   font-family: inherit;
   background: #f8fafc;
-  padding: 0.75rem 1rem;
+  padding: 0.3rem 0.45rem;
   border-radius: var(--radius);
   margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.35;
 }
 
 .quill-editor-host .ql-editor .quittance-footer {
-  margin-top: 2rem;
+  margin-top: 0.65rem;
   text-align: right;
 }
 
@@ -2194,11 +2265,12 @@ table.data-table tr.row-focused td {
     padding: 0.45rem 0.5rem;
   }
 
-  .quill-editor-host .ql-editor .quittance-header {
+  .quill-editor-host .ql-editor div.quittance-header {
     flex-direction: column !important;
   }
 
-  .quill-editor-host .ql-editor .quittance-party-locataire,
+  .quill-editor-host .ql-editor table.quittance-header .quittance-party-locataire,
+  .quill-editor-host .ql-editor div.quittance-header .quittance-party-locataire,
   .quill-editor-host .ql-editor .quittance-header .quittance-party:last-child {
     text-align: left !important;
   }
@@ -3060,4 +3132,34 @@ table.data-table tr.row-focused td {
 
 .demo-mode .header-icon-btn#btn-header-logout {
   display: none !important;
+}
+
+/* Éléments réservés au mode démo : masqués par défaut, visibles si body.demo-mode */
+[data-demo-only] {
+  display: none !important;
+}
+
+.demo-mode [data-demo-only] {
+  display: block !important;
+}
+
+.demo-csv-sample {
+  margin: 0 0 1rem;
+  padding: 0.85rem 1rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius);
+}
+
+.demo-csv-sample-text {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  color: #1e3a5f;
+}
+
+.demo-csv-sample-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
 }

@@ -34,6 +34,10 @@
           </div>
           <input type="password" id="login-password" name="password" required minlength="8" autocomplete="current-password">
         </div>
+        <div id="login-password-confirm-row" class="form-row hidden">
+          <label for="login-password-confirm">Confirmer la passphrase</label>
+          <input type="password" id="login-password-confirm" name="password-confirm" minlength="8" autocomplete="new-password" disabled>
+        </div>
         <p id="login-setup-hint" class="field-hint hidden">Minimum 8 caractères — une phrase de plusieurs mots est recommandée, sans règles de complexité. Ce compte protège l'accès à l'application.</p>
         <button type="submit" id="btn-login-submit" class="btn btn-primary login-submit">Se connecter</button>
       </form>

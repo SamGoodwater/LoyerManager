@@ -1,25 +1,22 @@
-<div class="quittance-doc">
-  <table class="quittance-header" width="100%" style="width:100%;border-collapse:collapse;border:none;margin-bottom:1rem;">
-    <tr>
-      <td class="quittance-party quittance-party-bailleur" style="width:50%;vertical-align:top;text-align:left;border:none;padding:0;">
-        <h3>BAILLEUR</h3>
-        <p><strong>{{bailleur.name}}</strong></p>
-        <p>{{bailleur.street}}</p>
-        <p>{{bailleur.postalCode}} {{bailleur.city}}</p>
-      </td>
-      <td class="quittance-party quittance-party-locataire" style="width:50%;vertical-align:top;text-align:right;border:none;padding:0;">
-        <h3>LOCATAIRE</h3>
-        <p><strong>{{locataire.name}}</strong></p>
-        <p>{{locataire.street}}</p>
-        <p>{{locataire.postalCode}} {{locataire.city}}</p>
-      </td>
+<div class="quittance-doc"><div style="text-align: right;"><br><table class="quittance-header" width="100%" style="font-size: 11pt; text-align: left; width: 745.031px;"><tbody><tr><td class="quittance-party quittance-party-bailleur" style="width: 372.51px;"><p class="quittance-party-label" style="counter-reset: list-1 0 list-2 0 list-3 0 list-4 0 list-5 0 list-6 0 list-7 0 list-8 0 list-9 0;">Bailleur</p><p class="quittance-party-lines" style="counter-reset: list-1 0 list-2 0 list-3 0 list-4 0 list-5 0 list-6 0 list-7 0 list-8 0 list-9 0;"><strong>{{bailleur.name}}</strong><br>{{bailleur.street}}<br>{{bailleur.postalCode}} {{bailleur.city}}</p><table class="quittance-header" width="100%" style="width: 745.031px;"><tbody><tr><td class="quittance-party quittance-party-locataire" style="width: 372.521px;"><p class="quittance-party-label" style="counter-reset: list-1 0 list-2 0 list-3 0 list-4 0 list-5 0 list-6 0 list-7 0 list-8 0 list-9 0;"><br></p></td></tr></tbody></table></td><td class="quittance-party quittance-party-locataire" style="width: 372.521px;"></td></tr></tbody></table></div></div><div class="quittance-doc"><p class="quittance-party-label" style="counter-reset: list-1 0 list-2 0 list-3 0 list-4 0 list-5 0 list-6 0 list-7 0 list-8 0 list-9 0; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; line-height: 1.1; color: rgb(92, 107, 122); font-weight: 600; text-align: right; margin: 0px 0px 0.08rem !important;">Locataire</p><p class="quittance-party-lines" style="counter-reset: list-1 0 list-2 0 list-3 0 list-4 0 list-5 0 list-6 0 list-7 0 list-8 0 list-9 0; text-align: right; margin: 0px !important; line-height: 1.15 !important;"><strong>{{locataire.name}}</strong><br style="line-height: 1.15;">{{locataire.street}}<br style="line-height: 1.15;">{{locataire.postalCode}} {{locataire.city}}</p><p class="quittance-party-lines" style="counter-reset: list-1 0 list-2 0 list-3 0 list-4 0 list-5 0 list-6 0 list-7 0 list-8 0 list-9 0; text-align: right; margin: 0px !important; line-height: 1.15 !important;"><br></p><h2 class="quittance-title">{{titreDocument}}</h2>
+<p class="quittance-body">Je soussigné(e) <strong>{{bailleur.name}}</strong>, bailleur du logement situé au <strong>{{adresseLogement}}</strong>, déclare avoir reçu de <strong>{{locataire.name}}</strong>, locataire dudit logement{{texteBail}} la somme de <strong>{{paiement}}</strong> au titre du loyer et des charges locatives pour la période du <strong>{{date}}</strong> au <strong>{{datePlusUnMois}}</strong>.</p>  <h4 class="quittance-subtitle">Détail des sommes dues et reçues<span style="font-size: 11pt;"> </span></h4><table class="quittance-amounts" width="100%">
+    <tbody><tr>
+      <td>Loyer hors charges</td>
+      <td><strong>{{loyer}}</strong></td>
     </tr>
-  </table>
-  <h2 class="quittance-title">Quittance de loyer et charges — {{moisText}}</h2>
-  <p class="quittance-body">Je soussigné(e) <strong>{{bailleur.name}}</strong>, propriétaire bailleur du logement situé au {{locataire.street}}, {{locataire.postalCode}} {{locataire.city}}, déclare avoir reçu de <strong>{{locataire.name}}</strong> la somme de <strong>{{paiement}}</strong> au titre du paiement du loyer et des charges locatives pour la période du {{date}} au {{datePlusUnMois}}.</p>
-  <p class="quittance-breakdown">Montants dus pour cette période : loyer hors charges <strong>{{loyer}}</strong>, charges locatives <strong>{{charges}}</strong>, soit un total de <strong>{{totalAttendu}}</strong> ({{texteMontants}}).</p>
-  <div class="quittance-payments"><h4>Paiements reçus :</h4><div class="quittance-list">{{listePaiements}}</div></div>
-  <p class="quittance-solde">{{texteSolde}}</p>
-  <p class="quittance-legal">La présente quittance ne vaut pas présomption de paiement des loyers antérieurs et futurs. Elle atteste du paiement pour la période indiquée, conformément aux obligations du bailleur en matière de quittance de loyer (voir <a href="https://www.service-public.gouv.fr/particuliers/vosdroits/R31936" rel="noopener noreferrer">service-public.fr — quittance de loyer</a>).</p>
-  <div class="quittance-footer" style="margin-top:1.5rem;text-align:right;"><p style="margin:0;">Fait le {{dateDuJour}} à {{lieu}}, pour faire valoir ce que de droit.</p>{{signatureHtml}}</div>
-</div>
+    <tr>
+      <td>Provisions pour charges locatives</td>
+      <td><strong>{{charges}}</strong></td>
+    </tr>
+    <tr>
+      <td>Total dû pour la période</td>
+      <td><strong>{{totalAttendu}}</strong></td>
+    </tr>
+    <tr>
+      <td>Total reçu (loyer + charges)</td>
+      <td><strong>{{paiement}}</strong></td>
+    </tr>
+  </tbody></table>
+ <span style="font-size: 0.92rem; font-weight: 600;">Encaissements enregistrés</span><div class="quittance-payments"><div class="quittance-list">{{listePaiements}}</div></div>
+ <span style="color: rgb(100, 116, 139); font-size: 0.88rem;">{{texteDatePaiement}}</span>
+ <span style="font-size: 11pt;">{{texteSolde}}</span><br><p class="quittance-legal">{{mentionLegale}} Voir aussi <a href="https://www.service-public.gouv.fr/particuliers/vosdroits/R31936" rel="noopener noreferrer">service-public.fr — quittance de loyer</a>.</p> <div class="quittance-footer" style="margin-top: 0.65rem; text-align: right;"><p style="margin: 0px;">Fait le {{dateDuJour}} à {{lieu}}, pour faire valoir ce que de droit.</p>{{signatureHtml}}</div></div>

@@ -39,6 +39,14 @@
     { key: '{{datePlusUnMois}}', label: 'Fin de période' },
     { key: '{{listePaiements}}', label: 'Liste des virements (HTML/texte)' },
     { key: '{{texteSolde}}', label: 'Texte solde / reste dû' },
+    { key: '{{titreDocument}}', label: 'Titre (quittance ou reçu + période)' },
+    { key: '{{typeDocument}}', label: 'Type : Quittance ou Reçu' },
+    { key: '{{adresseLogement}}', label: 'Adresse du logement loué' },
+    { key: '{{bailDate}}', label: 'Date du bail (si renseignée)' },
+    { key: '{{texteBail}}', label: 'Phrase « en application du bail… »' },
+    { key: '{{texteDatePaiement}}', label: 'Date du dernier encaissement' },
+    { key: '{{mentionLegale}}', label: 'Mention légale (quittance ou reçu)' },
+    { key: '{{textePieceJointe}}', label: 'Phrase pièce jointe (quittance/reçu)' },
     { key: '{{dateDuJour}}', label: 'Date du jour' },
     { key: '{{lieu}}', label: 'Lieu (ville bailleur)' },
     { key: '{{signatureHtml}}', label: 'Signature (image HTML)' },
@@ -191,7 +199,7 @@
       base.moisFin = base.mois;
       base.anneeDebut = base.annee;
       base.anneeFin = base.annee;
-      base.texteQuittancesJointes = 'la quittance de loyer pour ' + base.moisText;
+      base.texteQuittancesJointes = base.textePieceJointe || ('la quittance de loyer pour ' + base.moisText);
     }
     base.periode = base.periodeText;
     return base;

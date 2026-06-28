@@ -6,20 +6,27 @@
 declare(strict_types=1);
 
 const LOYER_SYSTEM_TEMPLATE_ID = '_system';
-const LOYER_LEGACY_MIGRATION_ID = 'principal';
 const LOYER_BUILTIN_COMPLET_ID = 'complet';
 const LOYER_BUILTIN_COURT_ID = 'court';
+/** Ancien id registre — migré vers complet au chargement. */
+const LOYER_DEPRECATED_TEMPLATE_ID = 'principal';
 
 /** Ids modèles de base non modifiables / non supprimables. */
 function loyerProtectedTemplateIds(): array
 {
-    return [LOYER_BUILTIN_COMPLET_ID, LOYER_BUILTIN_COURT_ID, LOYER_LEGACY_MIGRATION_ID];
+    return [LOYER_BUILTIN_COMPLET_ID, LOYER_BUILTIN_COURT_ID];
 }
 
-/** True si id protégé (complet, court ou legacy principal). */
+/** Normalise un id modèle (principal → complet). */
+function loyerNormalizeTemplateId(string $id): string
+{
+    return $id === LOYER_DEPRECATED_TEMPLATE_ID ? LOYER_BUILTIN_COMPLET_ID : $id;
+}
+
+/** True si id protégé (complet ou court). */
 function loyerIsProtectedTemplateId(string $id): bool
 {
-    return in_array($id, loyerProtectedTemplateIds(), true);
+    return in_array(loyerNormalizeTemplateId($id), loyerProtectedTemplateIds(), true);
 }
 
 /** Valide le type de modèle (quittance ou mail). */
@@ -52,6 +59,7 @@ function templateDirForType(string $type, string $quittancesDir, string $mailsDi
 /** Chemin absolu du fichier corps (.html) d'un modèle. */
 function templateBodyPath(string $type, string $id, string $quittancesDir, string $mailsDir): ?string
 {
+    $id = loyerNormalizeTemplateId($id);
     if ($id === LOYER_SYSTEM_TEMPLATE_ID || !isValidTemplateId($id)) {
         return null;
     }
@@ -65,60 +73,63 @@ function templateBodyPath(string $type, string $id, string $quittancesDir, strin
 /** Chemin du fichier objet mail (-subject.txt). */
 function templateSubjectPath(string $id, string $mailsDir): ?string
 {
+    $id = loyerNormalizeTemplateId($id);
     if ($id === LOYER_SYSTEM_TEMPLATE_ID || !isValidTemplateId($id)) {
         return null;
     }
     return $mailsDir . '/' . $id . '-subject.txt';
 }
 
-/** Migration anciens templates/ plats vers quittances/ et mails/ (id principal). */
+/** Migre fichiers legacy (templates/ plats, id principal) vers complet. */
 function migrateLegacyFlatTemplates(string $templatesDir, string $quittancesDir, string $mailsDir): void
 {
     ensureDir($quittancesDir);
     ensureDir($mailsDir);
 
+    $targetCompletQ = $quittancesDir . '/' . LOYER_BUILTIN_COMPLET_ID . '.html';
+    $targetCompletM = $mailsDir . '/' . LOYER_BUILTIN_COMPLET_ID . '.html';
+    $targetSubjectComplet = $mailsDir . '/' . LOYER_BUILTIN_COMPLET_ID . '-subject.txt';
+
     $legacyQuittance = $templatesDir . '/quittance.html';
-    $targetQuittance = $quittancesDir . '/' . LOYER_LEGACY_MIGRATION_ID . '.html';
-    if (is_file($legacyQuittance) && !is_file($targetQuittance)) {
-        copy($legacyQuittance, $targetQuittance);
+    if (is_file($legacyQuittance) && !is_file($targetCompletQ)) {
+        copy($legacyQuittance, $targetCompletQ);
         rename($legacyQuittance, $legacyQuittance . '.bak');
     }
 
     $legacyMail = $templatesDir . '/mail.html';
-    $targetMail = $mailsDir . '/' . LOYER_LEGACY_MIGRATION_ID . '.html';
-    if (is_file($legacyMail) && !is_file($targetMail)) {
-        copy($legacyMail, $targetMail);
+    if (is_file($legacyMail) && !is_file($targetCompletM)) {
+        copy($legacyMail, $targetCompletM);
         rename($legacyMail, $legacyMail . '.bak');
     }
 
     $legacySubject = $templatesDir . '/mail-subject.txt';
-    $targetSubject = $mailsDir . '/' . LOYER_LEGACY_MIGRATION_ID . '-subject.txt';
-    if (is_file($legacySubject) && !is_file($targetSubject)) {
-        copy($legacySubject, $targetSubject);
+    if (is_file($legacySubject) && !is_file($targetSubjectComplet)) {
+        copy($legacySubject, $targetSubjectComplet);
         rename($legacySubject, $legacySubject . '.bak');
     }
 
-    if (!is_file($targetQuittance)) {
-        copyExampleIfMissing($targetQuittance, $templatesDir . '/quittance.example.html');
-    }
-    if (!is_file($targetMail)) {
-        copyExampleIfMissing($targetMail, $templatesDir . '/mail.example.html');
-    }
-    if (!is_file($targetSubject)) {
-        copyExampleIfMissing($targetSubject, $templatesDir . '/mail-subject.example.txt');
+    $legacyPrincipalQ = $quittancesDir . '/' . LOYER_DEPRECATED_TEMPLATE_ID . '.html';
+    if (is_file($legacyPrincipalQ)) {
+        if (!is_file($targetCompletQ) || filesize($targetCompletQ) === 0) {
+            copy($legacyPrincipalQ, $targetCompletQ);
+        }
+        unlink($legacyPrincipalQ);
     }
 
-    $targetComplet = $quittancesDir . '/' . LOYER_BUILTIN_COMPLET_ID . '.html';
-    if (is_file($targetQuittance) && !is_file($targetComplet)) {
-        copy($targetQuittance, $targetComplet);
+    $legacyPrincipalM = $mailsDir . '/' . LOYER_DEPRECATED_TEMPLATE_ID . '.html';
+    if (is_file($legacyPrincipalM)) {
+        if (!is_file($targetCompletM) || filesize($targetCompletM) === 0) {
+            copy($legacyPrincipalM, $targetCompletM);
+        }
+        unlink($legacyPrincipalM);
     }
-    $targetMailComplet = $mailsDir . '/' . LOYER_BUILTIN_COMPLET_ID . '.html';
-    $targetSubjectComplet = $mailsDir . '/' . LOYER_BUILTIN_COMPLET_ID . '-subject.txt';
-    if (is_file($targetMail) && !is_file($targetMailComplet)) {
-        copy($targetMail, $targetMailComplet);
-    }
-    if (is_file($targetSubject) && !is_file($targetSubjectComplet)) {
-        copy($targetSubject, $targetSubjectComplet);
+
+    $legacyPrincipalS = $mailsDir . '/' . LOYER_DEPRECATED_TEMPLATE_ID . '-subject.txt';
+    if (is_file($legacyPrincipalS)) {
+        if (!is_file($targetSubjectComplet) || filesize($targetSubjectComplet) === 0) {
+            copy($legacyPrincipalS, $targetSubjectComplet);
+        }
+        unlink($legacyPrincipalS);
     }
 }
 
@@ -164,6 +175,9 @@ function listTemplateIds(string $type, string $quittancesDir, string $mailsDir):
     if ($type === 'quittance') {
         foreach (glob($quittancesDir . '/*.html') ?: [] as $path) {
             $base = basename($path, '.html');
+            if ($base === LOYER_DEPRECATED_TEMPLATE_ID) {
+                continue;
+            }
             if (isValidTemplateId($base)) {
                 $items[] = ['id' => $base];
             }
@@ -173,6 +187,9 @@ function listTemplateIds(string $type, string $quittancesDir, string $mailsDir):
     if ($type === 'mail') {
         foreach (glob($mailsDir . '/*.html') ?: [] as $path) {
             $base = basename($path, '.html');
+            if ($base === LOYER_DEPRECATED_TEMPLATE_ID) {
+                continue;
+            }
             if (isValidTemplateId($base)) {
                 $items[] = ['id' => $base];
             }
@@ -185,9 +202,7 @@ function listTemplateIds(string $type, string $quittancesDir, string $mailsDir):
 /** Chemin source dans builtin-templates/ (complet, court). */
 function builtinTemplateSourcePath(string $type, string $id, string $part, string $templatesDir): ?string
 {
-    if ($id === LOYER_LEGACY_MIGRATION_ID) {
-        $id = LOYER_BUILTIN_COMPLET_ID;
-    }
+    $id = loyerNormalizeTemplateId($id);
     if ($id !== LOYER_BUILTIN_COMPLET_ID && $id !== LOYER_BUILTIN_COURT_ID) {
         return null;
     }
@@ -215,6 +230,7 @@ function readTemplateContent(
     string $quittancesDir,
     string $mailsDir
 ): string {
+    $id = loyerNormalizeTemplateId($id);
     if ($part === 'subject') {
         $path = templateSubjectPath($id, $mailsDir);
     } else {

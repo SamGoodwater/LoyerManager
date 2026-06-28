@@ -22,28 +22,35 @@
   /** wrap for export. */
   function wrapForExport(innerHtml, forDocx) {
     var headerCss =
-      '.quittance-header{width:100%;border-collapse:collapse;border:none;margin-bottom:1rem}' +
+      '.quittance-doc{font-size:10.5pt;line-height:1.35;color:#111}' +
+      '.quittance-header{width:100%;border-collapse:collapse;border:none;margin-bottom:0.65rem}' +
       '.quittance-header td{border:none;padding:0;vertical-align:top}' +
       '.quittance-party-bailleur{text-align:left;width:50%}' +
       '.quittance-party-locataire{text-align:right;width:50%}' +
-      '.quittance-party h3{font-size:0.85rem;letter-spacing:0.05em;margin:0 0 0.35rem;color:#5c6b7a}' +
-      '.quittance-party p{margin:0 0 0.15rem}' +
+      '.quittance-party-label,.quittance-party h3{font-size:0.72rem;letter-spacing:0.06em;text-transform:uppercase;margin:0 0 0.08rem;padding:0;line-height:1.1;color:#5c6b7a}' +
+      '.quittance-party-lines,.quittance-party p:not(.quittance-party-label){margin:0;padding:0;line-height:1.15}' +
       '.ql-align-right{text-align:right}';
-    var bodyMargin = forDocx ? '1rem auto' : '2rem auto';
+    var bodyMargin = forDocx ? '0.75rem auto' : '0';
     return (
       '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">' +
-      '<style>body{font-family:Georgia,serif;max-width:800px;margin:' +
+      '<style>@page{margin:12mm}body{font-family:Georgia,serif;max-width:100%;margin:' +
       bodyMargin +
-      ';line-height:1.4;color:#111}' +
-      'p{margin:0.35rem 0}' +
+      ';line-height:1.35;color:#111;font-size:10.5pt}' +
+      'p{margin:0.15rem 0}' +
       BATCH_EXPORT_CSS +
       headerCss +
-      '.quittance-title{text-align:center;margin:1rem 0}' +
-      '.quittance-list,.quittance-payments pre{white-space:pre-wrap;font-family:inherit;background:#f8f8f8;padding:1rem;border-radius:4px;border:none}' +
-      '.quittance-footer{margin-top:1.5rem;text-align:right}.quittance-footer>p{margin:0}' +
-      '.quittance-signature{margin-top:0.75rem;font-weight:bold;text-align:right}' +
-      '.quittance-signature-img,.quittance-footer img{width:250px;height:auto;max-width:250px;display:block;margin-top:0.5rem;margin-left:auto;object-fit:contain}' +
-      '.quittance-signature-name{margin-top:0.75rem;margin-bottom:0;font-weight:600;text-align:right}' +
+      '.quittance-title{text-align:center;font-size:1.05rem;margin:0.35rem 0 0.45rem}' +
+      'h4,.quittance-subtitle{margin:0.4rem 0 0.2rem;font-size:0.92rem}' +
+      '.quittance-list,.quittance-payments pre{white-space:pre-wrap;font-family:inherit;background:#f8fafc;padding:0.3rem 0.45rem;border-radius:3px;border:none;font-size:0.88rem;margin:0}' +
+      'table.quittance-amounts{width:100%;border-collapse:collapse;margin:0.3rem 0 0.4rem;font-size:0.92rem}' +
+      'table.quittance-amounts td{padding:0.18rem 0;border-bottom:1px solid #e5e7eb;vertical-align:top}' +
+      'table.quittance-amounts tr:last-child td{border-bottom:none}' +
+      '.quittance-meta{color:#64748b;font-size:0.88rem;margin:0.2rem 0}' +
+      '.quittance-legal{font-size:0.78rem;line-height:1.3;color:#475569;margin:0.35rem 0 0}' +
+      '.quittance-footer{margin-top:0.65rem;text-align:right}.quittance-footer>p{margin:0}' +
+      '.quittance-signature{margin-top:0.35rem;font-weight:bold;text-align:right}' +
+      '.quittance-signature-img,.quittance-footer img{width:180px;height:auto;max-width:180px;display:block;margin:0.35rem 0 0 auto;object-fit:contain}' +
+      '.quittance-signature-name{margin-top:0.35rem;margin-bottom:0;font-weight:600;text-align:right}' +
       'strong,b{font-weight:bold}em,i{font-style:italic}u{text-decoration:underline}' +
       '</style></head><body>' +
       innerHtml +
@@ -101,15 +108,29 @@
     return pages;
   }
 
-  /** Options html2pdf (format A4, marges, scale). */
+  /** Options html2pdf (format A4, marges réduites, une page). */
   function getPdfOptions(filename) {
     return {
-      margin: 15,
+      margin: [10, 10, 10, 10],
       filename: filename ? filename + '.pdf' : 'export.pdf',
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      html2canvas: { scale: 2, useCORS: true, scrollY: 0, scrollX: 0 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['avoid-all'] }
     };
+  }
+
+  /** Prépare l'élément DOM avant capture PDF (supprime padding écran). */
+  function withPdfExportSurface(container, work) {
+    var host = container && container.closest ? container.closest('.quill-editor-host') : null;
+    if (host) host.classList.add('is-pdf-export');
+    if (container) container.classList.add('is-pdf-export');
+    return Promise.resolve()
+      .then(work)
+      .finally(function () {
+        if (host) host.classList.remove('is-pdf-export');
+        if (container) container.classList.remove('is-pdf-export');
+      });
   }
 
   /** Rafraîchit le rendu DOM de render export page. */
@@ -130,31 +151,33 @@
     var worker = null;
     var chain = Promise.resolve();
 
-    pages.forEach(function (pageHtml, index) {
-      chain = chain.then(function () {
-        return renderExportPage(el, pageHtml).then(function () {
-          if (index === 0) {
-            worker = html2pdf().set(opt);
-            return worker.from(el).toContainer().toCanvas().toPdf();
-          }
-          return worker.get('pdf').then(function (pdf) {
-            pdf.addPage();
-            return worker.from(el).toContainer().toCanvas().toPdf();
+    return withPdfExportSurface(el, function () {
+      pages.forEach(function (pageHtml, index) {
+        chain = chain.then(function () {
+          return renderExportPage(el, pageHtml).then(function () {
+            if (index === 0) {
+              worker = html2pdf().set(opt);
+              return worker.from(el).toContainer().toCanvas().toPdf();
+            }
+            return worker.get('pdf').then(function (pdf) {
+              pdf.addPage();
+              return worker.from(el).toContainer().toCanvas().toPdf();
+            });
           });
         });
       });
-    });
 
-    return chain
-      .then(function () {
-        if (!worker) return Promise.reject(new Error('Export PDF impossible.'));
-        if (asBlob) return worker.output('blob');
-        return worker.save();
-      })
-      .finally(function () {
-        el.innerHTML = savedHtml;
-        applyQuittanceLayout(el);
-      });
+      return chain
+        .then(function () {
+          if (!worker) return Promise.reject(new Error('Export PDF impossible.'));
+          if (asBlob) return worker.output('blob');
+          return worker.save();
+        })
+        .finally(function () {
+          el.innerHTML = savedHtml;
+          applyQuittanceLayout(el);
+        });
+    });
   }
 
   /** apply quittance layout. */
@@ -184,7 +207,9 @@
         return waitForImages(el);
       })
       .then(function () {
-        return callback(el);
+        return withPdfExportSurface(el, function () {
+          return callback(el);
+        });
       })
       .finally(function () {
         el.innerHTML = savedHtml;
@@ -198,13 +223,15 @@
       window.print();
       return Promise.resolve();
     }
-    return waitForLayout()
-      .then(function () {
-        return waitForImages(container);
-      })
-      .then(function () {
-        return html2pdf().set(getPdfOptions(filename)).from(container).save();
-      });
+    return withPdfExportSurface(container, function () {
+      return waitForLayout()
+        .then(function () {
+          return waitForImages(container);
+        })
+        .then(function () {
+          return html2pdf().set(getPdfOptions(filename)).from(container).save();
+        });
+    });
   }
 
   /** Blob PDF depuis élément DOM. */
@@ -212,13 +239,15 @@
     if (typeof html2pdf === 'undefined') {
       return Promise.reject(new Error('html2pdf missing'));
     }
-    return waitForLayout()
-      .then(function () {
-        return waitForImages(container);
-      })
-      .then(function () {
-        return html2pdf().set(getPdfOptions(null)).from(container).output('blob');
-      });
+    return withPdfExportSurface(container, function () {
+      return waitForLayout()
+        .then(function () {
+          return waitForImages(container);
+        })
+        .then(function () {
+          return html2pdf().set(getPdfOptions(null)).from(container).output('blob');
+        });
+    });
   }
 
   /** Exporte export pdf from html. */

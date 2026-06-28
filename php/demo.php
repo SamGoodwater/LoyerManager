@@ -32,7 +32,7 @@ function loyerDemoGoldenJsonPath(array $ctx): string
     if ($custom !== '' && is_file($custom)) {
         return $custom;
     }
-    return $ctx['baseDir'] . '/docs/demo/loyer-data.demo.json';
+    return $ctx['baseDir'] . '/demo/loyer-data.demo.json';
 }
 
 /** Restaure données démo depuis le JSON golden. */

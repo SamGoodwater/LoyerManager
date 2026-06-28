@@ -513,10 +513,37 @@
       listePaiements = 'Aucun virement enregistré pour ce mois.';
     }
 
+    var estQuittance = resteDu <= 0 && detail.totalRecu > 0;
+    var moisText = formatMonthLong(year, month);
+    var titreDocument = estQuittance
+      ? 'Quittance de loyer et charges — ' + moisText
+      : 'Reçu de paiement — ' + moisText;
+    var loc = settings.locataire || {};
+    var adresseLogement =
+      [loc.street, loc.postalCode, loc.city].filter(Boolean).join(', ') || '—';
+    var bailDate = settings.leaseStart ? formatDateLong(settings.leaseStart) : '';
+    var texteBail = bailDate ? ', en application du contrat de bail en date du ' + bailDate + ',' : '';
+    var texteDatePaiement = '';
+    if (detail.payments.length) {
+      var lastPayment = detail.payments.reduce(function (best, p) {
+        if (!best) return p;
+        return parseDate(p.date) > parseDate(best.date) ? p : best;
+      }, null);
+      if (lastPayment) {
+        texteDatePaiement = 'Date du dernier encaissement : ' + formatDateLong(lastPayment.date) + '.';
+      }
+    }
+    var mentionLegale = estQuittance
+      ? 'La présente quittance atteste du paiement intégral du loyer et des charges pour la période indiquée, avec distinction du loyer hors charges et des provisions pour charges. Elle ne vaut pas présomption de paiement des loyers antérieurs et futurs (art. 21 de la loi n° 89-462 du 6 juillet 1989).'
+      : 'Le présent reçu atteste des sommes versées pour la période indiquée. Une quittance ne peut être délivrée qu\'après règlement intégral du loyer et des charges dus pour la période (art. 21 de la loi n° 89-462 du 6 juillet 1989).';
+    var textePieceJointe = estQuittance
+      ? 'la quittance de loyer pour ' + moisText
+      : 'le reçu de paiement pour ' + moisText;
+
     return {
       bailleur: settings.bailleur,
       locataire: settings.locataire,
-      moisText: formatMonthLong(year, month),
+      moisText: moisText,
       mois: MONTH_NAMES[month - 1],
       annee: String(year),
       loyer: formatCurrency(breakdown.loyer),
@@ -531,6 +558,14 @@
       datePlusUnMois: period.endLabel,
       listePaiements: listePaiements,
       texteSolde: texteSolde,
+      titreDocument: titreDocument,
+      typeDocument: estQuittance ? 'Quittance' : 'Reçu',
+      adresseLogement: adresseLogement,
+      bailDate: bailDate,
+      texteBail: texteBail,
+      texteDatePaiement: texteDatePaiement,
+      mentionLegale: mentionLegale,
+      textePieceJointe: textePieceJointe,
       dateDuJour: formatDateLong(formatDateISO(new Date())),
       lieu: settings.bailleur.city || '',
       signatureHtml: buildSignatureHtml(settings.bailleur)

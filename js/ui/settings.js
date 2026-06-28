@@ -398,6 +398,7 @@
     if (!el || !el.closest) return false;
     if (el.closest('#settings-mail-smtp')) return false;
     if (el.closest('#settings-account')) return false;
+    if (el.closest('#settings-backup-json')) return false;
     if (el.closest('#settings-data-section')) return false;
     if (el.type === 'file' || el.tagName === 'BUTTON') return false;
     return el.closest('#panel-settings') !== null;
@@ -583,17 +584,71 @@
       }
     });
 
-    App.$('#btn-export-profile').addEventListener('click', function () {
-      App.collectSettingsFromForm();
-      App.persist();
-      clearSettingsDirty();
-      LoyerStore.exportProfile(App.state.data)
-        .then(function () {
-          LoyerNotify.success('Profil exporté (fichier chiffré — conservez le mot de passe de sauvegarde).');
-        })
-        .catch(function (err) {
-          LoyerNotify.error(err.message || 'Export impossible.');
-        });
+    App.bindIf('#btn-export-json', function (el) {
+      el.addEventListener('click', function () {
+        App.collectSettingsFromForm();
+        App.persist();
+        clearSettingsDirty();
+        var d = new Date();
+        var stamp = d.toISOString().slice(0, 10);
+        LoyerStore.exportJson(App.state.data, 'loyer-data-' + stamp + '.json');
+        LoyerNotify.success('Données exportées (JSON).');
+      });
+    });
+
+    App.bindIf('#import-settings-json', function (el) {
+      el.addEventListener('change', function (e) {
+        var file = e.target.files[0];
+        e.target.value = '';
+        if (!file) return;
+        LoyerStore.previewLoyerDataImport(file)
+          .then(function (preview) {
+            var s = preview.summary;
+            var msg =
+              'Fichier valide.\n\n' +
+              'Bailleur : ' + s.bailleur + '\n' +
+              'Locataire : ' + s.locataire + '\n' +
+              'Début location : ' + s.leaseStart + '\n' +
+              'Virements : ' + s.payments + '\n' +
+              'Paliers loyer : ' + s.priceTiers + '\n\n' +
+              'Remplacer vos données actuelles par ce fichier ?';
+            return LoyerNotify.confirm(msg, { confirmLabel: 'Importer', danger: true }).then(function (ok) {
+              if (!ok) return null;
+              return preview;
+            });
+          })
+          .then(function (preview) {
+            if (!preview) return null;
+            return LoyerStore.importLoyerData(preview.data);
+          })
+          .then(function (data) {
+            if (!data) return;
+            App.state.data = data;
+            App.renderAll();
+            App.updateDataFileStatus();
+            clearSettingsDirty();
+            if (global.LoyerMailOAuth) global.LoyerMailOAuth.refreshTransport();
+            LoyerNotify.success('Données importées et enregistrées.');
+          })
+          .catch(function (err) {
+            LoyerNotify.error(err.message || 'Import JSON impossible.');
+          });
+      });
+    });
+
+    App.bindIf('#btn-export-profile', function (el) {
+      el.addEventListener('click', function () {
+        App.collectSettingsFromForm();
+        App.persist();
+        clearSettingsDirty();
+        LoyerStore.exportProfile(App.state.data)
+          .then(function () {
+            LoyerNotify.success('Profil exporté (fichier chiffré — conservez le mot de passe de sauvegarde).');
+          })
+          .catch(function (err) {
+            LoyerNotify.error(err.message || 'Export impossible.');
+          });
+      });
     });
 
     var btnSaveApiKey = App.$('#btn-save-api-key');

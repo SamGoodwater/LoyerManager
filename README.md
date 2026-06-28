@@ -38,8 +38,6 @@ Guide détaillé : [`docs/HEBERGEMENT-MUTUALISE.md`](docs/HEBERGEMENT-MUTUALISE.
 
 Sécurité (HTTPS, mot de passe site, session) : [`docs/SECURITE.md`](docs/SECURITE.md)
 
-Déploiement Apache Debian/WSL : [`deploy/README.md`](deploy/README.md)
-
 ## Développement local
 
 L'application **requiert un serveur web** (pas d'ouverture en `file://`). Pour tester sur votre machine :
@@ -51,7 +49,7 @@ cp config.example.php config.php
 php -S localhost:8080
 ```
 
-Ouvrez `http://localhost:8080/` et créez votre compte sur `login.html`. Voir [`deploy/README.md`](deploy/README.md) pour Apache en production.
+Ouvrez `http://localhost:8080/` et créez votre compte sur `login.html`.
 
 ## Configuration
 
@@ -73,7 +71,7 @@ Au premier lancement, l'application crée `data/loyer-data.json` et `data/loyer.
 ## Jeu de démonstration
 
 ```bash
-cp docs/demo/loyer-data.demo.json data/loyer-data.json
+cp demo/loyer-data.demo.json data/loyer-data.json
 ```
 
 Voir [`docs/demo/README.md`](docs/demo/README.md).
@@ -95,7 +93,7 @@ LoyerManager/
 ├── php/              handlers, auth, mail, OAuth…
 ├── data/ templates/
 ├── docs/             guides utilisateur et développeurs
-└── deploy/           Apache Debian/WSL (optionnel)
+└── demo/             jeu golden (instances demo_mode)
 ```
 
 ## Modèles (résumé)

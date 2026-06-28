@@ -31,6 +31,9 @@
   function fetchAuthStatus() {
     return fetchJson(API_URL + '?action=auth-status').then(function (data) {
       cachedStatus = data;
+      if (data.demo && global.LoyerDemoUi && global.LoyerDemoUi.applyDemoUi) {
+        global.LoyerDemoUi.applyDemoUi(data);
+      }
       return data;
     });
   }
@@ -239,9 +242,6 @@
     }
     return fetchAuthStatus().then(function (status) {
       if (status.demo) {
-        if (global.LoyerDemoUi && global.LoyerDemoUi.applyDemoUi) {
-          global.LoyerDemoUi.applyDemoUi(status);
-        }
         return status;
       }
       if (status.authenticated) {
@@ -277,6 +277,18 @@
     var backupFile = document.getElementById('login-backup-file');
     var backupPassword = document.getElementById('login-backup-password');
     var btnBackupPrepare = document.getElementById('btn-login-backup-prepare');
+    var passwordInput = document.getElementById('login-password');
+    var passwordConfirmRow = document.getElementById('login-password-confirm-row');
+    var passwordConfirmInput = document.getElementById('login-password-confirm');
+
+    function applySetupModeUi() {
+      if (passwordConfirmRow) passwordConfirmRow.classList.remove('hidden');
+      if (passwordConfirmInput) {
+        passwordConfirmInput.disabled = false;
+        passwordConfirmInput.required = true;
+      }
+      if (passwordInput) passwordInput.autocomplete = 'new-password';
+    }
 
     function showBackupPending(sourceAccount, expiresIn) {
       if (!backupPending) return;
@@ -346,6 +358,7 @@
         }
         if (submitBtn) submitBtn.textContent = 'Créer mon compte';
         if (setupHint) setupHint.classList.remove('hidden');
+        applySetupModeUi();
         if (backupBlock) backupBlock.classList.remove('hidden');
         document.title = 'Configuration — Loyer Manager';
         refreshPendingBackup();
@@ -358,6 +371,19 @@
       e.preventDefault();
       var email = document.getElementById('login-email').value.trim();
       var password = document.getElementById('login-password').value;
+      if (isSetupMode) {
+        var passwordConfirm = passwordConfirmInput ? passwordConfirmInput.value : '';
+        if (password !== passwordConfirm) {
+          if (global.LoyerNotify) {
+            global.LoyerNotify.warn('Les deux passphrases ne correspondent pas.');
+          } else if (errorEl) {
+            errorEl.textContent = 'Les deux passphrases ne correspondent pas.';
+            errorEl.classList.remove('hidden');
+          }
+          if (passwordConfirmInput) passwordConfirmInput.focus();
+          return;
+        }
+      }
       var action = isSetupMode ? setupLocal(email, password) : loginLocal(email, password);
       action
         .then(function (data) {

@@ -1,3 +1,0 @@
-- mettre la répétition du mdp à la création du compte
-- supprimer tous les virements à enlever
-- problème construction pdf

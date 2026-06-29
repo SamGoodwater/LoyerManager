@@ -344,6 +344,7 @@
           bankLabel: item.label || '',
           bankRef: item.bankRef || '',
           status: 'importé',
+          tag: 'virement',
           comment: ''
         };
         return payment;

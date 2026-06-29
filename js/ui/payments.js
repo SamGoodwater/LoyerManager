@@ -1,10 +1,10 @@
-/** Virements, import CSV, modale paiement. */
+/** Paiements, import CSV, modale paiement. */
 (function (global) {
   'use strict';
   var App = global.LoyerApp;
   if (!App) return;
 
-  /** Classe CSS normalisée à partir du libellé statut virement. */
+  /** Classe CSS normalisée à partir du libellé statut origine. */
   function paymentStatusClass(status) {
     var s = String(status || '').toLowerCase();
     if (s.indexOf('import') !== -1) return 'importe';
@@ -12,7 +12,7 @@
     return 'manuel';
   }
 
-  /** Badge HTML pour la colonne statut d'un virement. */
+  /** Badge HTML pour la colonne statut d'un paiement. */
   function renderPaymentStatusBadge(status) {
     var label = status || '—';
     if (!status) {
@@ -27,7 +27,67 @@
     );
   }
 
-  /** Génère les <td> d'une ligne virement (tableaux dashboard et liste). */
+  /** Badge HTML pour le tag type de paiement. */
+  function renderPaymentTagBadge(tag) {
+    var id = global.LoyerPaymentTags.normalizeTag(tag);
+    var label = global.LoyerPaymentTags.getTagLabel(id);
+    return (
+      '<span class="payment-tag payment-tag-' +
+      id +
+      '">' +
+      App.escapeHtml(label) +
+      '</span>'
+    );
+  }
+
+  /** Bouton rond icône en début de ligne (tableaux mois / paiements). */
+  function renderRowIconButton(options) {
+    options = options || {};
+    var extraClass = options.extraClass || '';
+    var icon = options.icon || 'fa-pen-clip';
+    var label = options.label || '';
+    var attrs = options.attrs || '';
+    return (
+      '<button type="button" class="btn-row-icon ' +
+      extraClass +
+      '" aria-label="' +
+      App.escapeHtml(label) +
+      '" title="' +
+      App.escapeHtml(label) +
+      '" ' +
+      attrs +
+      '><i class="fa-solid ' +
+      icon +
+      '" aria-hidden="true"></i></button>'
+    );
+  }
+
+  /** Select inline pour changer le type de paiement. */
+  function renderPaymentTagSelect(p) {
+    var id = global.LoyerPaymentTags.normalizeTag(p.tag);
+    var opts = global.LoyerPaymentTags.TAGS.map(function (t) {
+      return (
+        '<option value="' +
+        t.id +
+        '"' +
+        (t.id === id ? ' selected' : '') +
+        '>' +
+        App.escapeHtml(t.label) +
+        '</option>'
+      );
+    }).join('');
+    return (
+      '<select class="payment-tag-select payment-tag-select-' +
+      id +
+      '" data-payment-id="' +
+      App.escapeHtml(p.id) +
+      '" aria-label="Type de paiement">' +
+      opts +
+      '</select>'
+    );
+  }
+
+  /** Génère les <td> d'une ligne paiement (tableaux dashboard et liste). */
   function renderPaymentRowCells(p, options) {
     options = options || {};
     function cell(label, className, html, title) {
@@ -39,15 +99,27 @@
       if (title) attrs += ' title="' + App.escapeHtml(title) + '"';
       return '<td' + attrs + '>' + html + '</td>';
     }
-    return (
+    var typeHtml = options.tagAsSelect
+      ? App.renderPaymentTagSelect(p)
+      : App.renderPaymentTagBadge(p.tag);
+    var html =
       cell('Date', '', p.date) +
-      cell('Émetteur', '', App.escapeHtml(p.emitter)) +
-      cell('Montant', 'num', App.fmt(p.amount)) +
-      cell('Libellé bancaire', 'payment-label', App.escapeHtml(p.bankLabel || '—'), p.bankLabel) +
-      cell('Réf.', 'payment-ref col-pay-ref', App.escapeHtml(p.bankRef || '—'), p.bankRef) +
+      cell('Type', 'col-pay-type', typeHtml) +
+      cell(
+        'Montant',
+        'num' + (Number(p.amount) < 0 ? ' num-negative' : ''),
+        App.fmt(p.amount)
+      ) +
+      cell('Émetteur', '', App.escapeHtml(p.emitter));
+    if (!options.compact) {
+      html +=
+        cell('Libellé bancaire', 'payment-label', App.escapeHtml(p.bankLabel || '—'), p.bankLabel) +
+        cell('Réf.', 'payment-ref col-pay-ref', App.escapeHtml(p.bankRef || '—'), p.bankRef);
+    }
+    html +=
       cell('Statut', '', App.renderPaymentStatusBadge(p.status)) +
-      cell('Commentaire', 'payment-comment col-pay-comment', App.escapeHtml(p.comment || '—'), p.comment)
-    );
+      cell('Commentaire', 'payment-comment col-pay-comment', App.escapeHtml(p.comment || '—'), p.comment);
+    return html;
   }
 
   /** Remplit le <select> émetteur de la modale virement. */
@@ -62,12 +134,41 @@
       .join('');
   }
 
-  /** Ouvre la modale création/édition virement avec valeurs préremplies. */
-  function openPaymentModal(payment) {
+  /** Remplit le <select> tag de la modale paiement. */
+  function populateTagSelect(selected) {
+    var tagSel = App.$('#pay-tag');
+    if (!tagSel || !global.LoyerPaymentTags) return;
+    tagSel.innerHTML = global.LoyerPaymentTags.TAGS.map(function (t) {
+      return (
+        '<option value="' +
+        t.id +
+        '">' +
+        App.escapeHtml(t.label) +
+        '</option>'
+      );
+    }).join('');
+    tagSel.value = global.LoyerPaymentTags.normalizeTag(selected);
+  }
+
+  /** Ouvre la modale création/édition paiement avec valeurs préremplies. */
+  function openPaymentModal(payment, context) {
+    context = context ? Object.assign({}, context) : {};
+    var monthModal = App.$('#modal-month-detail');
+    if (monthModal && !monthModal.classList.contains('hidden') && App.state.monthDetail) {
+      context.suspendedMonthDetail = true;
+      monthModal.classList.add('hidden');
+    }
     App.populateEmitterSelect();
+    App.populateTagSelect(payment ? payment.tag : global.LoyerPaymentTags.DEFAULT_TAG);
+    App.state.paymentModalContext = context;
     App.state.editingPaymentId = payment ? payment.id : null;
-    App.$('#modal-payment-title').textContent = payment ? 'Modifier le virement' : 'Nouveau virement';
-    App.$('#pay-date').value = payment ? payment.date : LoyerCalc.formatDateISO(new Date());
+    App.$('#modal-payment-title').textContent = payment ? 'Modifier le paiement' : 'Nouveau paiement';
+    App.$('#pay-date').value =
+      payment && payment.date
+        ? payment.date
+        : context && context.presetDate
+          ? context.presetDate
+          : LoyerCalc.formatDateISO(new Date());
     App.$('#pay-emitter').value = payment ? payment.emitter : App.state.data.settings.emitters[0] || '';
     App.$('#pay-amount').value = payment ? payment.amount : '';
     App.$('#pay-bank-label').value = payment ? payment.bankLabel || '' : '';
@@ -75,39 +176,142 @@
     App.$('#pay-status').value = payment ? payment.status || 'manuel' : 'manuel';
     App.$('#pay-comment').value = payment ? payment.comment || '' : '';
     App.$('#modal-payment').classList.remove('hidden');
+    if (global.LoyerReportExport) global.LoyerReportExport.syncPaymentReportButton();
     App.$('#pay-date').focus();
   }
 
   /** Ferme la modale et réinitialise le formulaire. */
   function closePaymentModal() {
+    var ctx = App.state.paymentModalContext;
     App.state.editingPaymentId = null;
+    App.state.paymentModalContext = null;
     App.$('#modal-payment').classList.add('hidden');
     App.$('#form-payment').reset();
+    if (global.LoyerReportExport) global.LoyerReportExport.syncPaymentReportButton();
+    if (ctx && ctx.suspendedMonthDetail && App.state.monthDetail) {
+      App.$('#modal-month-detail').classList.remove('hidden');
+    }
   }
 
-  /** Rafraîchit le tableau complet de l'onglet Virements. */
+  /** Lit les critères filtres depuis le DOM. */
+  function readPaymentFilterCriteria() {
+    var amountModeEl = App.$('#pay-filter-amount-mode');
+    var amountMode = amountModeEl ? amountModeEl.value : 'all';
+    return {
+      search: App.$('#pay-filter-search') ? App.$('#pay-filter-search').value.trim() : '',
+      year: App.$('#pay-filter-year') ? App.$('#pay-filter-year').value : '',
+      month: App.$('#pay-filter-month') ? App.$('#pay-filter-month').value : '',
+      tag: App.$('#pay-filter-tag') ? App.$('#pay-filter-tag').value : '',
+      amountMode: amountMode,
+      amountExact: App.$('#pay-filter-amount-exact') ? App.$('#pay-filter-amount-exact').value.trim() : '',
+      sort: App.$('#pay-filter-sort') ? App.$('#pay-filter-sort').value : 'date-desc'
+    };
+  }
+
+  /** Remplit les listes année du filtre paiements. */
+  function populatePaymentFilterYears() {
+    var yearSel = App.$('#pay-filter-year');
+    if (!yearSel) return;
+    var years = {};
+    (App.state.data.payments || []).forEach(function (p) {
+      var y = String(p.date || '').slice(0, 4);
+      if (y) years[y] = true;
+    });
+    var list = Object.keys(years).sort();
+    var current = yearSel.value;
+    yearSel.innerHTML =
+      '<option value="">Toutes</option>' +
+      list
+        .map(function (y) {
+          return '<option value="' + y + '">' + y + '</option>';
+        })
+        .join('');
+    if (current && years[current]) yearSel.value = current;
+  }
+
+  /** Applique filtres et rafraîchit le tableau Paiements. */
+  function applyPaymentFilters() {
+    var criteria = readPaymentFilterCriteria();
+    App.state.paymentFilters = criteria;
+    if (global.LoyerPaymentFilters) global.LoyerPaymentFilters.saveCriteria(criteria);
+    App.renderPayments();
+  }
+
+  /** Rafraîchit le tableau complet de l'onglet Paiements. */
   function renderPayments() {
     App.populateEmitterSelect();
-    var sorted = App.state.data.payments.slice().sort(function (a, b) {
-      return LoyerCalc.parseDate(b.date) - LoyerCalc.parseDate(a.date);
-    });
+    populatePaymentFilterYears();
+    var criteria =
+      App.state.paymentFilters ||
+      (global.LoyerPaymentFilters ? global.LoyerPaymentFilters.loadCriteria() : readPaymentFilterCriteria());
+    App.state.paymentFilters = criteria;
+
+    if (App.$('#pay-filter-search')) App.$('#pay-filter-search').value = criteria.search || '';
+    if (App.$('#pay-filter-year')) App.$('#pay-filter-year').value = criteria.year || '';
+    if (App.$('#pay-filter-month')) App.$('#pay-filter-month').value = criteria.month || '';
+    if (App.$('#pay-filter-tag')) App.$('#pay-filter-tag').value = criteria.tag || '';
+    if (App.$('#pay-filter-amount-mode')) App.$('#pay-filter-amount-mode').value = criteria.amountMode || 'all';
+    if (App.$('#pay-filter-amount-exact')) {
+      App.$('#pay-filter-amount-exact').value = criteria.amountExact || '';
+      App.$('#pay-filter-amount-exact').classList.toggle(
+        'hidden',
+        criteria.amountMode !== 'exact'
+      );
+    }
+    if (App.$('#pay-filter-sort')) App.$('#pay-filter-sort').value = criteria.sort || 'date-desc';
+
+    var sorted = global.LoyerPaymentFilters
+      ? global.LoyerPaymentFilters.filterAndSort(App.state.data.payments, criteria)
+      : App.state.data.payments.slice();
+
+    var hint = App.$('#payments-filter-hint');
+    if (hint) {
+      hint.textContent =
+        sorted.length +
+        ' paiement(s) affiché(s) sur ' +
+        App.state.data.payments.length +
+        '.';
+    }
 
     App.$('#payments-table tbody').innerHTML = sorted
       .map(function (p) {
         return (
-          '<tr>' +
-          App.renderPaymentRowCells(p) +
+          '<tr data-payment-id="' +
+          App.escapeHtml(p.id) +
+          '">' +
+          '<td class="col-row-action">' +
+          App.renderRowIconButton({
+            extraClass: 'btn-edit-pay-icon',
+            label: 'Modifier le paiement',
+            attrs: 'data-id="' + App.escapeHtml(p.id) + '"'
+          }) +
+          '</td>' +
+          App.renderPaymentRowCells(p, { tagAsSelect: true }) +
           '<td class="inline-actions">' +
-          '<button type="button" class="btn btn-secondary btn-edit-pay" data-id="' +
-          p.id +
-          '">Modifier</button>' +
           '<button type="button" class="btn btn-danger btn-del-pay" data-id="' +
           p.id +
-          '">Suppr.</button>' +
+          '"><i class="fa-solid fa-trash" aria-hidden="true"></i>Suppr.</button>' +
           '</td></tr>'
         );
       })
-      .join('') || '<tr><td colspan="8" class="empty-msg">Aucun virement enregistré</td></tr>';
+      .join('') || '<tr><td colspan="10" class="empty-msg">Aucun paiement enregistré</td></tr>';
+  }
+
+  /** Met à jour le tag d'un paiement depuis le select inline. */
+  function setPaymentTag(paymentId, tag, selectEl) {
+    var idx = App.state.data.payments.findIndex(function (p) {
+      return p.id === paymentId;
+    });
+    if (idx < 0) return;
+    var normalized = global.LoyerPaymentTags.normalizeTag(tag);
+    App.state.data.payments[idx] = LoyerStore.normalizePayment(
+      Object.assign({}, App.state.data.payments[idx], { tag: normalized })
+    );
+    App.persist();
+    if (selectEl) {
+      selectEl.className = 'payment-tag-select payment-tag-select-' + normalized;
+    }
+    LoyerNotify.success('Type modifié.');
   }
 
   /** Ferme la modale prévisualisation import CSV. */
@@ -132,7 +336,7 @@
 
     App.$('#csv-import-summary').textContent =
       items.length +
-      ' virement(s) reconnu(s) dans le CSV — ' +
+      ' paiement(s) reconnu(s) dans le CSV — ' +
       newCount +
       ' nouveau(x), ' +
       dupCount +
@@ -366,9 +570,16 @@
     window.addEventListener('dragend', hideDropOverlay, false);
   }
 
+  App.renderRowIconButton = renderRowIconButton;
+  App.renderPaymentTagSelect = renderPaymentTagSelect;
+  App.setPaymentTag = setPaymentTag;
   App.paymentStatusClass = paymentStatusClass;
   App.renderPaymentStatusBadge = renderPaymentStatusBadge;
   App.renderPaymentRowCells = renderPaymentRowCells;
+  App.renderPaymentTagBadge = renderPaymentTagBadge;
+  App.populateTagSelect = populateTagSelect;
+  App.readPaymentFilterCriteria = readPaymentFilterCriteria;
+  App.applyPaymentFilters = applyPaymentFilters;
   App.populateEmitterSelect = populateEmitterSelect;
   App.openPaymentModal = openPaymentModal;
   App.closePaymentModal = closePaymentModal;
@@ -412,13 +623,19 @@
         date: App.$('#pay-date').value,
         emitter: App.$('#pay-emitter').value,
         amount: parseFloat(App.$('#pay-amount').value),
+        tag: App.$('#pay-tag') ? App.$('#pay-tag').value : global.LoyerPaymentTags.DEFAULT_TAG,
         bankLabel: App.$('#pay-bank-label').value.trim(),
         bankRef: App.$('#pay-bank-ref').value.trim(),
         status: App.$('#pay-status').value || 'manuel',
         comment: App.$('#pay-comment').value.trim()
       };
-      if (!payment.date || !payment.emitter || !(payment.amount > 0)) {
-        LoyerNotify.warn('Veuillez remplir tous les champs correctement.');
+      if (
+        !payment.date ||
+        !payment.emitter ||
+        payment.amount === 0 ||
+        isNaN(payment.amount)
+      ) {
+        LoyerNotify.warn('Date, émetteur et montant non nul requis.');
         return;
       }
       if (App.state.editingPaymentId) {
@@ -430,10 +647,12 @@
         App.state.data.payments.push(LoyerStore.normalizePayment(payment));
       }
       var wasEdit = !!App.state.editingPaymentId;
+      var ctx = App.state.paymentModalContext;
       App.persist();
       App.closePaymentModal();
       App.renderAll();
-      LoyerNotify.success(wasEdit ? 'Virement modifié.' : 'Virement enregistré.');
+      if (ctx && typeof ctx.onSaved === 'function') ctx.onSaved();
+      LoyerNotify.success(wasEdit ? 'Paiement modifié.' : 'Paiement enregistré.');
     });
 
     App.$('#btn-add-payment').addEventListener('click', function () {
@@ -451,7 +670,9 @@
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
       if (!App.$('#modal-csv-import').classList.contains('hidden')) App.closeCsvImportModal();
-      else if (!App.$('#modal-payment').classList.contains('hidden')) App.closePaymentModal();
+      else if (!App.$('#modal-month-detail').classList.contains('hidden') && App.closeMonthDetailModal) {
+        App.closeMonthDetailModal();
+      } else if (!App.$('#modal-payment').classList.contains('hidden')) App.closePaymentModal();
     });
 
     App.$('#import-csv').addEventListener('change', function (e) {
@@ -482,7 +703,7 @@
     App.$('#btn-csv-import-confirm').addEventListener('click', function () {
       var toImport = LoyerCsvImport.itemsToPayments(App.state.csvImportItems);
       if (!toImport.length) {
-        LoyerNotify.warn('Aucun virement sélectionné à importer.');
+        LoyerNotify.warn('Aucun paiement sélectionné à importer.');
         return;
       }
       App.state.data.payments = App.state.data.payments.concat(
@@ -493,13 +714,13 @@
       App.persist();
       App.closeCsvImportModal();
       App.renderAll();
-      LoyerNotify.success(toImport.length + ' virement(s) importé(s).');
+      LoyerNotify.success(toImport.length + ' paiement(s) importé(s).');
       var csvName = App.$('#import-csv') && App.$('#import-csv').files && App.$('#import-csv').files[0]
         ? App.$('#import-csv').files[0].name
         : '';
       if (global.LoyerServerApi && global.LoyerServerApi.isActive()) {
         global.LoyerServerApi.logCsvImport(
-          'Import CSV : ' + toImport.length + ' virement(s)',
+          'Import CSV : ' + toImport.length + ' paiement(s)',
           { count: toImport.length, filename: csvName }
         ).then(function () {
           if (global.LoyerActivityLog) global.LoyerActivityLog.loadAndRender();
@@ -507,17 +728,58 @@
       }
     });
 
+    App.bindIf('#pay-filter-apply', function (el) {
+      el.addEventListener('click', applyPaymentFilters);
+    });
+
+    App.bindIf('#pay-filter-reset', function (el) {
+      el.addEventListener('click', function () {
+        App.state.paymentFilters = global.LoyerPaymentFilters.defaultCriteria();
+        global.LoyerPaymentFilters.saveCriteria(App.state.paymentFilters);
+        App.renderPayments();
+      });
+    });
+
+    ['pay-filter-search', 'pay-filter-year', 'pay-filter-month', 'pay-filter-tag', 'pay-filter-sort'].forEach(
+      function (id) {
+        App.bindIf('#' + id, function (el) {
+          el.addEventListener('change', applyPaymentFilters);
+          if (id === 'pay-filter-search') {
+            el.addEventListener('input', applyPaymentFilters);
+          }
+        });
+      }
+    );
+
+    App.bindIf('#pay-filter-amount-mode', function (el) {
+      el.addEventListener('change', function () {
+        var exact = App.$('#pay-filter-amount-exact');
+        if (exact) exact.classList.toggle('hidden', el.value !== 'exact');
+        applyPaymentFilters();
+      });
+    });
+
+    App.bindIf('#pay-filter-amount-exact', function (el) {
+      el.addEventListener('change', applyPaymentFilters);
+    });
+
+    App.$('#payments-table').addEventListener('change', function (e) {
+      var tagSel = e.target.closest('.payment-tag-select');
+      if (!tagSel) return;
+      App.setPaymentTag(tagSel.dataset.paymentId, tagSel.value, tagSel);
+    });
+
     App.$('#payments-table').addEventListener('click', function (e) {
-      var editBtn = e.target.closest('.btn-edit-pay');
+      var editBtn = e.target.closest('.btn-edit-pay-icon');
       var delBtn = e.target.closest('.btn-del-pay');
       if (editBtn) {
-        var p = App.state.data.payments.find(function (x) {
+        var pEdit = App.state.data.payments.find(function (x) {
           return x.id === editBtn.dataset.id;
         });
-        if (p) App.openPaymentModal(p);
+        if (pEdit) App.openPaymentModal(pEdit);
       }
       if (delBtn) {
-        LoyerNotify.confirm('Supprimer ce virement ?', {
+        LoyerNotify.confirm('Supprimer ce paiement ?', {
           confirmLabel: 'Supprimer',
           danger: true
         }).then(function (ok) {
@@ -527,7 +789,7 @@
           });
           App.persist();
           App.renderAll();
-          LoyerNotify.success('Virement supprimé.');
+          LoyerNotify.success('Paiement supprimé.');
         });
       }
     });

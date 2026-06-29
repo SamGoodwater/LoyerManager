@@ -101,7 +101,7 @@
         var charges = p.charges != null ? p.charges : 0;
         var total = (Number(p.amount) || 0) + (Number(charges) || 0);
         return (
-          '<div class="price-tier" style="margin-bottom:0.75rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border-subtle,#e8e8e8)">' +
+          '<div class="price-tier" style="margin-bottom:0.75rem;padding-bottom:0.75rem;border-bottom:1px solid var(--slate-200)">' +
           '<div class="grid-2" style="align-items:end;margin-bottom:0.5rem">' +
           '<div class="form-row"><label>À partir du</label>' +
           '<input type="date" class="price-from" data-index="' + i + '" value="' + p.from + '"></div>' +

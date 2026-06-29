@@ -213,6 +213,9 @@
 
   /** Clic heatmap/ligne → focus ou sélection mois. */
   function handleDashboardMonthClick(year, month) {
+    if (!App.isRangeActive()) {
+      App.state.dashboardChartYear = year;
+    }
     if (App.isRangeActive()) {
       App.setFocusMonth(year, month);
     } else {

@@ -35,7 +35,7 @@
     <div class="app-header-nav">
       <nav class="tabs" role="tablist" aria-label="Sections de l'application">
         <button type="button" role="tab" id="tab-dashboard" data-panel="panel-dashboard" class="active" aria-selected="true" aria-controls="panel-dashboard"><i class="fa-solid fa-chart-line tab-icon" aria-hidden="true"></i>Tableau de bord</button>
-        <button type="button" role="tab" id="tab-payments" data-panel="panel-payments" aria-selected="false" aria-controls="panel-payments"><i class="fa-solid fa-money-bill-transfer tab-icon" aria-hidden="true"></i>Virements</button>
+        <button type="button" role="tab" id="tab-payments" data-panel="panel-payments" aria-selected="false" aria-controls="panel-payments"><i class="fa-solid fa-money-bill-transfer tab-icon" aria-hidden="true"></i>Paiements</button>
         <button type="button" role="tab" id="tab-settings" data-panel="panel-settings" aria-selected="false" aria-controls="panel-settings"><i class="fa-solid fa-gear tab-icon" aria-hidden="true"></i>Paramètres</button>
         <button type="button" role="tab" id="tab-quittance" data-panel="panel-quittance" aria-selected="false" aria-controls="panel-quittance"><i class="fa-solid fa-file-invoice tab-icon" aria-hidden="true"></i>Quittance</button>
         <button type="button" role="tab" id="tab-mail" data-panel="panel-mail" aria-selected="false" aria-controls="panel-mail"><i class="fa-solid fa-envelope tab-icon" aria-hidden="true"></i>Mail</button>
@@ -64,11 +64,16 @@
   <main id="main-content">
     <!-- Tableau de bord -->
     <section id="panel-dashboard" class="panel active" role="tabpanel" aria-labelledby="tab-dashboard">
-      <div class="card no-print">
-        <h2 class="heading-with-help">Tableau de bord
-          <button type="button" class="help-trigger" data-help-id="dash-period" aria-label="Aide : période" aria-expanded="false"><span aria-hidden="true">?</span></button>
-        </h2>
-        <p class="field-hint">Utilisez la barre de période ci-dessus. La sélection du mois est partagée avec Quittance et Mail.</p>
+      <div id="report-print-banner" class="report-print-banner" aria-hidden="true"></div>
+      <div class="card report-printable" id="card-dash-summary" data-report-print="summary full">
+        <div class="card-header-row">
+          <h2 class="heading-with-help card-header-title">Tableau de bord
+            <button type="button" class="help-trigger" data-help-id="dash-period" aria-label="Aide : période" aria-expanded="false"><span aria-hidden="true">?</span></button>
+          </h2>
+          <button type="button" class="btn-report-export" data-report-export="summary" title="Imprimer ce bloc" aria-label="Imprimer le rapport : tableau de bord"><i class="fa-solid fa-print" aria-hidden="true"></i></button>
+        </div>
+        <div id="report-block-summary">
+        <p class="field-hint screen-only">Utilisez la barre de période ci-dessus. La sélection du mois est partagée avec Quittance et Mail.</p>
         <div class="heading-with-help dash-kpis-heading">
           <span class="subsection-title">Indicateurs de l'année</span>
           <button type="button" class="help-trigger" data-help-id="dash-kpis" aria-label="Aide : indicateurs" aria-expanded="false"><span aria-hidden="true">?</span></button>
@@ -79,21 +84,23 @@
           <button type="button" class="help-trigger" data-help-id="dash-month-stats" aria-label="Aide : stats du mois" aria-expanded="false"><span aria-hidden="true">?</span></button>
         </div>
         <div id="month-stats" class="stats-row"></div>
-        <div class="btn-group" style="margin-top:0.5rem">
-          <button type="button" id="btn-print-report" class="btn btn-secondary"><i class="fa-solid fa-print" aria-hidden="true"></i>Imprimer le rapport</button>
-          <button type="button" class="help-trigger" data-help-id="dash-print" aria-label="Aide : impression rapport" aria-expanded="false"><span aria-hidden="true">?</span></button>
         </div>
       </div>
 
       <div class="dashboard-period-grid">
-        <div class="card">
-          <h2 class="heading-with-help">Détail — <span id="dash-period-label">—</span>
-            <button type="button" class="help-trigger" data-help-id="dash-monthly-table" aria-label="Aide : tableau mensuel" aria-expanded="false"><span aria-hidden="true">?</span></button>
-          </h2>
-          <p class="table-hint" id="dash-table-hint">Cliquez sur une ligne pour sélectionner un mois.</p>
+        <div class="card report-printable" id="card-dash-month" data-report-print="summary month full">
+          <div class="card-header-row">
+            <h2 class="heading-with-help card-header-title">Détail — <span id="dash-period-label">—</span>
+              <button type="button" class="help-trigger" data-help-id="dash-monthly-table" aria-label="Aide : tableau mensuel" aria-expanded="false"><span aria-hidden="true">?</span></button>
+            </h2>
+            <button type="button" class="btn-report-export" data-report-export="month" title="Imprimer ce bloc" aria-label="Imprimer le rapport : détail du mois"><i class="fa-solid fa-print" aria-hidden="true"></i></button>
+          </div>
+          <div id="report-block-month">
+          <p class="table-hint screen-only" id="dash-table-hint">Cliquez sur une ligne pour sélectionner un mois.</p>
           <table class="data-table" id="monthly-table">
             <thead>
               <tr>
+                <th class="col-row-action" aria-label="Actions"></th>
                 <th>Mois</th>
                 <th>Statut</th>
                 <th class="num">Total dû</th>
@@ -104,21 +111,28 @@
             </thead>
             <tbody></tbody>
           </table>
+          </div>
         </div>
 
-        <div class="card card-dashboard-payments">
-          <h2 class="heading-with-help">Virements — <span id="dash-payments-label">—</span>
-            <button type="button" class="help-trigger" data-help-id="dash-payments-month" aria-label="Aide : virements du mois" aria-expanded="false"><span aria-hidden="true">?</span></button>
-          </h2>
-          <p class="field-hint table-hint" id="dash-payments-hint">Encaissements de la période affichée.</p>
-          <p class="table-scroll-hint">← Faites glisser le tableau horizontalement pour voir toutes les colonnes →</p>
+        <div class="card card-dashboard-payments report-printable" id="card-dash-payments" data-report-print="summary payments full">
+          <div class="card-header-row">
+            <h2 class="heading-with-help card-header-title">Paiements — <span id="dash-payments-label">—</span>
+              <button type="button" class="help-trigger" data-help-id="dash-payments-month" aria-label="Aide : paiements du mois" aria-expanded="false"><span aria-hidden="true">?</span></button>
+            </h2>
+            <button type="button" class="btn-report-export" data-report-export="payments" title="Imprimer ce bloc" aria-label="Imprimer le rapport : détail des paiements"><i class="fa-solid fa-print" aria-hidden="true"></i></button>
+          </div>
+          <div id="report-block-payments">
+          <p class="field-hint table-hint screen-only" id="dash-payments-hint">Encaissements du mois sélectionné. Icône crayon dans le tableau mensuel = détail du mois.</p>
+          <p class="table-scroll-hint screen-only">← Faites glisser le tableau horizontalement pour voir toutes les colonnes →</p>
           <div class="payments-table-scroll payments-table-scroll--dashboard">
             <table class="data-table data-table-payments data-table-dashboard-payments" id="payments-month-table">
               <thead>
                 <tr>
+                  <th class="col-row-action" aria-label="Actions"></th>
                   <th>Date</th>
-                  <th>Émetteur</th>
+                  <th>Type</th>
                   <th class="num">Montant</th>
+                  <th>Émetteur</th>
                   <th>Libellé bancaire</th>
                   <th class="col-pay-ref">Réf.</th>
                   <th>Statut</th>
@@ -128,37 +142,35 @@
               <tbody></tbody>
             </table>
           </div>
+          </div>
         </div>
       </div>
 
-      <div class="dashboard-viz-grid no-print">
-        <div class="card dashboard-heatmap-card">
-          <h2 class="heading-with-help">Heatmap — Statuts par mois
-            <button type="button" class="help-trigger" data-help-id="dash-heatmap" aria-label="Aide : heatmap" aria-expanded="false"><span aria-hidden="true">?</span></button>
+      <div class="report-printable" id="report-block-viz" data-report-print="viz full">
+      <div class="card dashboard-overview-card">
+        <div class="card-header-row">
+          <h2 class="heading-with-help card-header-title">Vue d'ensemble — <span id="dash-chart-overview-label">—</span>
+            <button type="button" class="help-trigger" data-help-id="dash-charts" aria-label="Aide : vue d'ensemble" aria-expanded="false"><span aria-hidden="true">?</span></button>
           </h2>
-          <p class="field-hint table-hint">Survolez un mois pour le statut. Clic = détail virements (la période reste active en mode plage).</p>
-          <div id="dashboard-heatmap" class="dashboard-heatmap"></div>
-        </div>
-        <div class="card dashboard-chart-months-card">
-          <h2 class="heading-with-help">Graphique — <span id="dash-chart-stack-label">Reçu vs reste dû</span>
-            <button type="button" class="help-trigger" data-help-id="dash-charts" aria-label="Aide : graphiques" aria-expanded="false"><span aria-hidden="true">?</span></button>
-          </h2>
-          <div class="chart-wrap chart-wrap--compact"><canvas id="chart-monthly-stack"></canvas></div>
-        </div>
-      </div>
-
-      <div class="dashboard-viz-grid-2 no-print">
-        <div class="card">
-          <div class="card-header-row">
-            <h2 class="heading-with-help">Graphique — Année <span id="dash-chart-year-label">—</span>
-              <button type="button" class="help-trigger" data-help-id="dash-charts" aria-label="Aide : graphique annuel" aria-expanded="false"><span aria-hidden="true">?</span></button>
-            </h2>
-            <div class="btn-group">
+          <div class="card-header-actions">
+            <div class="btn-group screen-only" id="dash-chart-year-nav">
               <button type="button" id="btn-chart-year-prev" class="btn btn-secondary btn-sm" aria-label="Année précédente"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
               <button type="button" id="btn-chart-year-next" class="btn btn-secondary btn-sm" aria-label="Année suivante"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
             </div>
+            <button type="button" class="btn-report-export" data-report-export="viz" title="Imprimer le graphique et le récapitulatif annuel" aria-label="Imprimer le rapport : vue d'ensemble et récapitulatif"><i class="fa-solid fa-print" aria-hidden="true"></i></button>
           </div>
-          <div class="chart-wrap chart-wrap--compact"><canvas id="chart-yearly-bar"></canvas></div>
+        </div>
+        <p class="field-hint screen-only" id="dash-chart-overview-hint">Total dû (ligne grise), paiements empilés (vert zébré), remboursements (orange), manque (rouge), excédent (bleu), solde cumulé (tirets). Icône crayon dans le tableau mensuel = détail mois.</p>
+        <div class="chart-wrap chart-wrap--overview"><canvas id="chart-overview"></canvas></div>
+      </div>
+
+      <div class="dashboard-viz-grid">
+        <div class="card dashboard-heatmap-card">
+          <h2 class="heading-with-help">Calendrier des mois
+            <button type="button" class="help-trigger" data-help-id="dash-heatmap" aria-expanded="false"><span aria-hidden="true">?</span></button>
+          </h2>
+          <p class="field-hint table-hint screen-only">Chaque case est un mois. Survolez pour voir le statut, cliquez pour sélectionner ce mois.</p>
+          <div id="dashboard-heatmap" class="dashboard-heatmap"></div>
         </div>
         <div class="card">
           <h2 class="heading-with-help">Récapitulatif par année
@@ -178,22 +190,23 @@
           </table>
         </div>
       </div>
+      </div>
 
-      <div class="card no-print dashboard-balance-card">
-        <h2 class="heading-with-help">Graphique — <span id="dash-chart-balance-label">Solde cumulé</span>
-          <button type="button" class="help-trigger" data-help-id="dash-balance-chart" aria-label="Aide : solde cumulé" aria-expanded="false"><span aria-hidden="true">?</span></button>
-        </h2>
-        <p class="field-hint" id="dash-chart-balance-hint">Évolution du solde sur la période affichée.</p>
-        <div class="chart-wrap"><canvas id="chart-balance"></canvas></div>
+      <div class="card screen-only report-full-card">
+        <div class="report-full-inner">
+          <p class="field-hint report-full-hint">Imprimez l'ensemble des blocs du tableau de bord (indicateurs, tableaux, graphique et récapitulatif annuel). Choisissez « Enregistrer au format PDF » dans la fenêtre d'impression pour obtenir un fichier.</p>
+          <button type="button" id="btn-report-full" class="btn btn-primary" data-report-export="full"><i class="fa-solid fa-print" aria-hidden="true"></i>Imprimer le rapport complet</button>
+          <button type="button" class="help-trigger" data-help-id="dash-report-full" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        </div>
       </div>
     </section>
 
-    <!-- Virements -->
+    <!-- Paiements -->
     <section id="panel-payments" class="panel" role="tabpanel" aria-labelledby="tab-payments">
       <div class="card">
         <div class="card-header-row">
-          <h2 class="heading-with-help">Liste des virements
-            <button type="button" class="help-trigger" data-help-id="payments-list" aria-label="Aide : liste des virements" aria-expanded="false"><span aria-hidden="true">?</span></button>
+          <h2 class="heading-with-help">Liste des paiements
+            <button type="button" class="help-trigger" data-help-id="payments-list" aria-label="Aide : liste des paiements" aria-expanded="false"><span aria-hidden="true">?</span></button>
           </h2>
           <div class="btn-group">
             <label class="btn btn-secondary" style="cursor:pointer;margin:0" title="Importer un relevé bancaire au format CSV">
@@ -201,11 +214,71 @@
               <input type="file" id="import-csv" accept=".csv,text/csv" class="hidden" aria-describedby="hint-import-csv">
             </label>
             <button type="button" class="help-trigger" data-help-id="payments-csv" aria-label="Aide : import CSV" aria-expanded="false"><span aria-hidden="true">?</span></button>
-            <button type="button" id="btn-add-payment" class="btn"><i class="fa-solid fa-plus" aria-hidden="true"></i>Ajouter un virement</button>
+            <button type="button" id="btn-add-payment" class="btn"><i class="fa-solid fa-plus" aria-hidden="true"></i>Ajouter un paiement</button>
             <button type="button" class="help-trigger" data-help-id="payments-manual" aria-label="Aide : ajout manuel" aria-expanded="false"><span aria-hidden="true">?</span></button>
           </div>
         </div>
-        <p id="hint-import-csv" class="field-hint card-intro">Deux façons d'ajouter des virements : <strong>Importer CSV</strong>, glisser-déposer un <strong>.csv</strong> sur la page, ou <strong>+ Ajouter un virement</strong> (saisie une par une).</p>
+        <p id="hint-import-csv" class="field-hint card-intro">Importez un relevé bancaire (<strong>.csv</strong>), déposez le fichier sur la page, ou ajoutez un paiement à la main (virement, espèce, nature… ; montant négatif = remboursement au locataire).</p>
+        <div class="payments-filters card-subsection">
+          <div class="payments-filters-grid">
+            <div class="form-row">
+              <label for="pay-filter-search">Recherche</label>
+              <input type="search" id="pay-filter-search" placeholder="Émetteur, libellé, réf., commentaire…" autocomplete="off">
+            </div>
+            <div class="form-row">
+              <label for="pay-filter-year">Année</label>
+              <select id="pay-filter-year"><option value="">Toutes</option></select>
+            </div>
+            <div class="form-row">
+              <label for="pay-filter-month">Mois</label>
+              <select id="pay-filter-month">
+                <option value="">Tous</option>
+                <option value="1">Janvier</option><option value="2">Février</option><option value="3">Mars</option>
+                <option value="4">Avril</option><option value="5">Mai</option><option value="6">Juin</option>
+                <option value="7">Juillet</option><option value="8">Août</option><option value="9">Septembre</option>
+                <option value="10">Octobre</option><option value="11">Novembre</option><option value="12">Décembre</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label for="pay-filter-tag">Type</label>
+              <select id="pay-filter-tag">
+                <option value="">Tous</option>
+                <option value="virement">Virement</option>
+                <option value="espece">Espèce</option>
+                <option value="nature">Nature</option>
+                <option value="autre">Autres</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label for="pay-filter-amount-mode">Montant</label>
+              <select id="pay-filter-amount-mode">
+                <option value="all">Tous</option>
+                <option value="positive">Positifs</option>
+                <option value="negative">Négatifs</option>
+                <option value="exact">Égal à…</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label for="pay-filter-amount-exact">Valeur (€)</label>
+              <input type="number" id="pay-filter-amount-exact" class="hidden" step="0.01" placeholder="Ex. 680">
+            </div>
+            <div class="form-row">
+              <label for="pay-filter-sort">Tri</label>
+              <select id="pay-filter-sort">
+                <option value="date-desc">Date ↓</option>
+                <option value="date-asc">Date ↑</option>
+                <option value="amount-desc">Montant ↓</option>
+                <option value="amount-asc">Montant ↑</option>
+                <option value="tag">Type</option>
+              </select>
+            </div>
+          </div>
+          <div class="btn-group payments-filters-actions">
+            <button type="button" id="pay-filter-apply" class="btn btn-secondary btn-sm"><i class="fa-solid fa-check" aria-hidden="true"></i>Appliquer</button>
+            <button type="button" id="pay-filter-reset" class="btn btn-secondary btn-sm"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i>Réinitialiser</button>
+          </div>
+          <p class="field-hint" id="payments-filter-hint"></p>
+        </div>
         <div id="demo-csv-sample" class="demo-csv-sample" data-demo-only>
           <p class="demo-csv-sample-text">Essayez l'import multiple : téléchargez un relevé bancaire fictif, puis utilisez <strong>Importer CSV</strong> (ou glissez-déposez le fichier). Le fichier contient une dizaine de virements locataire <strong>absents des données initiales</strong>, ainsi que des lignes déjà présentes (doublons ignorés) et du bruit bancaire (salaire, assurance…).</p>
           <div class="demo-csv-sample-actions">
@@ -218,9 +291,11 @@
           <table class="data-table data-table-payments" id="payments-table">
             <thead>
               <tr>
+                <th class="col-row-action" aria-label="Actions"></th>
                 <th>Date</th>
-                <th>Émetteur</th>
+                <th>Type</th>
                 <th class="num">Montant</th>
+                <th>Émetteur</th>
                 <th>Libellé bancaire</th>
                 <th>Réf.</th>
                 <th>Statut</th>
@@ -250,7 +325,7 @@
             <input type="date" id="set-lease-start">
           </div>
           <div class="form-row">
-            <label for="set-rent-day">Jour théorique du virement</label>
+            <label for="set-rent-day">Jour habituel de paiement</label>
             <input type="number" id="set-rent-day" min="1" max="31" value="1" aria-describedby="hint-rent-day">
             <p id="hint-rent-day" class="field-hint">Jour habituel du mois où le locataire paie (souvent 1, 5 ou 10).</p>
           </div>
@@ -275,8 +350,8 @@
             <input type="file" id="set-signature-image" accept="image/png,image/jpeg,image/webp,image/gif">
             <div id="signature-preview" class="signature-preview"></div>
             <div class="btn-group" style="margin-top:0.5rem">
-              <button type="button" id="btn-restore-signature" class="btn btn-secondary">Restaurer la signature par défaut</button>
-              <button type="button" id="btn-remove-signature" class="btn btn-secondary hidden">Supprimer l'image</button>
+              <button type="button" id="btn-restore-signature" class="btn btn-secondary"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i>Restaurer la signature par défaut</button>
+              <button type="button" id="btn-remove-signature" class="btn btn-secondary hidden"><i class="fa-solid fa-trash" aria-hidden="true"></i>Supprimer l'image</button>
             </div>
           </div>
         </div>
@@ -292,12 +367,12 @@
       </div>
 
       <div class="card">
-        <h2 class="heading-with-help">Émetteurs de virements (import CSV)
-          <button type="button" class="help-trigger" data-help-id="settings-emitters" aria-label="Aide : émetteurs CSV" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        <h2 class="heading-with-help">Émetteurs pour l'import bancaire
+          <button type="button" class="help-trigger" data-help-id="settings-emitters" aria-expanded="false"><span aria-hidden="true">?</span></button>
         </h2>
-        <p class="subsection-title">Nom affiché dans l'app et motifs à rechercher dans le libellé bancaire (un par ligne). La référence bancaire extraite du libellé sert à éviter les doublons.</p>
+        <p class="subsection-title">Nom du locataire dans l'application et mots à repérer dans le libellé bancaire (un par ligne).</p>
         <div id="emitters-list"></div>
-        <button type="button" id="btn-add-emitter" class="btn btn-secondary">+ Ajouter un émetteur</button>
+        <button type="button" id="btn-add-emitter" class="btn btn-secondary"><i class="fa-solid fa-plus" aria-hidden="true"></i>Ajouter un émetteur</button>
       </div>
 
       <div class="card">
@@ -306,7 +381,7 @@
         </h2>
         <p class="field-hint">Indiquez le loyer hors charges, les charges locatives et la date d'application de chaque palier. Le total mensuel (loyer + charges) sert au suivi et à la quittance.</p>
         <div id="prices-list"></div>
-        <button type="button" id="btn-add-price" class="btn btn-secondary">+ Ajouter un palier</button>
+        <button type="button" id="btn-add-price" class="btn btn-secondary"><i class="fa-solid fa-plus" aria-hidden="true"></i>Ajouter un palier</button>
       </div>
 
       <div class="card" id="settings-templates-section">
@@ -323,8 +398,8 @@
           </div>
           <ul id="quittance-templates-list" class="template-registry-list" aria-label="Modèles quittance enregistrés"></ul>
           <div class="btn-group" style="flex-wrap:wrap;margin-top:0.5rem">
-            <button type="button" id="btn-new-quittance-template" class="btn btn-secondary">+ Nouveau modèle</button>
-            <button type="button" id="btn-settings-export-quittance" class="btn btn-secondary">Exporter modèle</button>
+            <button type="button" id="btn-new-quittance-template" class="btn btn-secondary"><i class="fa-solid fa-file-circle-plus" aria-hidden="true"></i>Nouveau modèle</button>
+            <button type="button" id="btn-settings-export-quittance" class="btn btn-secondary"><i class="fa-solid fa-upload" aria-hidden="true"></i>Exporter modèle</button>
             <label class="btn btn-secondary" style="cursor:pointer;margin:0">
               Importer modèle
               <input type="file" id="import-quittance-template-settings" accept=".html,text/html" class="hidden">
@@ -340,8 +415,8 @@
           </div>
           <ul id="mail-templates-list" class="template-registry-list" aria-label="Modèles mail enregistrés"></ul>
           <div class="btn-group" style="flex-wrap:wrap;margin-top:0.5rem">
-            <button type="button" id="btn-new-mail-template" class="btn btn-secondary">+ Nouveau modèle</button>
-            <button type="button" id="btn-settings-export-mail" class="btn btn-secondary">Exporter modèle</button>
+            <button type="button" id="btn-new-mail-template" class="btn btn-secondary"><i class="fa-solid fa-file-circle-plus" aria-hidden="true"></i>Nouveau modèle</button>
+            <button type="button" id="btn-settings-export-mail" class="btn btn-secondary"><i class="fa-solid fa-upload" aria-hidden="true"></i>Exporter modèle</button>
             <label class="btn btn-secondary" style="cursor:pointer;margin:0">
               Importer modèle
               <input type="file" id="import-mail-template-settings" accept=".json,.html,application/json,text/html" class="hidden">
@@ -356,7 +431,7 @@
         </h2>
         <p class="subsection-title">Le contenu du mail se modifie dans l'onglet <strong>Mail</strong>. Ici : destinataires (À, CC, CCI) et signature texte (<code>{{signature}}</code>).</p>
         <div id="recipients-list"></div>
-        <button type="button" id="btn-add-recipient" class="btn btn-secondary">+ Ajouter un destinataire</button>
+        <button type="button" id="btn-add-recipient" class="btn btn-secondary"><i class="fa-solid fa-plus" aria-hidden="true"></i>Ajouter un destinataire</button>
         <div class="form-row" style="margin-top:1rem">
           <label for="set-mail-signature">Signature (texte)</label>
           <input type="text" id="set-mail-signature">
@@ -372,10 +447,10 @@
       </div>
 
       <div class="card" id="settings-mail-smtp" data-demo-hide>
-        <h2 class="heading-with-help">Envoi mail (SMTP)
-          <button type="button" class="help-trigger" data-help-id="settings-mail-smtp" aria-label="Aide : SMTP" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        <h2 class="heading-with-help">Envoi mail (serveur classique)
+          <button type="button" class="help-trigger" data-help-id="settings-mail-smtp" aria-expanded="false"><span aria-hidden="true">?</span></button>
         </h2>
-        <p class="subsection-title">Alternative sans OAuth : renseignez votre serveur SMTP (OVH, Free, Orange, etc.). Le mot de passe est chiffré côté serveur.</p>
+        <p class="subsection-title">Alternative si vous n'utilisez pas Gmail ou Outlook : renseignez les paramètres fournis par votre hébergeur mail (OVH, Free, Orange…).</p>
         <div id="smtp-status-line" class="field-hint" aria-live="polite"></div>
         <div class="form-row">
           <label for="set-smtp-host">Serveur SMTP</label>
@@ -412,18 +487,19 @@
           <input type="text" id="set-smtp-from-name" autocomplete="off">
         </div>
         <div class="btn-group">
-          <button type="button" id="btn-test-smtp" class="btn btn-secondary">Tester la connexion</button>
-          <button type="button" id="btn-save-smtp" class="btn">Enregistrer SMTP</button>
-          <button type="button" id="btn-clear-smtp" class="btn btn-secondary" title="Effacer la configuration SMTP enregistrée">Supprimer la config SMTP</button>
+          <button type="button" id="btn-test-smtp" class="btn btn-secondary"><i class="fa-solid fa-plug" aria-hidden="true"></i>Tester la connexion</button>
+          <button type="button" class="help-trigger" data-help-id="btn-test-smtp" aria-expanded="false"><span aria-hidden="true">?</span></button>
+          <button type="button" id="btn-save-smtp" class="btn"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>Enregistrer SMTP</button>
+          <button type="button" id="btn-clear-smtp" class="btn btn-secondary" title="Effacer la configuration SMTP enregistrée"><i class="fa-solid fa-trash" aria-hidden="true"></i>Supprimer la config SMTP</button>
           <button type="button" class="help-trigger" data-help-id="btn-clear-smtp" aria-label="Aide : supprimer SMTP" aria-expanded="false"><span aria-hidden="true">?</span></button>
         </div>
       </div>
 
       <div class="card" id="settings-backup-json">
-        <h2 class="heading-with-help">Sauvegarde JSON
-          <button type="button" class="help-trigger" data-help-id="settings-backup-json" aria-label="Aide : sauvegarde JSON" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        <h2 class="heading-with-help">Sauvegarde des données
+          <button type="button" class="help-trigger" data-help-id="settings-backup-json" aria-expanded="false"><span aria-hidden="true">?</span></button>
         </h2>
-        <p class="field-hint card-intro">Exportez ou importez vos <strong>paramètres et virements</strong> (<code>loyer-data.json</code>). Vous pouvez aussi déposer un fichier <strong>.json</strong> sur la page. Pour une sauvegarde complète chiffrée (OAuth mail, SMTP, historique), voir <strong>Mon compte</strong>.</p>
+        <p class="field-hint card-intro">Exportez ou importez vos paramètres et paiements. Vous pouvez aussi déposer un fichier <strong>.json</strong> sur la page. Pour une sauvegarde complète protégée par mot de passe, voir <strong>Mon compte</strong>.</p>
         <div class="btn-group" style="flex-wrap:wrap">
           <button type="button" id="btn-export-json" class="btn btn-secondary"><i class="fa-solid fa-download" aria-hidden="true"></i>Exporter les données (JSON)</button>
           <label class="btn btn-secondary" style="cursor:pointer;margin:0">
@@ -443,7 +519,7 @@
           <p class="field-hint">Demandez cette clé à l'administrateur de votre installation si l'application vous la réclame.</p>
           <div class="btn-group" style="align-items:flex-end">
             <input type="password" id="set-server-api-key" class="flex-grow" autocomplete="off" placeholder="Collez la clé ici">
-            <button type="button" id="btn-save-api-key" class="btn">Valider</button>
+            <button type="button" id="btn-save-api-key" class="btn"><i class="fa-solid fa-check" aria-hidden="true"></i>Valider</button>
           </div>
         </div>
         <p id="settings-data-intro" class="subsection-title hidden"></p>
@@ -476,7 +552,7 @@
               <input type="password" id="account-confirm-passphrase" autocomplete="new-password" required minlength="8">
             </div>
             <p class="field-hint">Minimum 8 caractères. Privilégiez une phrase longue et mémorable plutôt que des caractères spéciaux obligatoires.</p>
-            <button type="submit" class="btn btn-secondary">Modifier la passphrase</button>
+            <button type="submit" class="btn btn-secondary"><i class="fa-solid fa-key" aria-hidden="true"></i>Modifier la passphrase</button>
           </form>
         </div>
         <p class="field-hint card-intro">Exportez (fichier chiffré avec mot de passe de sauvegarde), importez ou supprimez l'ensemble de vos loyers et paramètres. La déconnexion ferme votre session sans effacer vos données.</p>
@@ -487,9 +563,9 @@
             Importer un profil
             <input type="file" id="import-profile" accept=".json,application/json" class="hidden">
           </label>
-          <button type="button" id="btn-delete-data" class="btn btn-danger" title="Supprime loyers, virements et paramètres métier (JSON)">Supprimer mes données</button>
+          <button type="button" id="btn-delete-data" class="btn btn-danger" title="Supprime loyers, virements et paramètres métier (JSON)"><i class="fa-solid fa-trash" aria-hidden="true"></i>Supprimer mes données</button>
           <button type="button" class="help-trigger" data-help-id="btn-delete-data" aria-label="Aide : supprimer mes données" aria-expanded="false"><span aria-hidden="true">?</span></button>
-          <button type="button" id="btn-delete-account" class="btn btn-danger" title="Supprime le compte d'accès (passphrase requise si compte local)">Supprimer mon compte</button>
+          <button type="button" id="btn-delete-account" class="btn btn-danger" title="Supprime le compte d'accès (passphrase requise si compte local)"><i class="fa-solid fa-user-xmark" aria-hidden="true"></i>Supprimer mon compte</button>
           <button type="button" class="help-trigger" data-help-id="btn-delete-account" aria-label="Aide : supprimer mon compte" aria-expanded="false"><span aria-hidden="true">?</span></button>
         </div>
       </div>
@@ -516,14 +592,14 @@
         </div>
         <p id="quittance-template-readonly-hint" class="field-hint hidden">Les modèles complet et court sont en lecture seule. Utilisez <strong>Nouveau modèle…</strong> ou <strong>Importer modèle</strong> pour créer une variante.</p>
         <div class="btn-group" style="flex-wrap:wrap">
-          <button type="button" id="btn-refresh-quittance" class="btn btn-secondary" title="Recalculer l'aperçu à partir du modèle">Régénérer</button>
-          <button type="button" id="btn-quittance-new" class="btn btn-secondary">Nouveau modèle…</button>
-          <button type="button" id="btn-quittance-export-template" class="btn btn-secondary">Exporter modèle</button>
+          <button type="button" id="btn-refresh-quittance" class="btn btn-secondary" title="Recalculer l'aperçu à partir du modèle"><i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i>Régénérer</button>
+          <button type="button" id="btn-quittance-new" class="btn btn-secondary"><i class="fa-solid fa-file-circle-plus" aria-hidden="true"></i>Nouveau modèle…</button>
+          <button type="button" id="btn-quittance-export-template" class="btn btn-secondary"><i class="fa-solid fa-upload" aria-hidden="true"></i>Exporter modèle</button>
           <label class="btn btn-secondary" style="cursor:pointer;margin:0">
             Importer modèle
             <input type="file" id="import-quittance-template-tab" accept=".html,text/html" class="hidden">
           </label>
-          <button type="button" id="btn-quittance-set-default" class="btn btn-secondary">Utiliser par défaut</button>
+          <button type="button" id="btn-quittance-set-default" class="btn btn-secondary"><i class="fa-solid fa-star" aria-hidden="true"></i>Utiliser par défaut</button>
           <button type="button" class="help-trigger" data-help-id="quittance-edit" aria-label="Aide : édition quittance" aria-expanded="false"><span aria-hidden="true">?</span></button>
           <button type="button" id="btn-export-pdf" class="btn" title="Télécharger un fichier PDF"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i>PDF</button>
           <button type="button" id="btn-export-docx" class="btn" title="Télécharger un fichier Word"><i class="fa-solid fa-file-word" aria-hidden="true"></i>DOCX</button>
@@ -574,13 +650,13 @@
         </div>
         <p id="mail-template-readonly-hint" class="field-hint hidden">Les modèles complet et court sont en lecture seule. Utilisez <strong>Nouveau modèle…</strong> ou <strong>Importer modèle</strong> pour créer une variante.</p>
         <div class="btn-group" style="flex-wrap:wrap">
-          <button type="button" id="btn-mail-new" class="btn btn-secondary">Nouveau modèle…</button>
-          <button type="button" id="btn-mail-export-template" class="btn btn-secondary">Exporter modèle</button>
+          <button type="button" id="btn-mail-new" class="btn btn-secondary"><i class="fa-solid fa-file-circle-plus" aria-hidden="true"></i>Nouveau modèle…</button>
+          <button type="button" id="btn-mail-export-template" class="btn btn-secondary"><i class="fa-solid fa-upload" aria-hidden="true"></i>Exporter modèle</button>
           <label class="btn btn-secondary" style="cursor:pointer;margin:0">
             Importer modèle
             <input type="file" id="import-mail-template-tab" accept=".json,.html,application/json,text/html" class="hidden">
           </label>
-          <button type="button" id="btn-mail-set-default" class="btn btn-secondary">Utiliser par défaut</button>
+          <button type="button" id="btn-mail-set-default" class="btn btn-secondary"><i class="fa-solid fa-star" aria-hidden="true"></i>Utiliser par défaut</button>
           <button type="button" class="help-trigger" data-help-id="mail-edit" aria-label="Aide : édition mail" aria-expanded="false"><span aria-hidden="true">?</span></button>
           <button type="button" class="help-trigger" data-help-id="quittance-mail" aria-label="Aide : envoi par mail" aria-expanded="false"><span aria-hidden="true">?</span></button>
           <button type="button" id="btn-mail-draft" class="btn btn-secondary" title="Enregistrer dans les brouillons Gmail ou Outlook (connexion requise)"><i class="fa-solid fa-file-pen" aria-hidden="true"></i>Brouillon</button>
@@ -634,7 +710,7 @@
         <h2 class="heading-with-help">Journal d'activité
           <button type="button" class="help-trigger" data-help-id="history-activity-log" aria-label="Aide : historique" aria-expanded="false"><span aria-hidden="true">?</span></button>
         </h2>
-        <p class="subsection-title card-intro">Envois mail, brouillons, imports CSV, exports PDF/DOCX et connexions OAuth. Export CSV et purge pour la conformité RGPD.</p>
+        <p class="subsection-title card-intro">Envois de mail, imports bancaires, exports de quittances. Export CSV et purge pour archiver ou effacer l'historique.</p>
         <div class="activity-log-toolbar btn-group" style="flex-wrap:wrap;margin-bottom:0.75rem">
           <label for="activity-log-type-filter">Type</label>
           <select id="activity-log-type-filter" aria-label="Filtrer par type" title="Filtrer le journal par type d'événement">
@@ -659,7 +735,7 @@
           </div>
           <div class="btn-group" style="align-items:flex-end">
             <input type="number" id="set-history-retention-months" min="0" max="120" value="24" class="flex-grow">
-            <button type="button" id="btn-save-history-retention" class="btn btn-secondary">Enregistrer</button>
+            <button type="button" id="btn-save-history-retention" class="btn btn-secondary"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>Enregistrer</button>
           </div>
         </div>
         <div id="activity-log-body" class="activity-log-body"></div>
@@ -678,7 +754,7 @@
             <li><a href="#help-intro">Avant de commencer</a></li>
             <li><a href="#help-step1">1. Premiers pas</a></li>
             <li><a href="#help-step2">2. Paramètres</a></li>
-            <li><a href="#help-step3">3. Virements</a></li>
+            <li><a href="#help-step3">3. Paiements</a></li>
             <li><a href="#help-step4">4. Consulter les données</a></li>
             <li><a href="#help-step5">5. Quittance et export</a></li>
             <li><a href="#help-step6">6. Mail et envoi</a></li>
@@ -687,7 +763,7 @@
             <li><a href="#help-deploy">Installation sur un serveur</a></li>
             <li><a href="#help-troubleshoot">Dépannage</a></li>
           </ol>
-          <p class="field-hint" style="margin-top:1rem">Partout dans l'application, le bouton <strong>?</strong> ouvre une explication courte. La barre de période (sous le menu) en propose une également ; cliquez un badge coloré pour le détail d'un statut.</p>
+          <p class="field-hint" style="margin-top:1rem">Partout dans l'application, le bouton <strong>?</strong> ouvre une explication courte et claire. La barre de période (sous le menu) en propose une aussi ; cliquez un badge coloré pour comprendre chaque statut.</p>
         </nav>
 
         <div class="help-content">
@@ -699,7 +775,7 @@
                 <p class="field-hint" style="margin:0.35rem 0 0">Loyer Manager — sur votre serveur, sans cloud.</p>
               </div>
             </div>
-            <p style="margin-top:1rem">Loyer Manager vous aide à suivre les loyers, enregistrer les virements et produire des quittances. Vos données restent sur <strong>votre serveur</strong> — pas de cloud tiers.</p>
+            <p style="margin-top:1rem">Loyer Manager vous aide à suivre les loyers, enregistrer les paiements et produire des quittances. Vos données restent sur <strong>votre serveur</strong> — pas de cloud tiers.</p>
             <div class="help-callout">
               <strong>Accès :</strong> connectez-vous avec votre compte, puis renseignez vos paramètres.<br>
               <strong>Import rapide :</strong> glissez-déposez un fichier <strong>.json</strong> (profil) ou <strong>.csv</strong> (relevé bancaire) n'importe où sur la page.
@@ -726,7 +802,7 @@
             <h3>2.1 — Location</h3>
             <ul>
               <li><strong>Début de location</strong> : date de prise d'effet du bail.</li>
-              <li><strong>Jour théorique du virement</strong> : jour habituel du paiement (souvent le 1<sup>er</sup> du mois).</li>
+              <li><strong>Jour habituel de paiement</strong> : jour où le locataire règle le loyer (souvent le 1<sup>er</sup> du mois).</li>
             </ul>
             <h3>2.2 — Bailleur et locataire</h3>
             <p>Renseignez les noms et adresses : ils apparaîtront sur la quittance de loyer.</p>
@@ -751,27 +827,27 @@
           </article>
 
           <article id="help-step3" class="card help-article" tabindex="-1">
-            <h2><span class="help-step-badge">Étape 3</span> Ajouter les virements</h2>
-            <p>Deux méthodes sont possibles — choisissez celle qui vous convient.</p>
-            <h3>Méthode A — Import CSV (relevé bancaire)</h3>
+            <h2><span class="help-step-badge">Étape 3</span> Enregistrer les paiements</h2>
+            <p>Deux méthodes — choisissez celle qui vous convient.</p>
+            <h3>Méthode A — Import depuis votre banque (CSV)</h3>
             <ol>
-              <li>Connectez-vous à votre banque en ligne et exportez vos opérations au format <strong>CSV</strong> (relevé de compte).</li>
-              <li>Dans l'onglet <strong>Virements</strong>, cliquez sur <strong>Importer CSV</strong> et choisissez le fichier téléchargé.</li>
-              <li>Une liste s'affiche : cochez les virements à enregistrer (les doublons sont déjà exclus).</li>
+              <li>Connectez-vous à votre banque en ligne et exportez vos opérations au format <strong>CSV</strong>.</li>
+              <li>Dans l'onglet <strong>Paiements</strong>, cliquez sur <strong>Importer CSV</strong> et choisissez le fichier.</li>
+              <li>Cochez les lignes à enregistrer (les doublons sont déjà exclus).</li>
               <li>Cliquez sur <strong>Importer la sélection</strong>.</li>
             </ol>
             <div class="help-callout">
-              L'import repère automatiquement les virements du locataire grâce aux « émetteurs » configurés à l'étape 2.5.
+              L'application repère les paiements du locataire grâce aux noms configurés dans Paramètres (section « Émetteurs pour l'import bancaire »).
             </div>
             <h3>Méthode B — Saisie manuelle</h3>
             <ol>
-              <li>Cliquez sur <strong>+ Ajouter un virement</strong>.</li>
-              <li>Indiquez la date, le montant et l'émetteur.</li>
+              <li>Cliquez sur <strong>Ajouter un paiement</strong>.</li>
+              <li>Indiquez la date, le montant, le type (virement, espèce…) et l'émetteur.</li>
               <li>Cliquez sur <strong>Enregistrer</strong>.</li>
             </ol>
-            <p class="field-hint">Utilisez la saisie manuelle pour corriger une ligne ou ajouter un virement ponctuel sans fichier bancaire.</p>
+            <p class="field-hint">La saisie manuelle convient pour corriger une ligne ou enregistrer un paiement en espèces, sans fichier bancaire.</p>
             <div class="help-actions">
-              <button type="button" class="btn btn-secondary help-goto" data-panel="panel-payments">Ouvrir Virements</button>
+              <button type="button" class="btn btn-secondary help-goto" data-panel="panel-payments">Ouvrir Paiements</button>
             </div>
           </article>
 
@@ -781,10 +857,10 @@
             <ul>
               <li>Utilisez la <strong>barre de période</strong> sous le menu : mois, bouton « Période » pour une plage Du→Au, timeline colorée.</li>
               <li>Les <strong>indicateurs</strong> résument le solde à date, le recouvrement et les mois problématiques.</li>
-              <li>Le tableau « Détail par mois » affiche un <strong>statut</strong> (payé, partiel, impayé…) et un éventuel retard (+X j).</li>
-              <li>La <strong>heatmap</strong> colore chaque mois — cliquez une cellule pour la sélectionner.</li>
+              <li>Le tableau « Détail par mois » affiche pour chaque mois ce qui était dû, reçu, l'écart et le solde. L'icône crayon ouvre le détail du mois.</li>
+              <li>Le <strong>calendrier coloré</strong> reprend les mêmes statuts mois par mois — cliquez une case pour sélectionner ce mois.</li>
               <li>Les graphiques et le récapitulatif annuel reprennent les mêmes chiffres sous forme visuelle.</li>
-              <li><strong>Imprimer le rapport</strong> pour une vue papier (tableaux et heatmap).</li>
+              <li>Les icônes <strong>imprimer</strong> en haut à droite de chaque bloc ouvrent une impression ciblée. Le rapport <strong>Tableau de bord</strong> regroupe indicateurs, détail par mois et paiements du mois. <strong>Imprimer le rapport complet</strong> ajoute le graphique et le récapitulatif annuel.</li>
             </ul>
             <div class="help-actions">
               <button type="button" class="btn btn-secondary help-goto" data-panel="panel-dashboard">Ouvrir Tableau de bord</button>
@@ -807,7 +883,7 @@
               </li>
             </ol>
             <div class="help-callout">
-              Cliquez sur <strong>Régénérer</strong> après avoir modifié des virements ou des paramètres pour recalculer l'aperçu.
+              Cliquez sur <strong>Régénérer</strong> après avoir modifié des paiements ou des paramètres pour recalculer l'aperçu.
             </div>
             <div class="help-actions">
               <button type="button" class="btn btn-secondary help-goto" data-panel="panel-quittance">Ouvrir Quittance</button>
@@ -851,7 +927,7 @@
             <p>Loyer Manager est auto-hébergé : <strong>vous</strong> êtes responsable du traitement des données sur votre instance.</p>
             <h3>Données stockées</h3>
             <ul>
-              <li>Vos loyers, virements et paramètres (exportables depuis <strong>Mon compte</strong>).</li>
+              <li>Vos loyers, paiements et paramètres (exportables depuis <strong>Mon compte</strong>).</li>
               <li>Le journal d'activité (onglet <strong>Historique</strong>).</li>
               <li>Vos modèles de quittance et de mail.</li>
             </ul>
@@ -887,16 +963,16 @@
             <p>Vérifiez votre passphrase ou reconnectez-vous avec Google ou Microsoft. En cas d'oubli sur un compte local, l'administrateur peut supprimer le compte côté serveur pour permettre une nouvelle inscription.</p>
             <h3>Mes données semblent endommagées</h3>
             <p>Au démarrage, l'application peut vous proposer de télécharger une copie de secours puis de repartir sur une base vide.</p>
-            <h3>L'import CSV ne trouve aucun virement</h3>
-            <p>Vérifiez les « Émetteurs » dans Paramètres : les mots-clés doivent correspondre au libellé affiché par votre banque.</p>
+            <h3>L'import bancaire ne trouve aucun paiement</h3>
+            <p>Vérifiez la section « Émetteurs pour l'import bancaire » dans Paramètres : les mots-clés doivent correspondre au libellé affiché par votre banque.</p>
             <h3>Les chiffres du tableau de bord semblent incorrects</h3>
-            <p>Vérifiez la date de début de location, l'historique des loyers et que tous les virements ont bien été saisis.</p>
+            <p>Vérifiez la date de début de location, l'historique des loyers et que tous les paiements ont bien été enregistrés.</p>
             <h3>Le bouton Brouillon est grisé</h3>
             <p>Les brouillons dans la boîte mail nécessitent Gmail ou Outlook (OAuth). Avec le SMTP seul, utilisez <strong>Autres → EML + PDF</strong>. Si OAuth est connecté mais le bouton reste inactif, déconnectez puis reconnectez le compte mail.</p>
             <h3>L'envoi mail échoue</h3>
             <p>Vérifiez les destinataires dans Paramètres, la connexion Gmail/Outlook ou la configuration SMTP. Consultez l'onglet Historique pour le détail de l'erreur.</p>
             <h3>Exporter mon profil</h3>
-            <p>Dans <strong>Paramètres → Sauvegarde JSON</strong>, exportez ou importez votre fichier <code>loyer-data.json</code> (paramètres + virements). Pour une sauvegarde complète chiffrée, utilisez <strong>Mon compte</strong>.</p>
+            <p>Dans <strong>Paramètres → Sauvegarde JSON</strong>, exportez ou importez votre fichier de données (paramètres et paiements). Pour une sauvegarde complète protégée par mot de passe, utilisez <strong>Mon compte</strong>.</p>
           </article>
         </div>
       </div>
@@ -933,9 +1009,9 @@
       </div>
       <p id="batch-export-summary" class="field-hint"></p>
       <div class="btn-group modal-actions">
-        <button type="button" id="btn-batch-export-pdf" class="btn">PDF</button>
-        <button type="button" id="btn-batch-export-docx" class="btn btn-secondary">DOCX</button>
-        <button type="button" id="btn-batch-export-html" class="btn btn-secondary">HTML</button>
+        <button type="button" id="btn-batch-export-pdf" class="btn"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i>PDF</button>
+        <button type="button" id="btn-batch-export-docx" class="btn btn-secondary"><i class="fa-solid fa-file-word" aria-hidden="true"></i>DOCX</button>
+        <button type="button" id="btn-batch-export-html" class="btn btn-secondary"><i class="fa-solid fa-file-code" aria-hidden="true"></i>HTML</button>
         <button type="button" class="btn btn-secondary" data-batch-modal-close>Annuler</button>
       </div>
     </div>
@@ -946,7 +1022,7 @@
     <div class="modal-backdrop" data-csv-modal-close></div>
     <div class="modal-box modal-box-wide">
       <div class="modal-header">
-        <h2 id="modal-csv-import-title">Importer des virements</h2>
+        <h2 id="modal-csv-import-title">Importer des paiements (CSV)</h2>
         <button type="button" class="help-trigger" data-help-id="csv-import-modal" aria-label="Aide : import CSV" aria-expanded="false"><span aria-hidden="true">?</span></button>
         <button type="button" class="modal-close" data-csv-modal-close aria-label="Fermer">×</button>
       </div>
@@ -974,19 +1050,20 @@
         </table>
       </div>
       <div class="btn-group modal-actions">
-        <button type="button" id="btn-csv-import-confirm" class="btn">Importer la sélection</button>
+        <button type="button" id="btn-csv-import-confirm" class="btn"><i class="fa-solid fa-file-import" aria-hidden="true"></i>Importer la sélection</button>
         <button type="button" class="btn btn-secondary" data-csv-modal-close>Annuler</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal virement -->
+  <!-- Modal paiement -->
   <div id="modal-payment" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-payment-title">
     <div class="modal-backdrop" data-modal-close></div>
     <div class="modal-box modal-box-wide">
       <div class="modal-header">
-        <h2 id="modal-payment-title">Nouveau virement</h2>
-        <button type="button" class="help-trigger" data-help-id="payment-form-modal" aria-label="Aide : formulaire virement" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        <h2 id="modal-payment-title">Nouveau paiement</h2>
+        <button type="button" id="btn-report-payment-modal" class="btn-report-export" data-report-export="modal-payment" title="Imprimer le détail de ce paiement" aria-label="Imprimer le rapport : détail du paiement" disabled><i class="fa-solid fa-print" aria-hidden="true"></i></button>
+        <button type="button" class="help-trigger" data-help-id="payment-form-modal" aria-label="Aide : formulaire paiement" aria-expanded="false"><span aria-hidden="true">?</span></button>
         <button type="button" class="modal-close" data-modal-close aria-label="Fermer">×</button>
       </div>
       <form id="form-payment">
@@ -997,7 +1074,7 @@
           </div>
           <div class="form-row">
             <label for="pay-amount">Montant (€)</label>
-            <input type="number" id="pay-amount" step="0.01" min="0.01" required>
+            <input type="number" id="pay-amount" step="0.01" required placeholder="Négatif = remboursement">
           </div>
         </div>
         <div class="grid-2">
@@ -1006,11 +1083,17 @@
             <select id="pay-emitter" required></select>
           </div>
           <div class="form-row">
+            <label for="pay-tag">Type</label>
+            <select id="pay-tag" title="Optionnel — défaut Virement"></select>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="form-row">
             <div class="label-with-help">
               <label for="pay-status">Statut</label>
-              <button type="button" class="help-trigger" data-help-id="payment-status" aria-label="Aide : statut virement" aria-expanded="false"><span aria-hidden="true">?</span></button>
+              <button type="button" class="help-trigger" data-help-id="payment-status" aria-expanded="false"><span aria-hidden="true">?</span></button>
             </div>
-            <select id="pay-status" title="Origine ou contrôle du virement — n'affecte pas les calculs">
+            <select id="pay-status" title="Origine ou contrôle — n'affecte pas les calculs">
               <option value="manuel">Manuel</option>
               <option value="importé">Importé</option>
               <option value="vérifié">Vérifié</option>
@@ -1023,17 +1106,65 @@
         </div>
         <div class="form-row">
           <label for="pay-bank-ref">Référence bancaire</label>
-          <input type="text" id="pay-bank-ref" placeholder="Identifiant unique du virement">
+          <input type="text" id="pay-bank-ref" placeholder="Référence bancaire (évite les doublons à l'import)">
         </div>
         <div class="form-row">
           <label for="pay-comment">Commentaire</label>
           <textarea id="pay-comment" rows="2" placeholder="Note personnelle (optionnel)"></textarea>
         </div>
         <div class="btn-group modal-actions">
-          <button type="submit" class="btn">Enregistrer</button>
+          <button type="submit" class="btn"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>Enregistrer</button>
           <button type="button" class="btn btn-secondary" data-modal-close>Annuler</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal détail mois (paiements + note interne) -->
+  <div id="modal-month-detail" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-month-detail-title">
+    <div class="modal-backdrop" data-month-modal-close></div>
+    <div class="modal-box modal-box-wide">
+      <div class="modal-header">
+        <h2 id="modal-month-detail-title">Paiements —</h2>
+        <button type="button" class="btn-report-export" data-report-export="modal-month" title="Imprimer le détail de ce mois" aria-label="Imprimer le rapport : détail du mois"><i class="fa-solid fa-print" aria-hidden="true"></i></button>
+        <button type="button" class="help-trigger" data-help-id="dash-month-modal" aria-label="Aide : détail mois" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        <button type="button" class="modal-close" data-month-modal-close aria-label="Fermer">×</button>
+      </div>
+      <div id="report-block-modal-month">
+      <div class="form-row screen-only">
+        <label for="month-detail-note">Commentaire interne du mois</label>
+        <textarea id="month-detail-note" rows="3" placeholder="Note personnelle (non exportée dans les quittances)"></textarea>
+        <p class="field-hint">Usage interne uniquement — visible dans le tableau de bord.</p>
+      </div>
+      <div class="report-field">
+        <div class="report-field-label">Commentaire interne du mois</div>
+        <div class="report-field-value" id="month-detail-note-export">—</div>
+      </div>
+      <div class="btn-group screen-only" style="margin-bottom:0.5rem">
+        <button type="button" id="btn-month-detail-add-payment" class="btn btn-secondary btn-sm"><i class="fa-solid fa-plus" aria-hidden="true"></i>Ajouter un paiement</button>
+        <button type="button" id="btn-month-detail-save-note" class="btn btn-sm"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>Enregistrer la note</button>
+      </div>
+      <div class="payments-table-scroll payments-table-scroll--modal">
+        <table class="data-table data-table-payments" id="month-detail-payments-table">
+          <thead>
+            <tr>
+              <th class="col-row-action" aria-label="Actions"></th>
+              <th>Date</th>
+              <th>Type</th>
+              <th class="num">Montant</th>
+              <th>Émetteur</th>
+              <th>Statut</th>
+              <th>Commentaire</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      </div>
+      <div class="btn-group modal-actions">
+        <button type="button" class="btn btn-secondary" data-month-modal-close><i class="fa-solid fa-xmark" aria-hidden="true"></i>Fermer</button>
+      </div>
     </div>
   </div>
 
@@ -1062,14 +1193,14 @@
   <div id="file-drop-overlay" class="file-drop-overlay hidden" aria-hidden="true">
     <div class="file-drop-overlay-box">
       <p class="file-drop-overlay-title">Déposer pour importer</p>
-      <p class="file-drop-overlay-hint"><strong>.json</strong> — restauration des données · <strong>.csv</strong> — relevé bancaire (virements)</p>
+      <p class="file-drop-overlay-hint"><strong>.json</strong> — restauration des données · <strong>.csv</strong> — relevé bancaire (paiements)</p>
     </div>
   </div>
 
   <div id="gdpr-consent-banner" class="gdpr-consent-banner hidden" role="dialog" aria-labelledby="gdpr-consent-title" aria-live="polite">
     <div class="gdpr-consent-inner">
       <p id="gdpr-consent-title"><strong>Données personnelles</strong> — Loyer Manager stocke vos loyers sur votre serveur et tient un journal d'activité. Aucun cookie publicitaire. <a href="#" id="gdpr-privacy-link">En savoir plus</a> <button type="button" class="help-trigger help-trigger-inline" data-help-id="privacy" aria-label="Aide : confidentialité" aria-expanded="false"><span aria-hidden="true">?</span></button></p>
-      <button type="button" id="btn-gdpr-accept" class="btn">J'ai compris</button>
+      <button type="button" id="btn-gdpr-accept" class="btn"><i class="fa-solid fa-check" aria-hidden="true"></i>J'ai compris</button>
     </div>
   </div>
 
@@ -1077,6 +1208,7 @@
   <script src="js/site-meta.js"></script>
   <script src="js/default-signature.js"></script>
   <script src="js/calculations.js"></script>
+  <script src="js/payment-tags.js"></script>
   <script src="js/csv-import.js"></script>
   <script src="js/server-api.js"></script>
   <script src="js/template-manager.js"></script>
@@ -1086,9 +1218,11 @@
   <script src="js/notify.js"></script>
   <script src="js/editor.js"></script>
   <script src="js/charts.js"></script>
+  <script src="js/payment-filters.js"></script>
   <script src="js/period-picker.js"></script>
   <script src="js/quittance.js"></script>
   <script src="js/export.js"></script>
+  <script src="js/report-export.js"></script>
   <script src="js/mail.js"></script>
   <script src="js/mail-oauth.js"></script>
   <script src="js/activity-log.js"></script>

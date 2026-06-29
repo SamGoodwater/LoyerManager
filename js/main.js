@@ -33,6 +33,7 @@
 
     App.bindDashboardEvents();
     App.bindPaymentsEvents();
+    if (global.LoyerReportExport) global.LoyerReportExport.bindReportButtons();
     App.bindSettingsEvents();
     App.bindTemplatesEvents();
     App.bindQuittanceEvents();

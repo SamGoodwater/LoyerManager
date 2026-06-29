@@ -22,12 +22,12 @@
   /** wrap for export. */
   function wrapForExport(innerHtml, forDocx) {
     var headerCss =
-      '.quittance-doc{font-size:10.5pt;line-height:1.35;color:#111}' +
+      '.quittance-doc{font-size:10.5pt;line-height:1.35;color:#0f172a}' +
       '.quittance-header{width:100%;border-collapse:collapse;border:none;margin-bottom:0.65rem}' +
       '.quittance-header td{border:none;padding:0;vertical-align:top}' +
       '.quittance-party-bailleur{text-align:left;width:50%}' +
       '.quittance-party-locataire{text-align:right;width:50%}' +
-      '.quittance-party-label,.quittance-party h3{font-size:0.72rem;letter-spacing:0.06em;text-transform:uppercase;margin:0 0 0.08rem;padding:0;line-height:1.1;color:#5c6b7a}' +
+      '.quittance-party-label,.quittance-party h3{font-size:0.72rem;letter-spacing:0.06em;text-transform:uppercase;margin:0 0 0.08rem;padding:0;line-height:1.1;color:#64748b}' +
       '.quittance-party-lines,.quittance-party p:not(.quittance-party-label){margin:0;padding:0;line-height:1.15}' +
       '.ql-align-right{text-align:right}';
     var bodyMargin = forDocx ? '0.75rem auto' : '0';
@@ -35,7 +35,7 @@
       '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">' +
       '<style>@page{margin:12mm}body{font-family:Georgia,serif;max-width:100%;margin:' +
       bodyMargin +
-      ';line-height:1.35;color:#111;font-size:10.5pt}' +
+      ';line-height:1.35;color:#0f172a;font-size:10.5pt}' +
       'p{margin:0.15rem 0}' +
       BATCH_EXPORT_CSS +
       headerCss +
@@ -43,7 +43,7 @@
       'h4,.quittance-subtitle{margin:0.4rem 0 0.2rem;font-size:0.92rem}' +
       '.quittance-list,.quittance-payments pre{white-space:pre-wrap;font-family:inherit;background:#f8fafc;padding:0.3rem 0.45rem;border-radius:3px;border:none;font-size:0.88rem;margin:0}' +
       'table.quittance-amounts{width:100%;border-collapse:collapse;margin:0.3rem 0 0.4rem;font-size:0.92rem}' +
-      'table.quittance-amounts td{padding:0.18rem 0;border-bottom:1px solid #e5e7eb;vertical-align:top}' +
+      'table.quittance-amounts td{padding:0.18rem 0;border-bottom:1px solid #e2e8f0;vertical-align:top}' +
       'table.quittance-amounts tr:last-child td{border-bottom:none}' +
       '.quittance-meta{color:#64748b;font-size:0.88rem;margin:0.2rem 0}' +
       '.quittance-legal{font-size:0.78rem;line-height:1.3;color:#475569;margin:0.35rem 0 0}' +

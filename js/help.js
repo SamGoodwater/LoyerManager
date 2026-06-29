@@ -8,121 +8,184 @@
   var openPopoverEl = null;
   var openTriggerEl = null;
 
+  var HELP_LABELS = {
+    'period-bar': 'Aide : choisir un mois ou une période',
+    'period-status': 'Signification des couleurs de statut',
+    'header-selection': 'Aide : mois actuellement consulté',
+    'dash-period': 'Aide : période affichée sur le tableau de bord',
+    'dash-kpis': 'Aide : chiffres clés en un coup d\'œil',
+    'dash-month-stats': 'Aide : détail du mois sélectionné',
+    'dash-report-export': 'Aide : imprimer ce bloc',
+    'dash-report-full': 'Aide : rapport complet à imprimer',
+    'dash-monthly-table': 'Aide : tableau mois par mois',
+    'dash-payments-month': 'Aide : paiements du mois choisi',
+    'dash-charts': 'Aide : graphique de synthèse',
+    'dash-heatmap': 'Aide : calendrier coloré des mois',
+    'dash-yearly': 'Aide : bilan année par année',
+    'dash-month-modal': 'Aide : fenêtre détail d\'un mois',
+    'payments-list': 'Aide : liste de tous les paiements',
+    'payments-csv': 'Aide : importer un relevé bancaire',
+    'payments-manual': 'Aide : ajouter un paiement à la main',
+    'payments-demo-csv': 'Aide : fichier de démonstration',
+    'settings-auto-save': 'Aide : enregistrement automatique',
+    'settings-lease': 'Aide : dates et échéance du loyer',
+    'settings-bailleur': 'Aide : vos coordonnées de propriétaire',
+    'settings-locataire': 'Aide : coordonnées du locataire',
+    'settings-signature': 'Aide : image de signature',
+    'settings-emitters': 'Aide : reconnaissance des paiements à l\'import',
+    'settings-prices': 'Aide : montants du loyer dans le temps',
+    'settings-templates': 'Aide : modèles de quittance et de mail',
+    'settings-mail': 'Aide : destinataires des e-mails',
+    'settings-mail-oauth': 'Aide : connexion Gmail ou Outlook',
+    'settings-mail-smtp': 'Aide : envoi par serveur mail classique',
+    'settings-backup-json': 'Aide : sauvegarder ou restaurer vos données',
+    'settings-data': 'Aide : clé d\'accès technique',
+    'settings-account': 'Aide : votre compte utilisateur',
+    'auth-passphrase': 'Aide : mot de passe de connexion',
+    'auth-email': 'Aide : adresse e-mail de connexion',
+    'auth-oauth-login': 'Aide : connexion Google ou Microsoft',
+    'auth-backup-restore': 'Aide : restaurer une sauvegarde',
+    'btn-delete-data': 'Aide : supprimer les données de loyer',
+    'btn-delete-account': 'Aide : supprimer le compte',
+    'btn-clear-smtp': 'Aide : effacer la configuration d\'envoi mail',
+    'btn-test-smtp': 'Aide : tester la connexion au serveur mail',
+    'payment-status': 'Aide : origine du paiement',
+    'template-mode': 'Aide : aperçu ou modification du modèle',
+    'placeholder-keywords': 'Aide : textes automatiques dans les modèles',
+    'quittance-period': 'Aide : mois de la quittance',
+    'quittance-edit': 'Aide : personnaliser le modèle',
+    'quittance-export': 'Aide : télécharger la quittance',
+    'batch-quittance-export': 'Aide : exporter plusieurs mois d\'un coup',
+    'mail-period': 'Aide : mois du message e-mail',
+    'mail-edit': 'Aide : personnaliser le mail',
+    'quittance-mail': 'Aide : envoyer la quittance par e-mail',
+    'history-activity-log': 'Aide : journal des actions',
+    'history-refresh': 'Aide : actualiser le journal',
+    'history-purge': 'Aide : effacer le journal',
+    'history-filter': 'Aide : filtrer le journal',
+    'history-retention': 'Aide : durée de conservation du journal',
+    'privacy': 'Aide : confidentialité et données',
+    'csv-import-modal': 'Aide : valider l\'import bancaire',
+    'payment-form-modal': 'Aide : saisir ou modifier un paiement'
+  };
+
   var TEXTS = {
     'period-bar':
-      'Sélection partagée entre Tableau de bord, Quittance et Mail. Flèches = mois précédent/suivant. Bouton « Période » = plage Du→Au (« Mois unique » pour revenir). Timeline : clic sur un mois ; en mode période, le 1er clic fixe la fin, les suivants ajustent le début ou la fin selon la position. Survol = détail du mois.',
+      'Choisissez le mois à consulter avec les flèches, ou ouvrez « Période » pour sélectionner plusieurs mois d\'affilée. La frise colorée en dessous reprend les mêmes mois : un clic sélectionne, un survol affiche si le loyer est payé, partiel ou impayé.',
     'period-status':
-      'Statuts affichés sur la timeline et la heatmap : Payé (loyer complet), En avance (trop-perçu), Partiel, Impayé, En cours (échéance pas encore dépassée). Survolez un badge ou un mois pour le détail.',
+      'Vert = loyer entièrement reçu. Bleu clair = trop-perçu. Jaune = paiement partiel. Rouge = rien ou presque reçu. Gris = échéance pas encore passée.',
     'dash-period':
-      'Même barre de période que ci-dessus (sous le menu). Le mois choisi filtre les tableaux et graphiques ci-dessous. En mode période, le détail virements et le récap mensuel suivent le mois cliqué dans la heatmap.',
+      'Le mois ou la période choisi en haut de page filtre tous les tableaux et graphiques de cette page.',
     'dash-kpis':
-      'Indicateurs de l\'année en cours : solde cumulé (avance ou dette), taux de recouvrement, nombre de mois partiels ou impayés, retard moyen de paiement.',
+      'Solde cumulé (avance ou dette), part des loyers bien encaissés, nombre de mois incomplets, et retard moyen de paiement le cas échéant.',
     'dash-month-stats':
-      'En mode période (plage Du→Au), détail du mois sélectionné dans la heatmap : statut, montants attendus/reçus et solde pour ce mois.',
-    'dash-heatmap':
-      'Chaque case = un mois coloré selon le statut (payé, partiel, impayé…). Survol = détail ; clic = sélectionner ce mois pour le tableau et les virements (la plage reste active).',
-    'dash-print':
-      'Imprime le tableau de bord (KPIs, tableaux, heatmap). Les graphiques sont masqués à l\'impression car ils ne s\'exportent pas bien en papier.',
+      'Quand plusieurs mois sont sélectionnés, ce bloc détaille le mois sur lequel vous avez cliqué dans le calendrier coloré.',
+    'dash-report-export':
+      'Ouvre la fenêtre d\'impression pour ce bloc seul (indicateurs, tableau, paiements ou graphique selon l\'icône). Choisissez « Enregistrer au format PDF » pour obtenir un fichier.',
+    'dash-report-full':
+      'Imprime tous les blocs : indicateurs, détail par mois, paiements, graphique et récapitulatif par année (sans le calendrier coloré).',
     'dash-monthly-table':
-      'Pour chaque mois : statut (payé, partiel, impayé…), total dû (loyer + charges), reçu, différence et solde cumulé. Survolez la colonne « Total dû » pour le détail loyer/charges.',
+      'Chaque ligne résume un mois : ce qui était dû, ce qui a été reçu, l\'écart et le solde cumulé. Cliquez une ligne pour la sélectionner. L\'icône crayon ouvre le détail du mois (liste des paiements et note personnelle). Une pastille 📝 indique qu\'une note existe.',
     'dash-payments-month':
-      'Virements reçus pour le mois sélectionné. Si la liste est vide, vérifiez l\'onglet Virements (import CSV ou saisie manuelle).',
+      'Liste des paiements enregistrés pour le mois sélectionné. Si elle est vide, ajoutez des paiements dans l\'onglet Paiements (import bancaire ou saisie manuelle).',
     'dash-charts':
-      'Graphique empilé : part reçue vs reste dû par mois. Courbe de solde cumulé : vert = avance locataire, rouge = dette. Les flèches ‹ › changent l\'année du graphique annuel.',
-    'dash-balance-chart':
-      'Courbe du solde cumulé sur toute la période du bail. Utile pour visualiser l\'évolution de la dette ou de l\'avance locataire dans le temps.',
-    'header-selection':
-      'En mode période, indique le mois « focus » cliqué dans la heatmap ou la timeline. Les tableaux de détail et virements du tableau de bord suivent ce mois.',
-    'template-mode':
-      'Aperçu du mois : rendu avec les données réelles du mois sélectionné. Édition du modèle : modifie le HTML (quittance) ou le corps/objet (mail) ; enregistrement automatique en revenant à l\'aperçu.',
-    'placeholder-keywords':
-      'Variables remplacées à l\'export ({{paiement}}, {{bailleur.name}}, {{periodeText}}…). Cliquez un mot-clé pour l\'insérer à la position du curseur dans l\'éditeur.',
-    'auth-oauth-login':
-      'Connexion sans passphrase : utilise votre compte Google ou Microsoft existant. Le compte doit correspondre à l\'e-mail enregistré sur cette instance (sauf première création de compte).',
-    'auth-email':
-      'Adresse e-mail de connexion à Loyer Manager. Elle sert d\'identifiant pour le compte local et les messages d\'erreur.',
-    'history-retention':
-      'Durée de conservation du journal (défaut 24 mois). 0 = illimité. Les entrées plus anciennes sont supprimées automatiquement lors de l\'enregistrement.',
-    'history-purge':
-      'Efface tout le journal d\'activité — irréversible. Préférez l\'export CSV avant purge pour conserver une trace (RGPD).',
-    'history-filter':
-      'Filtre la liste par type d\'événement : mail envoyé, brouillon, import CSV, export PDF/DOCX.',
-    'history-refresh':
-      'Recharge la liste depuis le serveur. Utile après un envoi mail ou import CSV.',
-    'btn-delete-account':
-      'Supprime le compte d\'accès et réinitialise toutes les données. Une sauvegarde chiffrée (mot de passe de sauvegarde) vous est proposée avant suppression.',
-    'btn-delete-data':
-      'Efface loyers, virements et modèles personnalisés. Une exportation complète vous est proposée au préalable. Le compte utilisateur est conservé.',
-    'btn-clear-smtp':
-      'Efface la configuration SMTP enregistrée (mot de passe chiffré inclus). L\'envoi passera par OAuth si connecté, sinon il faudra reconfigurer.',
-    'btn-test-smtp':
-      'Vérifie la connexion au serveur SMTP et l\'authentification avec les valeurs du formulaire (sans envoyer de mail). Mot de passe vide = mot de passe déjà enregistré.',
-    'payment-status':
-      'Manuel = saisi à la main. Importé = détecté via CSV. Vérifié = marqué comme contrôlé. Le statut n\'affecte pas les calculs.',
+      'Graphique du mois ou de l\'année : trait = loyer attendu ; barres vertes = encaissements ; orange = remboursements ; rouge = manque ; bleu = trop-perçu ; tirets = solde cumulé. Les flèches changent d\'année.',
+    'dash-month-modal':
+      'Ouvrez cette fenêtre avec l\'icône crayon à gauche d\'un mois. Vous y voyez tous les paiements du mois, pouvez en ajouter ou modifier, et laisser une note interne (non incluse dans les quittances).',
+    'dash-heatmap':
+      'Chaque case est un mois, coloré selon l\'état du paiement. Survolez pour le détail, cliquez pour sélectionner ce mois dans les tableaux.',
     'dash-yearly':
-      'Récapitulatif année par année : total dû (loyer + charges), reçu, différence et solde cumulé — utile pour faire le point sur une année complète.',
+      'Vue annuelle : total attendu, total reçu, écart et solde cumulé pour chaque année.',
+    'header-selection':
+      'Indique le mois actuellement consulté lorsque vous avez sélectionné une plage de plusieurs mois.',
+    'template-mode':
+      'Aperçu du mois : la quittance ou le mail est rempli avec vos vraies données. Édition du modèle : vous modifiez la mise en page ; l\'enregistrement se fait en revenant à l\'aperçu.',
+    'placeholder-keywords':
+      'Ces mots-clés (ex. nom du locataire, montant, période) sont remplacés automatiquement à l\'export. Cliquez sur un mot-clé pour l\'insérer dans le modèle.',
+    'auth-oauth-login':
+      'Connectez-vous avec Google ou Microsoft, sans mot de passe Loyer Manager. L\'adresse doit correspondre à votre compte, sauf lors de la toute première création.',
+    'auth-email':
+      'Adresse utilisée pour vous connecter à Loyer Manager.',
+    'history-retention':
+      'Durée de conservation du journal (24 mois par défaut). Mettez 0 pour ne jamais effacer automatiquement les anciennes entrées.',
+    'history-purge':
+      'Efface tout le journal. Action définitive : exportez d\'abord en CSV si vous souhaitez garder une trace.',
+    'history-filter':
+      'Affiche seulement certains types d\'événements : envoi de mail, brouillon, import bancaire, export de quittance…',
+    'history-refresh':
+      'Recharge la liste depuis le serveur, par exemple après un envoi de mail ou un import.',
+    'btn-delete-account':
+      'Supprime votre compte et toutes les données. Une sauvegarde vous est proposée avant confirmation.',
+    'btn-delete-data':
+      'Efface loyers, paiements et modèles personnalisés, sans supprimer votre compte. Une exportation est proposée au préalable.',
+    'btn-clear-smtp':
+      'Efface les paramètres d\'envoi mail enregistrés. Si Gmail ou Outlook est connecté, l\'envoi passera par ce compte.',
+    'btn-test-smtp':
+      'Vérifie que le serveur mail répond et accepte votre identifiant. Aucun e-mail n\'est envoyé. Laissez le mot de passe vide pour utiliser celui déjà enregistré.',
+    'payment-status':
+      'Indique d\'où vient le paiement : saisi à la main, importé depuis la banque, ou marqué comme vérifié. Cela n\'influence pas les calculs.',
     'payments-list':
-      'Tous vos virements enregistrés. Modifiez ou supprimez une ligne via la colonne Actions. Le statut indique l\'origine (import CSV ou saisie manuelle).',
+      'Tous vos paiements. L\'icône crayon ouvre la fiche de modification. Le menu Type permet de changer rapidement virement, espèce, nature… Les montants négatifs correspondent à un remboursement au locataire.',
     'payments-csv':
-      'Importez un CSV exporté depuis votre banque (relevé de compte), ou glissez-déposez le fichier n\'importe où sur la page. L\'application repère les virements du locataire grâce aux émetteurs configurés. Les doublons sont exclus.',
+      'Importez le fichier CSV exporté depuis votre banque, ou déposez-le n\'importe où sur la page. L\'application repère les encaissements du locataire grâce aux noms configurés dans Paramètres. Les doublons sont ignorés.',
     'payments-demo-csv':
-      'En mode démonstration uniquement : téléchargez le relevé bancaire fictif, puis importez-le comme un export banque. Environ une dizaine de virements locataire seront proposés à l\'insertion (mai 2026 et mois suivants absents des données initiales). Les lignes déjà enregistrées apparaissent comme doublons ; salaire, assurance et autres opérations sont ignorées.',
+      'Uniquement en mode démo : téléchargez un faux relevé bancaire, puis importez-le comme un vrai fichier CSV pour tester la sélection des lignes.',
     'payments-manual':
-      'Ajoutez un virement un par un si vous n\'avez pas de fichier CSV, ou pour corriger une saisie.',
+      'Ajoutez un paiement un par un : date, montant, type (virement, espèce…). Un montant négatif = remboursement au locataire.',
     'settings-auto-save':
-      'Les paramètres (hors SMTP et Mon compte) sont enregistrés automatiquement toutes les 30 secondes après modification, à la sortie de l\'onglet Paramètres et avant fermeture de la page. Le bouton flottant Enregistrer force une sauvegarde immédiate.',
+      'Vos paramètres se sauvegardent automatiquement toutes les 30 secondes. Le bouton Enregistrer en bas à droite force une sauvegarde immédiate.',
     'settings-lease':
-      'Date de début du bail et jour habituel du virement (souvent le 1er, 5 ou 10). Ces valeurs servent aux calculs du tableau de bord et aux statuts « en cours » / retard.',
+      'Date de début du bail et jour habituel de paiement du loyer (souvent le 1er du mois). Sert au calcul des retards et des statuts.',
     'settings-bailleur':
-      'Vos coordonnées en tant que propriétaire. Elles apparaissent sur la quittance et dans les mails via les mots-clés {{bailleur.*}}.',
+      'Vos coordonnées de propriétaire. Elles apparaissent sur les quittances et dans les e-mails.',
     'settings-locataire':
-      'Coordonnées du locataire. Elles apparaissent sur la quittance et dans les mails via les mots-clés {{locataire.*}}.',
+      'Coordonnées du locataire, reprises sur les quittances et les e-mails.',
     'settings-signature':
-      'Scan ou photo de votre signature (PNG, JPG, WebP ou GIF, max. 5 Mo). Placée en bas de la quittance (mot-clé {{signatureHtml}}). Vous pouvez restaurer la signature par défaut.',
+      'Image de votre signature (photo ou scan, max. 5 Mo). Elle est placée en bas de la quittance. Vous pouvez revenir à la signature par défaut.',
     'settings-emitters':
-      'Pour l\'import CSV : nom du locataire tel qu\'affiché dans l\'app, puis motifs à chercher dans le libellé bancaire (un par ligne, ex. DUPONT ou LOYER). La référence bancaire extraite évite les doublons.',
+      'Pour l\'import bancaire : le nom du locataire tel que vous le connaissez, puis les mots à chercher dans le libellé de la banque (un par ligne, ex. DUPONT ou LOYER).',
     'settings-prices':
-      'Loyer hors charges et charges locatives par palier, avec date d\'application. Le total (loyer + charges) détermine le montant attendu chaque mois. Les quittances détaillent cette répartition (cf. service-public.fr/particuliers/vosdroits/R31936).',
+      'Montant du loyer et des charges, avec la date à partir de laquelle chaque palier s\'applique. Le total sert aux calculs du tableau de bord et aux quittances.',
     'settings-mail':
-      'Destinataires des e-mails (À, CC, CCI) et signature texte (mot-clé {{signature}}). Le corps et l\'objet se modifient dans l\'onglet Mail.',
+      'Adresses e-mail en copie (À, CC, CCI) et texte de signature pour vos messages.',
     'settings-templates':
-      'Modèles enregistrés sur le serveur. Les modèles <strong>complet</strong> et <strong>court</strong> sont fournis en lecture seule (aperçu et export). Dupliquez-les via « + Nouveau modèle » ou importez un fichier pour créer une variante. Édition dans les onglets Quittance et Mail.',
+      'Modèles de quittance et de mail enregistrés sur le serveur. Les modèles « complet » et « court » sont fournis prêts à l\'emploi ; dupliquez-les pour créer votre propre version.',
     'settings-mail-oauth':
-      'Connectez Gmail ou Outlook pour envoyer un mail avec la quittance PDF jointe, ou l\'enregistrer en brouillon dans votre messagerie. Si le compte était connecté avant une mise à jour, déconnectez puis reconnectez pour activer les brouillons. Connexion mail distincte de votre compte Loyer Manager.',
+      'Connectez Gmail ou Outlook pour envoyer un e-mail avec la quittance en pièce jointe, ou l\'enregistrer en brouillon dans votre messagerie.',
     'settings-mail-smtp':
-      'Alternative sans OAuth : serveur SMTP (OVH, Free, Orange…). Port 587 + TLS est le cas le plus courant. Mot de passe SMTP chiffré sur le serveur. Pas de brouillon dans la boîte mail — utilisez EML + PDF. Si Gmail/Outlook OAuth est connecté, OAuth est prioritaire à l\'envoi.',
+      'Envoi direct par votre hébergeur mail (OVH, Free, Orange…), sans passer par Gmail ou Outlook. Port 587 avec sécurité TLS est le plus courant.',
     'settings-data':
-      'Clé d\'accès technique (legacy) : affichée uniquement si aucun compte utilisateur n\'existe encore ou si l\'administrateur l\'a configurée. Une fois connecté via login.html, la session PHP protège l\'API.',
+      'Clé technique réservée aux cas particuliers (première installation ou configuration avancée). En usage normal, connectez-vous avec votre compte.',
     'settings-backup-json':
-      'Exporte ou importe le fichier <code>loyer-data.json</code> (paramètres, virements, registre des modèles). L\'import vérifie le format puis affiche un résumé avant remplacement. Les sauvegardes chiffrées (export profil v2) passent par <strong>Mon compte</strong>. Glisser-déposer un <code>.json</code> sur la page fonctionne aussi.',
+      'Télécharge ou restaure un fichier contenant vos paramètres et paiements. Vous pouvez aussi déposer un fichier .json sur la page. Pour une sauvegarde complète chiffrée, utilisez Mon compte.',
     'settings-account':
-      'Déconnexion, changement de passphrase (compte local), export/import du profil complet (JSON métier + OAuth mail, SMTP, historique SQLite), suppression des données ou du compte utilisateur.',
+      'Déconnexion, changement de mot de passe, export ou import du profil complet, suppression des données ou du compte.',
     'auth-passphrase':
-      'Votre secret de connexion, idéalement une phrase longue et mémorable (plusieurs mots). Privilégiez la longueur plutôt que la complexité : majuscule, chiffre ou caractère spécial ne sont pas obligatoires. Minimum 8 caractères. Distinct du mot de passe de sauvegarde utilisé pour chiffrer les exports.',
+      'Mot de passe de connexion à Loyer Manager. Privilégiez une phrase longue et facile à retenir (8 caractères minimum). Distinct du mot de passe de sauvegarde.',
     'auth-backup-restore':
-      'Importe une sauvegarde exportée depuis Mon compte (format v2 chiffré). Saisissez le mot de passe de sauvegarde choisi à l\'export, puis créez votre compte (local ou Google/Microsoft). L\'identité OAuth prouve qui vous êtes ; le mot de passe de sauvegarde protège le fichier volé. Les tokens OAuth mail/SMTP ne sont restaurés que si le serveur utilise la même encryption_key.',
+      'Restaure une sauvegarde exportée depuis Mon compte. Saisissez le mot de passe de sauvegarde choisi lors de l\'export, puis créez ou reconnectez votre compte.',
     'mail-period':
-      'Mois ou période via la barre sous le menu (timeline incluse). En plage, le mail utilise {{periodeText}} et le PDF joint contient toutes les quittances de la période.',
+      'Le mois ou la période choisi en haut de page détermine le contenu du mail et de la quittance jointe.',
     'mail-edit':
-      'Mots-clés : {{periodeText}}, {{moisDebutText}}, {{moisFinText}}, {{texteQuittancesJointes}}, {{paiement}}, etc. En plage, {{periodeText}} affiche « janvier 2025 → juin 2025 ». Panneau Mots-clés à droite en mode édition.',
+      'Personnalisez l\'objet et le corps du message. Les mots-clés à droite (période, montant, locataire…) sont remplacés automatiquement.',
     'quittance-period':
-      'Mois ou période via la barre sous le menu. En plage, l\'aperçu et les exports PDF/DOCX/HTML génèrent une quittance par mois.',
+      'Le mois ou la période choisi en haut de page détermine la quittance affichée et exportée.',
     'quittance-edit':
-      'Les modèles complet et court sont en lecture seule. Dupliquez-les via « Nouveau modèle… » ou importez un .html. Les modèles personnalisés s\'éditent normalement ; enregistrement automatique en revenant à l\'aperçu. Panneau Mots-clés à droite.',
+      'Les modèles de base sont protégés : dupliquez-les pour créer le vôtre. L\'enregistrement se fait en revenant à l\'aperçu.',
     'quittance-export':
-      'PDF (envoi courant), DOCX (Word), HTML (page web) pour le mois ou la période sélectionnée. « Exporter plusieurs… » ouvre une plage manuelle distincte.',
+      'PDF pour envoyer ou imprimer, Word (DOCX) pour modifier, HTML pour une page web. « Exporter plusieurs… » génère un fichier pour toute une plage de mois.',
     'batch-quittance-export':
-      'Plage Du/Au (intersectée avec la période de bail). Le modèle sélectionné dans l\'onglet Quittance est utilisé. Au-delà de 24 mois, l\'export peut être lent.',
+      'Choisissez une plage de mois : un seul fichier PDF, Word ou HTML sera créé avec une quittance par mois. Au-delà de 24 mois, l\'opération peut prendre du temps.',
     'quittance-mail':
-      'Brouillon : mail + PDF dans Gmail/Outlook (relecture avant envoi). Envoyer : envoi immédiat (OAuth ou SMTP). EML + PDF : fichier à ouvrir dans votre messagerie. mailto : ouvre le client mail sans pièce jointe automatique.',
+      'Brouillon : prépare le mail dans Gmail ou Outlook pour relecture. Envoyer : envoi immédiat. EML + PDF : fichier à ouvrir dans votre messagerie.',
     'history-activity-log':
-      'Journal : mails envoyés, brouillons créés, imports CSV, exports PDF/DOCX. Filtrez par type, exportez en CSV ou purgez (RGPD). Conservation réglable (défaut 24 mois, 0 = illimité).',
+      'Retrace les envois de mail, imports bancaires et exports de quittances. Filtrez, exportez en CSV ou effacez le journal.',
     'privacy':
-      'Données : loyers, journal d\'activité, tokens OAuth chiffrés. Pas de publicité ni de tracking. Cookie de session PHP à la connexion. Export ou purge depuis Historique et Mon compte.',
+      'Vos données (loyers, paiements, journal) restent sur votre serveur. Pas de publicité ni de suivi. Cookie de session uniquement pendant votre connexion.',
     'csv-import-modal':
-      'Cochez les virements à importer. Les doublons (même référence bancaire ou montant+date) sont grisés. « Tout sélectionner » ignore les doublons. Validez avec « Importer la sélection ».',
+      'Cochez les lignes à enregistrer. Les doublons déjà présents apparaissent grisés. Validez avec « Importer la sélection ».',
     'payment-form-modal':
-      'Date et montant reçus. L\'émetteur doit correspondre à un nom configuré dans Paramètres. Libellé et référence bancaire optionnels ; la référence évite les doublons à l\'import CSV.'
+      'Date et montant du paiement (négatif = remboursement). Choisissez le type : virement, espèce, nature… L\'émetteur correspond au nom du locataire configuré dans Paramètres.'
   };
 
   /** Échappe texte popover aide. */
@@ -141,11 +204,14 @@
 
   /** Ferme popover ouvert et reset aria-expanded. */
   function closePopover() {
+    var trigger = openTriggerEl;
     if (openPopoverEl && openPopoverEl.parentNode) {
       openPopoverEl.parentNode.removeChild(openPopoverEl);
     }
-    if (openTriggerEl) {
-      openTriggerEl.setAttribute('aria-expanded', 'false');
+    if (trigger) {
+      trigger.setAttribute('aria-expanded', 'false');
+      trigger.removeAttribute('aria-controls');
+      if (typeof trigger.focus === 'function') trigger.focus();
     }
     openPopoverEl = null;
     openTriggerEl = null;
@@ -181,7 +247,9 @@
 
     var popover = document.createElement('div');
     popover.className = 'help-popover';
-    popover.setAttribute('role', 'tooltip');
+    popover.setAttribute('role', 'dialog');
+    popover.setAttribute('aria-modal', 'false');
+    popover.setAttribute('aria-label', 'Aide contextuelle');
     popover.id = 'help-popover-' + (id || 'custom');
     popover.innerHTML =
       '<p class="help-popover-text">' + escapeHtml(text) + '</p>' +
@@ -191,11 +259,13 @@
     positionPopover(popover, trigger);
 
     trigger.setAttribute('aria-expanded', 'true');
-    trigger.setAttribute('aria-describedby', popover.id);
+    trigger.setAttribute('aria-controls', popover.id);
     openPopoverEl = popover;
     openTriggerEl = trigger;
 
-    popover.querySelector('.help-popover-close').addEventListener('click', closePopover);
+    var closeBtn = popover.querySelector('.help-popover-close');
+    closeBtn.addEventListener('click', closePopover);
+    closeBtn.focus();
   }
 
   /** Génère HTML bouton ? (usage dynamique rare). */
@@ -214,7 +284,10 @@
   function bindHelpTriggers(root) {
     (root || document).querySelectorAll('.help-trigger:not([data-help-bound])').forEach(function (btn) {
       btn.setAttribute('data-help-bound', '1');
-      if (!btn.getAttribute('aria-label') && btn.getAttribute('data-help-id')) {
+      var id = btn.getAttribute('data-help-id');
+      if (id && HELP_LABELS[id]) {
+        btn.setAttribute('aria-label', HELP_LABELS[id]);
+      } else if (!btn.getAttribute('aria-label')) {
         btn.setAttribute('aria-label', 'Afficher l\'aide');
       }
     });
@@ -337,6 +410,7 @@
 
   global.LoyerHelp = {
     TEXTS: TEXTS,
+    HELP_LABELS: HELP_LABELS,
     init: init,
     refresh: refresh,
     closePopover: closePopover,

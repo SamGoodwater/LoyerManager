@@ -177,6 +177,12 @@
               delay +
               ' j</span>'
             : '';
+        var note = LoyerStore.getMonthNote(App.state.data, r.year, r.month);
+        var noteMark = note
+          ? ' <span class="month-note-indicator" title="' +
+            App.escapeHtml(note) +
+            '" aria-label="Note interne">📝</span>'
+          : '';
         return (
           '<tr class="' +
           classes +
@@ -185,8 +191,21 @@
           '" data-month="' +
           r.month +
           '" role="button" tabindex="0">' +
+          '<td class="col-row-action">' +
+          App.renderRowIconButton({
+            extraClass: 'btn-month-detail',
+            label: 'Détail paiements et note du mois',
+            attrs:
+              'data-year="' +
+              r.year +
+              '" data-month="' +
+              r.month +
+              '"'
+          }) +
+          '</td>' +
           '<td>' +
           LoyerCalc.formatMonthLong(r.year, r.month) +
+          noteMark +
           delayHint +
           '</td>' +
           '<td>' +
@@ -217,13 +236,13 @@
         );
       })
       .join('') ||
-      '<tr><td colspan="6" class="empty-msg">Aucune donnée pour cette période</td></tr>';
+      '<tr><td colspan="7" class="empty-msg">Aucune donnée pour cette période</td></tr>';
 
     var tableHint = App.$('#dash-table-hint');
     if (tableHint) {
       tableHint.textContent = rangeActive
-        ? selectionRows.length + ' mois dans la plage — cliquez une ligne pour le détail virements.'
-        : 'Cliquez sur une ligne pour sélectionner un mois.';
+        ? selectionRows.length + ' mois dans la plage — clic = sélection ; icône crayon = détail mois.'
+        : 'Clic = sélectionner un mois ; icône crayon = détail paiements et note interne.';
     }
 
     var focusLabel = LoyerCalc.formatMonthLong(App.state.focusYear, App.state.focusMonth);
@@ -235,14 +254,14 @@
     var paymentsHint = App.$('#dash-payments-hint');
     if (paymentsHint) {
       paymentsHint.textContent = rangeActive
-        ? 'Virements reçus pour ce mois (période : ' + periodLabel + ').'
-        : 'Virements reçus ce mois-ci.';
+        ? 'Paiements enregistrés pour ce mois (période : ' + periodLabel + ').'
+        : 'Paiements enregistrés ce mois-ci.';
     }
 
     var focusDetail = LoyerCalc.getMonthDetail(App.state.data, App.state.focusYear, App.state.focusMonth);
     var monthStatsHeading = App.$('#dash-month-stats-heading');
     if (monthStatsHeading) {
-      monthStatsHeading.classList.toggle('hidden', !rangeActive);
+      monthStatsHeading.classList.toggle('hidden', !focusDetail.row);
     }
     if (rangeActive) {
       if (focusDetail.row) {
@@ -306,52 +325,71 @@
 
     App.$('#payments-month-table tbody').innerHTML = dashPayments
       .map(function (p) {
-        return '<tr>' + App.renderPaymentRowCells(p, { dataLabels: true }) + '</tr>';
+        return (
+          '<tr>' +
+          '<td class="col-row-action">' +
+          App.renderRowIconButton({
+            extraClass: 'btn-edit-pay-dash',
+            label: 'Modifier le paiement',
+            attrs: 'data-id="' + App.escapeHtml(p.id) + '"'
+          }) +
+          '</td>' +
+          App.renderPaymentRowCells(p, { dataLabels: true }) +
+          '</tr>'
+        );
       })
       .join('') ||
-      '<tr class="payments-empty-row"><td colspan="7" class="empty-msg">Aucun virement ce mois</td></tr>';
+      '<tr class="payments-empty-row"><td colspan="9" class="empty-msg">Aucun paiement ce mois</td></tr>';
 
-    var canvasStack = App.$('#chart-monthly-stack');
-    var canvasYear = App.$('#chart-yearly-bar');
-    var canvasLine = App.$('#chart-balance');
-    var stackLabel = App.$('#dash-chart-stack-label');
-    var yearLabel = App.$('#dash-chart-year-label');
-    var balanceLabel = App.$('#dash-chart-balance-label');
-    var balanceHint = App.$('#dash-chart-balance-hint');
-    if (stackLabel) stackLabel.textContent = periodLabel;
+    var canvasOverview = App.$('#chart-overview');
+    var overviewLabel = App.$('#dash-chart-overview-label');
+    var overviewHint = App.$('#dash-chart-overview-hint');
+    var yearNav = App.$('#dash-chart-year-nav');
     var chartYear = App.getDashboardChartYear(allRows);
-    if (yearLabel) yearLabel.textContent = String(chartYear);
-    if (balanceLabel) balanceLabel.textContent = rangeActive ? 'Solde cumulé — ' + periodLabel : 'Solde cumulé';
-    if (balanceHint) {
-      balanceHint.textContent = rangeActive
-        ? 'Solde cumulé sur les mois de la plage sélectionnée.'
-        : 'Solde cumulé jusqu\'au mois sélectionné.';
+    var chartRows;
+    var chartTitle;
+
+    if (rangeActive) {
+      chartRows = selectionRows;
+      chartTitle = periodLabel;
+      if (overviewLabel) overviewLabel.textContent = periodLabel;
+      if (overviewHint) {
+        overviewHint.textContent =
+          'Plage sélectionnée — clic sur un mois pour afficher ses paiements ci-dessus.';
+      }
+      if (yearNav) yearNav.classList.add('hidden');
+    } else {
+      chartRows = allRows.filter(function (r) {
+        return r.year === chartYear;
+      });
+      chartTitle = 'Année ' + chartYear;
+      if (overviewLabel) overviewLabel.textContent = String(chartYear);
+      if (overviewHint) {
+        overviewHint.textContent =
+          'Total dû (ligne grise), paiements empilés (vert zébré), remboursements (orange), manque (rouge), excédent (bleu), solde cumulé (tirets). Icône crayon dans le tableau mensuel = détail mois.';
+      }
+      if (yearNav) yearNav.classList.remove('hidden');
+      var years = LoyerCalc.getAvailableYears(allRows);
+      var yearIdx = years.indexOf(chartYear);
+      var prevBtn = App.$('#btn-chart-year-prev');
+      var nextBtn = App.$('#btn-chart-year-next');
+      if (prevBtn) prevBtn.disabled = yearIdx <= 0;
+      if (nextBtn) nextBtn.disabled = yearIdx === -1 || yearIdx >= years.length - 1;
     }
 
-    var balanceRows = rangeActive
-      ? selectionRows
-      : allRows.filter(function (r) {
-          var key = LoyerCalc.monthKey(r.year, r.month);
-          var sel = LoyerCalc.monthKey(App.state.selectedYear, App.state.selectedMonth);
-          return key <= sel;
-        });
-
-    var yearRows = allRows.filter(function (r) {
-      return r.year === chartYear;
-    });
-
-    if (canvasStack && typeof Chart !== 'undefined') {
-      LoyerCharts.renderMonthlyStackedBar(canvasStack, selectionRows, periodLabel);
-      LoyerCharts.renderYearlyBar(canvasYear, yearRows, String(chartYear));
-      LoyerCharts.renderBalanceLine(canvasLine, balanceRows, periodLabel);
+    if (canvasOverview && typeof Chart !== 'undefined' && chartRows.length) {
+      LoyerCharts.renderOverviewChart(canvasOverview, {
+        rows: chartRows,
+        payments: App.state.data.payments || [],
+        title: chartTitle,
+        highlightMonth: { year: App.state.focusYear, month: App.state.focusMonth },
+        onMonthClick: function (year, month) {
+          App.handleDashboardMonthClick(year, month);
+        }
+      });
+    } else if (canvasOverview && typeof Chart !== 'undefined') {
+      LoyerCharts.destroyAll();
     }
-
-    var years = LoyerCalc.getAvailableYears(allRows);
-    var yearIdx = years.indexOf(chartYear);
-    var prevBtn = App.$('#btn-chart-year-prev');
-    var nextBtn = App.$('#btn-chart-year-next');
-    if (prevBtn) prevBtn.disabled = yearIdx <= 0;
-    if (nextBtn) nextBtn.disabled = yearIdx === -1 || yearIdx >= years.length - 1;
 
     App.renderDashboardHeatmap(allRows);
   }
@@ -480,6 +518,116 @@
       });
   }
 
+  /** Date préremplie pour un paiement dans un mois (jour théorique du loyer). */
+  function monthDetailPresetDate(year, month) {
+    var settings = App.state.data.settings || {};
+    var dueDay = settings.rentDueDay || 1;
+    var lastDay = new Date(year, month, 0).getDate();
+    var day = Math.min(dueDay, lastDay);
+    return (
+      year +
+      '-' +
+      String(month).padStart(2, '0') +
+      '-' +
+      String(day).padStart(2, '0')
+    );
+  }
+
+  /** Rafraîchit le tableau paiements dans la modale détail mois. */
+  function renderMonthDetailPayments() {
+    var md = App.state.monthDetail;
+    if (!md) return;
+    var tbody = App.$('#month-detail-payments-table tbody');
+    if (!tbody) return;
+    var list = LoyerCalc.filterPaymentsInMonth(
+      App.state.data.payments || [],
+      md.year,
+      md.month
+    );
+    var refreshCtx = {
+      onSaved: function () {
+        renderMonthDetailPayments();
+        App.renderDashboard();
+      }
+    };
+    tbody.innerHTML =
+      list
+        .map(function (p) {
+          return (
+            '<tr>' +
+            '<td class="col-row-action">' +
+            App.renderRowIconButton({
+              extraClass: 'btn-edit-pay-month',
+              label: 'Modifier le paiement',
+              attrs: 'data-id="' + App.escapeHtml(p.id) + '"'
+            }) +
+            '</td>' +
+            App.renderPaymentRowCells(p, { compact: true }) +
+            '<td class="inline-actions">' +
+            '<button type="button" class="btn btn-danger btn-sm btn-del-pay-month" data-id="' +
+            p.id +
+            '"><i class="fa-solid fa-trash" aria-hidden="true"></i>Suppr.</button>' +
+            '</td></tr>'
+          );
+        })
+        .join('') ||
+      '<tr><td colspan="8" class="empty-msg">Aucun paiement ce mois</td></tr>';
+
+    tbody.querySelectorAll('.btn-edit-pay-month').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var pay = App.state.data.payments.find(function (x) {
+          return x.id === btn.dataset.id;
+        });
+        if (pay) App.openPaymentModal(pay, refreshCtx);
+      });
+    });
+
+    tbody.querySelectorAll('.btn-del-pay-month').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        LoyerNotify.confirm('Supprimer ce paiement ?', {
+          confirmLabel: 'Supprimer',
+          danger: true
+        }).then(function (ok) {
+          if (!ok) return;
+          App.state.data.payments = App.state.data.payments.filter(function (x) {
+            return x.id !== btn.dataset.id;
+          });
+          App.persist();
+          renderMonthDetailPayments();
+          App.renderDashboard();
+          App.renderPayments();
+          LoyerNotify.success('Paiement supprimé.');
+        });
+      });
+    });
+  }
+
+  /** Ouvre la modale détail mois (paiements + note interne). */
+  function openMonthDetailModal(year, month) {
+    App.state.monthDetail = { year: year, month: month };
+    App.$('#modal-month-detail-title').textContent =
+      'Paiements — ' + LoyerCalc.formatMonthLong(year, month);
+    App.$('#month-detail-note').value = LoyerStore.getMonthNote(App.state.data, year, month);
+    var noteExport = App.$('#month-detail-note-export');
+    if (noteExport) {
+      noteExport.textContent = App.$('#month-detail-note').value.trim() || '—';
+    }
+    renderMonthDetailPayments();
+    App.$('#modal-month-detail').classList.remove('hidden');
+    App.handleDashboardMonthClick(year, month);
+  }
+
+  /** Ferme la modale détail mois. */
+  function closeMonthDetailModal() {
+    App.state.monthDetail = null;
+    App.$('#modal-month-detail').classList.add('hidden');
+  }
+
+  App.renderMonthDetailPayments = renderMonthDetailPayments;
+  App.openMonthDetailModal = openMonthDetailModal;
+  App.closeMonthDetailModal = closeMonthDetailModal;
+  App.monthDetailPresetDate = monthDetailPresetDate;
+
   App.renderMonthStatusBadge = renderMonthStatusBadge;
   App.heatmapCellHtml = heatmapCellHtml;
   App.renderDashboardHeatmap = renderDashboardHeatmap;
@@ -490,15 +638,18 @@
   App.closeBatchExportModal = closeBatchExportModal;
   App.runBatchExport = runBatchExport;
 
-  /** Attache clics heatmap, impression, export groupé, graphiques. */
+  /** Attache clics heatmap, export groupé, graphiques. */
   function bindDashboardEvents() {
-    App.bindIf('#btn-print-report', function (el) {
-      el.addEventListener('click', function () {
-        window.print();
-      });
-    });
-
     App.$('#monthly-table').addEventListener('click', function (e) {
+      var detailBtn = e.target.closest('.btn-month-detail');
+      if (detailBtn) {
+        e.stopPropagation();
+        App.openMonthDetailModal(
+          parseInt(detailBtn.dataset.year, 10),
+          parseInt(detailBtn.dataset.month, 10)
+        );
+        return;
+      }
       var row = e.target.closest('tr[data-month]');
       if (!row) return;
       App.handleDashboardMonthClick(parseInt(row.dataset.year, 10), parseInt(row.dataset.month, 10));
@@ -560,6 +711,53 @@
       if (!row) return;
       e.preventDefault();
       App.handleDashboardMonthClick(parseInt(row.dataset.year, 10), parseInt(row.dataset.month, 10));
+    });
+
+    App.$$('[data-month-modal-close]').forEach(function (btn) {
+      btn.addEventListener('click', closeMonthDetailModal);
+    });
+
+    App.bindIf('#payments-month-table', function (el) {
+      el.addEventListener('click', function (e) {
+        var editBtn = e.target.closest('.btn-edit-pay-dash');
+        if (!editBtn) return;
+        var pay = App.state.data.payments.find(function (x) {
+          return x.id === editBtn.dataset.id;
+        });
+        if (pay) App.openPaymentModal(pay);
+      });
+    });
+
+    App.bindIf('#btn-month-detail-save-note', function (el) {
+      el.addEventListener('click', function () {
+        var md = App.state.monthDetail;
+        if (!md) return;
+        LoyerStore.setMonthNote(
+          App.state.data,
+          md.year,
+          md.month,
+          App.$('#month-detail-note').value.trim()
+        );
+        var noteExport = App.$('#month-detail-note-export');
+        if (noteExport) noteExport.textContent = App.$('#month-detail-note').value.trim() || '—';
+        App.persist();
+        App.renderDashboard();
+        LoyerNotify.success('Note enregistrée.');
+      });
+    });
+
+    App.bindIf('#btn-month-detail-add-payment', function (el) {
+      el.addEventListener('click', function () {
+        var md = App.state.monthDetail;
+        if (!md) return;
+        App.openPaymentModal(null, {
+          presetDate: App.monthDetailPresetDate(md.year, md.month),
+          onSaved: function () {
+            renderMonthDetailPayments();
+            App.renderDashboard();
+          }
+        });
+      });
     });
   }
 

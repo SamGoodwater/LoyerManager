@@ -199,6 +199,7 @@
     if (!data.version) data.version = 1;
     if (!data.settings) data.settings = createDefaultData().settings;
     if (!Array.isArray(data.payments)) data.payments = [];
+    if (!data.monthNotes || typeof data.monthNotes !== 'object') data.monthNotes = {};
     if (!Array.isArray(data.settings.emitters)) data.settings.emitters = [];
     normalizeEmitterProfiles(data.settings);
     if (!Array.isArray(data.settings.priceHistory)) data.settings.priceHistory = [];
@@ -260,7 +261,29 @@
     if (!p.status) {
       p.status = p.bankRef || p.bankLabel ? 'importé' : 'manuel';
     }
+    if (global.LoyerPaymentTags) {
+      p.tag = global.LoyerPaymentTags.normalizeTag(p.tag);
+    } else if (!p.tag) {
+      p.tag = 'virement';
+    }
+    if (p.amount != null) p.amount = Number(p.amount) || 0;
     return p;
+  }
+
+  /** Commentaire interne d'un mois (clé YYYY-MM). */
+  function getMonthNote(data, year, month) {
+    if (!data || !data.monthNotes || !global.LoyerCalc) return '';
+    return data.monthNotes[global.LoyerCalc.monthKey(year, month)] || '';
+  }
+
+  /** Enregistre ou supprime le commentaire interne d'un mois. */
+  function setMonthNote(data, year, month, text) {
+    if (!data || !global.LoyerCalc) return;
+    if (!data.monthNotes) data.monthNotes = {};
+    var key = global.LoyerCalc.monthKey(year, month);
+    text = String(text || '').trim();
+    if (text) data.monthNotes[key] = text;
+    else delete data.monthNotes[key];
   }
 
   /** serialize. */
@@ -831,6 +854,8 @@
     STORAGE_KEY: STORAGE_KEY,
     CorruptDataFileError: CorruptDataFileError,
     normalizePayment: normalizePayment,
+    getMonthNote: getMonthNote,
+    setMonthNote: setMonthNote,
     createDefaultData: createDefaultData,
     normalizeData: normalizeData,
     load: loadFromLocalStorage,

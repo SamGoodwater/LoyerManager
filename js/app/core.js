@@ -21,6 +21,9 @@
     focusMonth: new Date().getMonth() + 1,
     dashboardChartYear: new Date().getFullYear(),
     editingPaymentId: null,
+    paymentModalContext: null,
+    monthDetail: null,
+    paymentFilters: null,
     csvImportItems: [],
     quittanceUi: {
       selectedId: null,

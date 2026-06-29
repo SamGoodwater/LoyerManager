@@ -143,6 +143,7 @@
       if (card) card.classList.add('hidden');
       if (intro) intro.classList.add('hidden');
       App.updateServerApiKeyBlock(false);
+      if (App.refreshSettingsNav) App.refreshSettingsNav();
       return;
     }
 
@@ -167,6 +168,7 @@
     el.className = 'data-file-status data-file-status-warn';
     if (intro) intro.classList.add('hidden');
     App.updateServerApiKeyBlock(false);
+    if (App.refreshSettingsNav) App.refreshSettingsNav();
   }
 
   /** Gestionnaire d'événement : handle corrupt file. */

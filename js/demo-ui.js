@@ -25,6 +25,9 @@
     document.querySelectorAll('[data-demo-hide]').forEach(function (el) {
       el.classList.add('hidden');
     });
+    if (global.LoyerApp && global.LoyerApp.refreshSettingsNav) {
+      global.LoyerApp.refreshSettingsNav();
+    }
     document.querySelectorAll('[data-demo-only]').forEach(function (el) {
       el.classList.remove('hidden');
       el.removeAttribute('hidden');

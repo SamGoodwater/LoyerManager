@@ -312,8 +312,12 @@
         if (panel) showPanelFn(panel);
         if (anchor) {
           setTimeout(function () {
-            var el = document.getElementById(anchor);
-            if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (panel === 'panel-settings' && global.LoyerApp && global.LoyerApp.scrollToSettingsSection) {
+              global.LoyerApp.scrollToSettingsSection(anchor);
+            } else {
+              var el = document.getElementById(anchor);
+              if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
           }, 80);
         }
         return;

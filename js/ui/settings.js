@@ -138,6 +138,7 @@
 
     renderAccountPanel();
     renderSmtpSettingsForm();
+    App.refreshSettingsNav();
   }
 
   /** Ligne statut compte + formulaire changement passphrase. */
@@ -373,6 +374,88 @@
   App.saveServerApiKey = saveServerApiKey;
   App.renderSignaturePreview = renderSignaturePreview;
   App.renderSettings = renderSettings;
+
+  var settingsNavObserver = null;
+
+  /** Met en surbrillance le lien actif du sommaire paramètres. */
+  function setActiveSettingsNavLink(activeLink) {
+    document.querySelectorAll('.settings-nav-link').forEach(function (link) {
+      var selected = link === activeLink;
+      link.classList.toggle('is-active', selected);
+      if (selected) link.setAttribute('aria-current', 'true');
+      else link.removeAttribute('aria-current');
+    });
+  }
+
+  /** Affiche ou masque les entrées du sommaire selon les sections visibles. */
+  function refreshSettingsNav() {
+    var dataNavItem = document.querySelector('[data-settings-nav-item="settings-data-section"]');
+    var dataSection = document.getElementById('settings-data-section');
+    if (dataNavItem && dataSection) {
+      dataNavItem.classList.toggle('hidden', dataSection.classList.contains('hidden'));
+    }
+  }
+
+  /** Défile vers une section paramètres (utilisé par l'aide intégrée). */
+  function scrollToSettingsSection(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    var link = document.querySelector('.settings-nav-link[href="#' + id + '"]');
+    if (link) setActiveSettingsNavLink(link);
+  }
+
+  /** Sommaire latéral : navigation et surbrillance au défilement. */
+  function bindSettingsNav() {
+    var nav = document.querySelector('.settings-nav');
+    if (!nav) return;
+
+    var links = nav.querySelectorAll('.settings-nav-link');
+    var sections = [];
+
+    links.forEach(function (link) {
+      var id = (link.getAttribute('href') || '').replace(/^#/, '');
+      if (!id) return;
+      var section = document.getElementById(id);
+      if (!section) return;
+      sections.push({ link: link, section: section });
+      link.addEventListener('click', function (e) {
+        e.preventDefault();
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setActiveSettingsNavLink(link);
+      });
+    });
+
+    if (settingsNavObserver) {
+      settingsNavObserver.disconnect();
+      settingsNavObserver = null;
+    }
+
+    if ('IntersectionObserver' in window && sections.length) {
+      settingsNavObserver = new IntersectionObserver(
+        function (entries) {
+          var visible = entries.filter(function (entry) {
+            return entry.isIntersecting;
+          });
+          if (!visible.length) return;
+          visible.sort(function (a, b) {
+            return b.intersectionRatio - a.intersectionRatio;
+          });
+          var match = nav.querySelector('[href="#' + visible[0].target.id + '"]');
+          if (match) setActiveSettingsNavLink(match);
+        },
+        { root: null, rootMargin: '-15% 0px -55% 0px', threshold: [0, 0.15, 0.4] }
+      );
+      sections.forEach(function (item) {
+        settingsNavObserver.observe(item.section);
+      });
+    }
+
+    refreshSettingsNav();
+  }
+
+  App.refreshSettingsNav = refreshSettingsNav;
+  App.scrollToSettingsSection = scrollToSettingsSection;
   App.collectSettingsFromForm = collectSettingsFromForm;
 
   var settingsDirty = false;
@@ -468,6 +551,7 @@
   /** Tous les écouteurs onglet Paramètres (compte, SMTP, listes). */
   function bindSettingsEvents() {
     bindSettingsAutoSave();
+    bindSettingsNav();
     App.$('#btn-save-settings').addEventListener('click', function () {
       saveSettings({ manual: true, refresh: true, notify: true });
     });

@@ -1,5 +1,9 @@
 /**
  * Persistance via api.php (serveur) + miroir localStorage.
+ *
+ * Schéma loyer-data.json (champ version) :
+ * - v1 : settings, payments ; mail.body/subject legacy ; pas de monthNotes ni payment.tag
+ * - v2 : monthNotes, payment.tag, emitterProfiles cohérents ; mail.body/subject retirés (→ templates)
  */
 (function (global) {
   'use strict';
@@ -7,11 +11,15 @@
   var STORAGE_KEY = 'loyerManagerData';
   var DATA_FILE_NAME = 'loyer-data.json';
   var DATA_FILE_PATH = 'data/' + DATA_FILE_NAME;
+  /** Version du schéma loyer-data.json — incrémenter à chaque migration incompatible. */
+  var LOYER_DATA_VERSION = 2;
 
   var writeTimer = null;
   var saveStatus = 'unknown';
   var saveStatusListeners = [];
   var pendingMailMigration = null;
+  var migrationPending = false;
+  var migrationNoticePending = false;
   var serverMode = false;
   var serverAuthRequired = false;
 
@@ -95,7 +103,7 @@
   /** Crée create default data. */
   function createDefaultData() {
     return {
-      version: 1,
+      version: LOYER_DATA_VERSION,
       settings: {
         leaseStart: '2024-01-01',
         rentDueDay: 1,
@@ -125,7 +133,8 @@
           signature: ''
         }
       },
-      payments: []
+      payments: [],
+      monthNotes: {}
     };
   }
 
@@ -193,10 +202,61 @@
     });
   }
 
+  /** v1 → v2 : notes mensuelles, tags paiement, statuts import, profils émetteurs. */
+  function migrateV1ToV2(data) {
+    if (!data.monthNotes || typeof data.monthNotes !== 'object' || Array.isArray(data.monthNotes)) {
+      data.monthNotes = {};
+    }
+    (data.payments || []).forEach(function (p) {
+      if (p && p.status === 'importe') {
+        p.status = 'importé';
+      }
+      normalizePayment(p);
+    });
+    if (data.settings) {
+      normalizeEmitterProfiles(data.settings);
+    }
+  }
+
+  /** Applique les migrations séquentielles jusqu'à LOYER_DATA_VERSION. */
+  function runMigrations(data) {
+    var version = Number(data.version) || 1;
+    if (version >= LOYER_DATA_VERSION) {
+      return false;
+    }
+    while (version < LOYER_DATA_VERSION) {
+      if (version === 1) {
+        migrateV1ToV2(data);
+        version = 2;
+      } else {
+        version = LOYER_DATA_VERSION;
+      }
+    }
+    data.version = LOYER_DATA_VERSION;
+    return true;
+  }
+
+  /** True si une migration vient d'être appliquée (consommé après chargement). */
+  function consumeMigrationPending() {
+    var v = migrationPending;
+    migrationPending = false;
+    return v;
+  }
+
+  /** Message utilisateur après migration (consommé une fois). */
+  function consumeMigrationNotice() {
+    var v = migrationNoticePending;
+    migrationNoticePending = false;
+    return v;
+  }
+
   /** Normalise le JSON métier (schéma, migrations légères). */
   function normalizeData(raw) {
     var data = raw && typeof raw === 'object' ? raw : createDefaultData();
-    if (!data.version) data.version = 1;
+    var sourceVersion = Number(data.version) || 1;
+    if (!data.version) {
+      data.version = sourceVersion;
+    }
     if (!data.settings) data.settings = createDefaultData().settings;
     if (!Array.isArray(data.payments)) data.payments = [];
     if (!data.monthNotes || typeof data.monthNotes !== 'object') data.monthNotes = {};
@@ -234,6 +294,7 @@
         body: data.settings.mail.body || '',
         subject: data.settings.mail.subject || ''
       };
+      migrationPending = true;
     }
     if (data.settings.mail.subject !== undefined) {
       delete data.settings.mail.subject;
@@ -246,6 +307,14 @@
     });
     if (global.LoyerTemplateManager) {
       global.LoyerTemplateManager.normalizeRegistry(data.settings);
+    }
+    if (runMigrations(data)) {
+      migrationPending = true;
+      migrationNoticePending = true;
+    } else if (sourceVersion < LOYER_DATA_VERSION) {
+      data.version = LOYER_DATA_VERSION;
+      migrationPending = true;
+      migrationNoticePending = true;
     }
     return data;
   }
@@ -458,38 +527,48 @@
     });
   }
 
+  /** Enregistre sur le serveur si migration ou sync modèles l'a modifié. */
+  function persistDataIfNeeded(out, extraDirty) {
+    var needsSave = consumeMigrationPending() || !!extraDirty;
+    if (!needsSave) {
+      return Promise.resolve(out);
+    }
+    saveToLocalStorage(out.data);
+    return saveNow(out.data).then(function () {
+      if (consumeMigrationNotice() && global.LoyerNotify) {
+        global.LoyerNotify.info('Fichier de données mis à jour au format actuel.');
+      }
+      return out;
+    });
+  }
+
   /** Initialise init from server. */
   function initFromServer() {
     return loadDataFromBackend()
       .then(function (out) {
         if (!serverMode || !global.LoyerTemplateManager) {
-          return out;
+          return persistDataIfNeeded(out, false);
         }
         return global.LoyerTemplateManager.syncRegistryFromDisk(out.data.settings).then(function (result) {
           if (result.changed) {
             out.data.settings = result.settings;
-            saveToLocalStorage(out.data);
-            return saveNow(out.data).then(function () {
-              return out;
-            });
+          }
+          return persistDataIfNeeded(out, result.changed);
+        });
+      })
+      .then(function (out) {
+        return migrateMailBodyFromData(out.data).then(function (mailMigrated) {
+          if (mailMigrated) {
+            migrationPending = true;
+            return persistDataIfNeeded(out, true);
           }
           return out;
         });
       })
       .then(function (out) {
-        return migrateMailBodyFromData(out.data).then(function (migrated) {
-          if (migrated) {
-            saveToLocalStorage(out.data);
-            return saveNow(out.data).then(function () {
-              out.mode = 'server';
-              setSaveStatus('saved');
-              return out;
-            });
-          }
-          out.mode = 'server';
-          setSaveStatus('saved');
-          return out;
-        });
+        out.mode = 'server';
+        setSaveStatus('saved');
+        return out;
       });
   }
 
@@ -522,6 +601,9 @@
       return global.LoyerServerApi.resetProfileData()
         .then(function () {
           return loadDataFromBackend();
+        })
+        .then(function (out) {
+          return persistDataIfNeeded(out, false);
         })
         .then(function (out) {
           return out.data;
@@ -676,6 +758,9 @@
                 return loadDataFromBackend();
               })
               .then(function (out) {
+                return persistDataIfNeeded(out, false);
+              })
+              .then(function (out) {
                 resolve(out.data);
               })
               .catch(reject);
@@ -788,6 +873,8 @@
       });
     }
     return chain.then(function (normalized) {
+      consumeMigrationPending();
+      consumeMigrationNotice();
       return saveNow(normalized);
     });
   }
@@ -852,6 +939,7 @@
 
   global.LoyerStore = {
     STORAGE_KEY: STORAGE_KEY,
+    LOYER_DATA_VERSION: LOYER_DATA_VERSION,
     CorruptDataFileError: CorruptDataFileError,
     normalizePayment: normalizePayment,
     getMonthNote: getMonthNote,

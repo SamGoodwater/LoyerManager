@@ -577,6 +577,94 @@ main {
   margin-bottom: 1rem;
 }
 
+.settings-layout {
+  display: grid;
+  grid-template-columns: minmax(11rem, 13.5rem) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.settings-nav {
+  position: sticky;
+  top: 1rem;
+  align-self: start;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  padding: 0.85rem 0.75rem;
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.settings-nav-title {
+  margin: 0 0 0.55rem;
+  padding: 0 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--slate-500);
+}
+
+.settings-nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.settings-nav-link {
+  display: block;
+  padding: 0.42rem 0.55rem;
+  border-radius: calc(var(--radius) - 2px);
+  color: var(--slate-700);
+  text-decoration: none;
+  font-size: 0.88rem;
+  line-height: 1.3;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.settings-nav-link:hover,
+.settings-nav-link:focus-visible {
+  background: var(--slate-100);
+  color: var(--text);
+  outline: none;
+}
+
+.settings-nav-link.is-active {
+  background: var(--blue-50);
+  color: var(--blue-800);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px var(--blue-200);
+}
+
+.settings-content {
+  min-width: 0;
+}
+
+.settings-content .card,
+.settings-content .grid-2,
+.settings-content .settings-intro-row {
+  scroll-margin-top: 1rem;
+}
+
+#settings-section-lease,
+#settings-section-parties,
+#settings-section-emitters,
+#settings-section-prices,
+#settings-templates-section,
+#settings-section-recipients,
+#settings-mail-oauth,
+#settings-mail-smtp,
+#settings-backup-json,
+#settings-data-section,
+#settings-account {
+  scroll-margin-top: 1rem;
+}
+
 .settings-intro-row .card-intro {
   flex: 1;
   margin: 0;
@@ -2238,6 +2326,7 @@ table.data-table tr.row-focused td {
   .screen-only,
   .btn-report-export,
   .report-full-card,
+  .settings-nav,
   .gdpr-consent-banner,
   #app-loading,
   .file-drop-overlay,
@@ -2398,6 +2487,38 @@ table.data-table tr.row-focused td {
 @media (max-width: 900px) {
   .dashboard-period-grid {
     grid-template-columns: 1fr;
+  }
+
+  .settings-layout {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .settings-nav {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .settings-nav-list {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 0.35rem;
+    width: max-content;
+    min-width: 100%;
+  }
+
+  .settings-nav-link {
+    white-space: nowrap;
+    font-size: 0.82rem;
+  }
+
+  .settings-nav-title {
+    display: none;
   }
 
   .dashboard-period-grid .card {

@@ -311,11 +311,29 @@
 
     <!-- Paramètres -->
     <section id="panel-settings" class="panel" role="tabpanel" aria-labelledby="tab-settings">
+      <div class="settings-layout">
+        <nav class="settings-nav no-print" aria-label="Sommaire des paramètres">
+          <p class="settings-nav-title">Sommaire</p>
+          <ul class="settings-nav-list">
+            <li><a href="#settings-section-lease" class="settings-nav-link" data-settings-target="settings-section-lease">Location</a></li>
+            <li><a href="#settings-section-parties" class="settings-nav-link" data-settings-target="settings-section-parties">Bailleur &amp; locataire</a></li>
+            <li><a href="#settings-section-emitters" class="settings-nav-link" data-settings-target="settings-section-emitters">Import bancaire</a></li>
+            <li><a href="#settings-section-prices" class="settings-nav-link" data-settings-target="settings-section-prices">Historique des loyers</a></li>
+            <li><a href="#settings-templates-section" class="settings-nav-link" data-settings-target="settings-templates-section">Modèles</a></li>
+            <li><a href="#settings-section-recipients" class="settings-nav-link" data-settings-target="settings-section-recipients">Destinataires mail</a></li>
+            <li data-demo-hide><a href="#settings-mail-oauth" class="settings-nav-link" data-settings-target="settings-mail-oauth">Gmail / Outlook</a></li>
+            <li data-demo-hide><a href="#settings-mail-smtp" class="settings-nav-link" data-settings-target="settings-mail-smtp">Serveur mail</a></li>
+            <li><a href="#settings-backup-json" class="settings-nav-link" data-settings-target="settings-backup-json">Sauvegarde</a></li>
+            <li class="hidden" data-settings-nav-item="settings-data-section"><a href="#settings-data-section" class="settings-nav-link" data-settings-target="settings-data-section">Données</a></li>
+            <li data-demo-hide><a href="#settings-account" class="settings-nav-link" data-settings-target="settings-account">Mon compte</a></li>
+          </ul>
+        </nav>
+        <div class="settings-content">
       <div class="settings-intro-row no-print">
         <p class="field-hint card-intro">Renseignez ces informations une première fois. Vos paramètres sont <strong>sauvegardés automatiquement</strong> toutes les 30 secondes lorsque vous les modifiez. Le bouton <strong>Enregistrer</strong> en bas à droite reste disponible pour enregistrer immédiatement.</p>
         <button type="button" class="help-trigger" data-help-id="settings-auto-save" aria-label="Aide : sauvegarde automatique" aria-expanded="false"><span aria-hidden="true">?</span></button>
       </div>
-      <div class="card">
+      <div class="card" id="settings-section-lease">
         <h2 class="heading-with-help">Location
           <button type="button" class="help-trigger" data-help-id="settings-lease" aria-label="Aide : location" aria-expanded="false"><span aria-hidden="true">?</span></button>
         </h2>
@@ -332,7 +350,7 @@
         </div>
       </div>
 
-      <div class="grid-2">
+      <div class="grid-2" id="settings-section-parties">
         <div class="card">
           <h2 class="heading-with-help">Bailleur
             <button type="button" class="help-trigger" data-help-id="settings-bailleur" aria-label="Aide : bailleur" aria-expanded="false"><span aria-hidden="true">?</span></button>
@@ -366,7 +384,7 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="settings-section-emitters">
         <h2 class="heading-with-help">Émetteurs pour l'import bancaire
           <button type="button" class="help-trigger" data-help-id="settings-emitters" aria-expanded="false"><span aria-hidden="true">?</span></button>
         </h2>
@@ -375,7 +393,7 @@
         <button type="button" id="btn-add-emitter" class="btn btn-secondary"><i class="fa-solid fa-plus" aria-hidden="true"></i>Ajouter un émetteur</button>
       </div>
 
-      <div class="card">
+      <div class="card" id="settings-section-prices">
         <h2 class="heading-with-help">Historique des loyers
           <button type="button" class="help-trigger" data-help-id="settings-prices" aria-label="Aide : historique des loyers" aria-expanded="false"><span aria-hidden="true">?</span></button>
         </h2>
@@ -425,7 +443,7 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="settings-section-recipients">
         <h2 class="heading-with-help">Destinataires et signature mail
           <button type="button" class="help-trigger" data-help-id="settings-mail" aria-label="Aide : destinataires mail" aria-expanded="false"><span aria-hidden="true">?</span></button>
         </h2>
@@ -567,6 +585,8 @@
           <button type="button" class="help-trigger" data-help-id="btn-delete-data" aria-label="Aide : supprimer mes données" aria-expanded="false"><span aria-hidden="true">?</span></button>
           <button type="button" id="btn-delete-account" class="btn btn-danger" title="Supprime le compte d'accès (passphrase requise si compte local)"><i class="fa-solid fa-user-xmark" aria-hidden="true"></i>Supprimer mon compte</button>
           <button type="button" class="help-trigger" data-help-id="btn-delete-account" aria-label="Aide : supprimer mon compte" aria-expanded="false"><span aria-hidden="true">?</span></button>
+        </div>
+      </div>
         </div>
       </div>
     </section>
